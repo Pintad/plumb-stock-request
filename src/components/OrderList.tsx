@@ -49,9 +49,10 @@ const getStatusLabel = (status: Order['status']) => {
 interface OrderListProps {
   orders: Order[];
   showUser?: boolean;
+  showFullDetails?: boolean;
 }
 
-const OrderList = ({ orders, showUser = false }: OrderListProps) => {
+const OrderList = ({ orders, showUser = false, showFullDetails = false }: OrderListProps) => {
   const { projects } = useAppContext();
   
   const getProjectName = (code?: string) => {
