@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Trash2, Image as ImageIcon, Edit } from 'lucide-react';
 import ProductForm from '@/components/admin/ProductForm';
 import { Product } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -16,6 +16,7 @@ const AdminProducts = () => {
   const { products, setProducts } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -43,6 +44,29 @@ const AdminProducts = () => {
     });
   };
 
+  const handleEditProduct = async (formData: any) => {
+    if (!editingProduct) return;
+
+    const updatedProduct = {
+      ...editingProduct,
+      name: formData.name,
+      reference: formData.reference,
+      unit: formData.unit,
+    };
+
+    if (formData.image?.[0]) {
+      const imageUrl = URL.createObjectURL(formData.image[0]);
+      updatedProduct.imageUrl = imageUrl;
+    }
+
+    setProducts(products.map(p => p.id === editingProduct.id ? updatedProduct : p));
+    setEditingProduct(null);
+    toast({
+      title: "Produit modifié",
+      description: "Le produit a été modifié avec succès",
+    });
+  };
+
   const handleDeleteProduct = (productId: string) => {
     setProducts(products.filter(p => p.id !== productId));
     toast({
@@ -67,6 +91,7 @@ const AdminProducts = () => {
                   <Button 
                     onClick={() => setShowAddForm(!showAddForm)}
                     className="bg-green-600 hover:bg-green-700"
+                    disabled={!!editingProduct}
                   >
                     <Plus className="mr-2" size={18} />
                     Ajouter un produit
@@ -83,10 +108,24 @@ const AdminProducts = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {showAddForm && (
+                {showAddForm && !editingProduct && (
                   <div className="mb-6 p-4 border rounded-lg bg-gray-50">
                     <h3 className="text-lg font-medium mb-4">Ajouter un nouveau produit</h3>
-                    <ProductForm onSubmit={handleAddProduct} />
+                    <ProductForm 
+                      onSubmit={handleAddProduct} 
+                      onCancel={() => setShowAddForm(false)}
+                    />
+                  </div>
+                )}
+                
+                {editingProduct && (
+                  <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                    <h3 className="text-lg font-medium mb-4">Modifier le produit</h3>
+                    <ProductForm 
+                      initialData={editingProduct} 
+                      onSubmit={handleEditProduct}
+                      onCancel={() => setEditingProduct(null)}
+                    />
                   </div>
                 )}
                 
@@ -122,13 +161,23 @@ const AdminProducts = () => {
                             <TableCell>{product.name}</TableCell>
                             <TableCell>{product.unit}</TableCell>
                             <TableCell>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteProduct(product.id)}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditingProduct(product)}
+                                  disabled={!!editingProduct}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))

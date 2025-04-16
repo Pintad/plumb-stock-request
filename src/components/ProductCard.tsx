@@ -31,7 +31,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <Card className="h-full">
       <CardContent className="pt-6">
         <div className="mb-4 bg-gray-50 rounded-md p-4 flex justify-center">
-          <Package size={48} className="text-gray-400" />
+          {product.imageUrl ? (
+            <img 
+              src={product.imageUrl} 
+              alt={product.name} 
+              className="h-32 object-contain"
+            />
+          ) : (
+            <Package size={48} className="text-gray-400" />
+          )}
         </div>
         <div className="space-y-2">
           <h3 className="font-medium text-base">{product.name}</h3>

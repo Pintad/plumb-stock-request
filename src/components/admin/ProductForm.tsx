@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -25,17 +24,34 @@ interface ProductFormData {
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
   initialData?: Product;
+  onCancel?: () => void;
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData }) => {
+const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCancel }) => {
   const form = useForm<ProductFormData>({
-    defaultValues: initialData,
+    defaultValues: {
+      name: initialData?.name || '',
+      reference: initialData?.reference || '',
+      unit: initialData?.unit || '',
+    }
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.name,
+        reference: initialData.reference,
+        unit: initialData.unit,
+      });
+    }
+  }, [initialData, form]);
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
       await onSubmit(data);
-      form.reset();
+      if (!initialData) {
+        form.reset();
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -95,7 +111,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData }) => {
           name="image"
           render={({ field: { onChange, value, ...field } }) => (
             <FormItem>
-              <FormLabel>Image</FormLabel>
+              <FormLabel>Image{initialData?.imageUrl ? " (Laisser vide pour conserver l'image actuelle)" : ""}</FormLabel>
               <FormControl>
                 <Input
                   type="file"
@@ -104,14 +120,31 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData }) => {
                   {...field}
                 />
               </FormControl>
+              {initialData?.imageUrl && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 mb-1">Image actuelle:</p>
+                  <img 
+                    src={initialData.imageUrl} 
+                    alt={initialData.name} 
+                    className="h-20 object-contain border rounded p-1" 
+                  />
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit">
-          {initialData ? "Modifier" : "Ajouter"}
-        </Button>
+        <div className="flex justify-between pt-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Annuler
+            </Button>
+          )}
+          <Button type="submit" className={onCancel ? "" : "w-full"}>
+            {initialData ? "Modifier" : "Ajouter"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
