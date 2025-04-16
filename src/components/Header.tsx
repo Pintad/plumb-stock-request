@@ -1,155 +1,194 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, ShoppingCart, LogOut, User, Package, LayoutDashboard, FileText } from 'lucide-react';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
+import { ShoppingCart, Package, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export const Header = () => {
   const { user, logout, cart, isAdmin } = useAppContext();
   const location = useLocation();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
-  
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-  
-  if (!user) return null;
-  
-  const navItems = isAdmin 
-    ? [
-        { title: 'Tableau de bord', path: '/admin', icon: <LayoutDashboard className="mr-2" size={20} /> },
-        { title: 'Demandes', path: '/admin/orders', icon: <FileText className="mr-2" size={20} /> },
-        { title: 'Produits', path: '/admin/products', icon: <Package className="mr-2" size={20} /> },
-      ]
-    : [
-        { title: 'Catalogue', path: '/', icon: <Package className="mr-2" size={20} /> },
-        { title: 'Panier', path: '/cart', icon: <ShoppingCart className="mr-2" size={20} /> },
-        { title: 'Mes Demandes', path: '/my-orders', icon: <FileText className="mr-2" size={20} /> },
-      ];
-  
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[250px] sm:w-[300px]">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                <div className="py-4">
-                  <div className="flex items-center mb-6">
-                    <User className="h-6 w-6 text-plumbing-blue mr-2" />
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{isAdmin ? 'Administrateur' : 'Ouvrier'}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator className="mb-4" />
-                  
-                  <nav className="space-y-3">
-                    {navItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setOpen(false)}
-                        className={`flex items-center py-2 px-3 rounded-md w-full ${
-                          location.pathname === item.path
-                            ? "bg-plumbing-lightBlue text-plumbing-blue"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {item.icon}
-                        {item.title}
-                        {item.path === '/cart' && cartItemsCount > 0 && (
-                          <Badge className="ml-auto bg-plumbing-blue">{cartItemsCount}</Badge>
-                        )}
-                      </Link>
-                    ))}
-                    
-                    <Separator className="my-4" />
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="flex items-center w-full justify-start" 
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="mr-2" size={20} />
-                      Déconnexion
-                    </Button>
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <Link to={isAdmin ? "/admin" : "/"} className="font-bold text-plumbing-blue text-xl flex items-center">
-              PlumbStock
-            </Link>
-          </div>
-
-          {/* Navigation Desktop */}
-          <nav className="hidden lg:flex items-center space-x-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center py-2 ${
-                  location.pathname === item.path
-                    ? "text-plumbing-blue font-medium"
-                    : "text-gray-600 hover:text-plumbing-blue"
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center">
+            <Package className="h-6 w-6 text-blue-600" />
+            <span className="ml-2 text-xl font-bold">PrestockPro</span>
+          </Link>
+          
+          {user && (
+            <nav className="hidden md:flex items-center gap-6">
+              <Link 
+                to="/" 
+                className={`text-sm font-medium transition-colors ${
+                  location.pathname === '/' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
                 }`}
               >
-                {item.title}
-                {item.path === '/cart' && cartItemsCount > 0 && (
-                  <Badge className="ml-2 bg-plumbing-blue">{cartItemsCount}</Badge>
-                )}
+                Catalogue
               </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center">
-            {!isAdmin && (
-              <Link to="/cart" className="mr-4 lg:hidden relative">
-                <ShoppingCart className="w-6 h-6 text-gray-700" />
-                {cartItemsCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 w-5 h-5 p-0 flex items-center justify-center bg-plumbing-blue">
-                    {cartItemsCount}
-                  </Badge>
-                )}
+              <Link 
+                to="/my-orders" 
+                className={`text-sm font-medium transition-colors ${
+                  location.pathname === '/my-orders' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Mes demandes
               </Link>
-            )}
-            <div className="hidden lg:block">
-              <Button variant="ghost" onClick={handleLogout} className="flex items-center">
-                <LogOut className="mr-2" size={18} />
-                Déconnexion
+              {isAdmin && (
+                <>
+                  <Link 
+                    to="/admin" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname.startsWith('/admin') && location.pathname === '/admin' 
+                        ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
+                    to="/admin/orders" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname === '/admin/orders' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Commandes
+                  </Link>
+                  <Link 
+                    to="/admin/products" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname === '/admin/products' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Produits
+                  </Link>
+                  <Link 
+                    to="/admin/categories" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname === '/admin/categories' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Catégories
+                  </Link>
+                  <Link 
+                    to="/admin/projects" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname === '/admin/projects' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                  >
+                    Affaires
+                  </Link>
+                </>
+              )}
+            </nav>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {user && !isAdmin && (
+            <Link to="/cart" className="relative">
+              <Button variant="outline" size="icon" className="rounded-full">
+                <ShoppingCart className="h-5 w-5" />
               </Button>
-            </div>
-            <div className="lg:hidden">
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
-                <LogOut size={20} />
-              </Button>
-            </div>
-          </div>
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemsCount}
+                </span>
+              )}
+            </Link>
+          )}
+          
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-100 text-blue-800">
+                      {user.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.role === 'admin' ? 'Administrateur' : 'Ouvrier'}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Menu mobile */}
+                <div className="md:hidden">
+                  <DropdownMenuItem asChild>
+                    <Link to="/" className="flex cursor-pointer items-center">
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Catalogue</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-orders" className="flex cursor-pointer items-center">
+                      <ListChecks className="mr-2 h-4 w-4" />
+                      <span>Mes demandes</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex cursor-pointer items-center">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/orders" className="flex cursor-pointer items-center">
+                          <ClipboardList className="mr-2 h-4 w-4" />
+                          <span>Commandes</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/products" className="flex cursor-pointer items-center">
+                          <Package className="mr-2 h-4 w-4" />
+                          <span>Produits</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/categories" className="flex cursor-pointer items-center">
+                          <Tag className="mr-2 h-4 w-4" />
+                          <span>Catégories</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/projects" className="flex cursor-pointer items-center">
+                          <Briefcase className="mr-2 h-4 w-4" />
+                          <span>Affaires</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                </div>
+                
+                <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Se déconnecter</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
     </header>

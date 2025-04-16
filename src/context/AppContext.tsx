@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, User, Order } from '../types';
+import { Product, CartItem, User, Order, Project } from '../types';
 import { demoProducts, demoUsers, demoOrders } from '../data/demoData';
 import { toast } from '@/components/ui/use-toast';
 
@@ -7,16 +8,30 @@ interface AppContextType {
   user: User | null;
   login: (username: string, password: string) => boolean;
   logout: () => void;
+  
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  
+  categories: string[];
+  addCategory: (category: string) => void;
+  deleteCategory: (category: string) => void;
+  
+  projects: Project[];
+  addProject: (project: Project) => void;
+  deleteProject: (projectId: string) => void;
+  
   cart: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  
   orders: Order[];
-  createOrder: () => void;
+  createOrder: (projectCode?: string) => void;
+  
   loadProductsFromCSV: (csvContent: string) => void;
+  loadProjectsFromCSV: (csvContent: string) => void;
+  
   isAdmin: boolean;
 }
 
@@ -25,9 +40,20 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>(demoProducts);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>(demoOrders);
   const isAdmin = user?.role === 'admin';
+
+  // Initialiser les catégories à partir des produits
+  useEffect(() => {
+    const uniqueCategories = [...new Set(products
+      .map(product => product.category)
+      .filter(Boolean) as string[]
+    )].sort();
+    setCategories(uniqueCategories);
+  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -48,6 +74,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedOrders = localStorage.getItem('orders');
     if (savedOrders) {
       setOrders(JSON.parse(savedOrders));
+    }
+    
+    const savedCategories = localStorage.getItem('categories');
+    if (savedCategories) {
+      setCategories(JSON.parse(savedCategories));
+    }
+    
+    const savedProjects = localStorage.getItem('projects');
+    if (savedProjects) {
+      setProjects(JSON.parse(savedProjects));
     }
   }, []);
 
@@ -70,6 +106,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
   }, [products]);
+  
+  useEffect(() => {
+    localStorage.setItem('categories', JSON.stringify(categories));
+  }, [categories]);
+  
+  useEffect(() => {
+    localStorage.setItem('projects', JSON.stringify(projects));
+  }, [projects]);
 
   const login = (username: string, password: string): boolean => {
     const foundUser = demoUsers.find(
@@ -125,7 +169,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCart([]);
   };
 
-  const createOrder = () => {
+  const createOrder = (projectCode?: string) => {
     if (!user || cart.length === 0) return;
     
     const newOrder: Order = {
@@ -134,7 +178,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userName: user.name,
       date: new Date().toISOString().split('T')[0],
       items: [...cart],
-      status: 'pending'
+      status: 'pending',
+      projectCode
     };
     
     setOrders([...orders, newOrder]);
@@ -144,6 +189,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       title: "Demande envoyée",
       description: "Votre demande a bien été transmise",
     });
+  };
+
+  const addCategory = (category: string) => {
+    if (categories.includes(category)) return;
+    setCategories([...categories, category].sort());
+  };
+
+  const deleteCategory = (category: string) => {
+    // Supprimer la catégorie de la liste
+    setCategories(categories.filter(c => c !== category));
+    
+    // Mettre à jour les produits qui utilisent cette catégorie
+    setProducts(products.map(product => 
+      product.category === category 
+        ? { ...product, category: undefined } 
+        : product
+    ));
+  };
+
+  const addProject = (project: Project) => {
+    setProjects([...projects, project]);
+  };
+
+  const deleteProject = (projectId: string) => {
+    setProjects(projects.filter(project => project.id !== projectId));
   };
 
   const loadProductsFromCSV = (csvContent: string) => {
@@ -157,12 +227,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const nameIndex = headers.findIndex(h => h === 'designation' || h === 'nom' || h === 'name');
       const referenceIndex = headers.findIndex(h => h === 'reference' || h === 'ref');
       const unitIndex = headers.findIndex(h => h === 'unite' || h === 'unit' || h === 'conditionnement');
+      const categoryIndex = headers.findIndex(h => h === 'categorie' || h === 'category');
       
       if (nameIndex === -1 || referenceIndex === -1 || unitIndex === -1) {
         throw new Error("Format CSV invalide: colonnes manquantes");
       }
       
       const newProducts: Product[] = [];
+      const newCategories = new Set(categories);
       
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
@@ -170,11 +242,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const values = lines[i].split(',').map(value => value.trim());
         
         if (values.length >= Math.max(nameIndex, referenceIndex, unitIndex) + 1) {
+          const category = categoryIndex !== -1 && values[categoryIndex] ? values[categoryIndex] : undefined;
+          
+          if (category) {
+            newCategories.add(category);
+          }
+          
           const product: Product = {
             id: `csv-${i}`,
             name: values[nameIndex],
             reference: values[referenceIndex],
             unit: values[unitIndex],
+            category,
             imageUrl: undefined
           };
           
@@ -187,9 +266,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       
       setProducts(newProducts);
+      setCategories([...newCategories].sort());
+      
       toast({
         title: "Import réussi",
         description: `${newProducts.length} produits importés avec succès`,
+      });
+      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur d'importation",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
+      });
+    }
+  };
+
+  const loadProjectsFromCSV = (csvContent: string) => {
+    try {
+      const lines = csvContent.split('\n');
+      if (lines.length <= 1) {
+        throw new Error("Le fichier CSV est vide ou mal formaté");
+      }
+      
+      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+      const codeIndex = headers.findIndex(h => h === 'code');
+      const nameIndex = headers.findIndex(h => h === 'nom' || h === 'name');
+      
+      if (codeIndex === -1 || nameIndex === -1) {
+        throw new Error("Format CSV invalide: colonnes manquantes (code, nom)");
+      }
+      
+      const newProjects: Project[] = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const values = lines[i].split(',').map(value => value.trim());
+        
+        if (values.length >= Math.max(codeIndex, nameIndex) + 1) {
+          const project: Project = {
+            id: `csv-project-${i}`,
+            code: values[codeIndex],
+            name: values[nameIndex],
+          };
+          
+          newProjects.push(project);
+        }
+      }
+      
+      if (newProjects.length === 0) {
+        throw new Error("Aucune affaire valide n'a pu être importée");
+      }
+      
+      setProjects(newProjects);
+      
+      toast({
+        title: "Import réussi",
+        description: `${newProjects.length} affaires importées avec succès`,
       });
       
     } catch (error) {
@@ -209,6 +343,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         products,
         setProducts,
+        categories,
+        addCategory,
+        deleteCategory,
+        projects,
+        addProject,
+        deleteProject,
         cart,
         addToCart,
         removeFromCart,
@@ -217,6 +357,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         orders,
         createOrder,
         loadProductsFromCSV,
+        loadProjectsFromCSV,
         isAdmin
       }}
     >

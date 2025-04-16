@@ -1,244 +1,143 @@
 
 import React from 'react';
-import { FileText, Printer, Download } from 'lucide-react';
 import { Order } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ClipboardList } from 'lucide-react';
+import { useAppContext } from '@/context/AppContext';
+
+const getStatusColor = (status: Order['status']) => {
+  switch (status) {
+    case 'pending':
+      return 'bg-yellow-500';
+    case 'processed':
+      return 'bg-blue-500';
+    case 'completed':
+      return 'bg-green-500';
+    default:
+      return 'bg-gray-500';
+  }
+};
+
+const getStatusLabel = (status: Order['status']) => {
+  switch (status) {
+    case 'pending':
+      return 'En attente';
+    case 'processed':
+      return 'En cours';
+    case 'completed':
+      return 'Terminée';
+    default:
+      return status;
+  }
+};
 
 interface OrderListProps {
   orders: Order[];
-  showFullDetails?: boolean;
+  showUser?: boolean;
 }
 
-const OrderList: React.FC<OrderListProps> = ({ orders, showFullDetails = false }) => {
-  const handlePrint = (order: Order) => {
-    // Ouvre une nouvelle fenêtre pour l'impression
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
-    
-    // Contenu HTML de la fenêtre d'impression
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Demande de stock #${order.id}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              margin: 0;
-              padding: 20px;
-            }
-            h1 {
-              font-size: 24px;
-              margin-bottom: 10px;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 20px;
-              border-bottom: 1px solid #ddd;
-              padding-bottom: 10px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 30px;
-            }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 8px 12px;
-              text-align: left;
-            }
-            th {
-              background-color: #f2f2f2;
-            }
-            .summary {
-              display: flex;
-              justify-content: space-between;
-              margin-top: 20px;
-              border-top: 1px solid #ddd;
-              padding-top: 10px;
-            }
-            .meta {
-              margin-bottom: 20px;
-            }
-            .meta p {
-              margin: 5px 0;
-            }
-            @media print {
-              button {
-                display: none;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>PlumbStock - Demande de stock #${order.id}</h1>
-            <div>
-              <p><strong>Date:</strong> ${format(new Date(order.date), 'dd MMMM yyyy', { locale: fr })}</p>
-            </div>
-          </div>
-          
-          <div class="meta">
-            <p><strong>Demandeur:</strong> ${order.userName}</p>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>Référence</th>
-                <th>Désignation</th>
-                <th>Unité</th>
-                <th>Quantité</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td>${item.reference}</td>
-                  <td>${item.name}</td>
-                  <td>${item.unit}</td>
-                  <td>${item.quantity}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="summary">
-            <div>
-              <p><strong>Total articles:</strong> ${totalItems}</p>
-              <p><strong>Total références:</strong> ${order.items.length}</p>
-            </div>
-            <button onclick="window.print()">Imprimer</button>
-          </div>
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
+const OrderList = ({ orders, showUser = false }: OrderListProps) => {
+  const { projects } = useAppContext();
+  
+  const getProjectName = (code?: string) => {
+    if (!code) return null;
+    const project = projects.find(p => p.code === code);
+    return project ? project.name : code;
   };
-  
-  const handleExport = (order: Order) => {
-    // Générer un CSV
-    const headers = ["Référence", "Désignation", "Unité", "Quantité"];
-    const data = order.items.map(item => [
-      item.reference,
-      item.name,
-      item.unit,
-      item.quantity.toString()
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => row.join(','))
-    ].join('\n');
-    
-    // Créer un blob et un lien de téléchargement
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `demande-${order.id}-${order.date}.csv`);
-    link.style.display = 'none';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  const renderStatusBadge = (status: Order['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">En attente</Badge>;
-      case 'processed':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300">En cours</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-800 border-green-300">Terminé</Badge>;
-      default:
-        return null;
-    }
-  };
-  
-  if (orders.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <FileText className="h-12 w-12 text-gray-300 mb-2" />
-            <p className="text-gray-500">Aucune demande trouvée</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+
   return (
     <div className="space-y-4">
-      {orders.map(order => (
-        <Card key={order.id} className="overflow-hidden">
-          <CardHeader className="pb-1">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <span>Demande #{order.id}</span>
-                {renderStatusBadge(order.status)}
-              </CardTitle>
-              <div className="flex items-center space-x-2 mt-2 sm:mt-0">
-                <Button variant="outline" size="sm" onClick={() => handlePrint(order)}>
-                  <Printer className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Imprimer</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => handleExport(order)}>
-                  <Download className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Exporter</span>
-                </Button>
+      {orders.length > 0 ? (
+        orders.map((order) => (
+          <Card key={order.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg flex items-center">
+                    <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
+                    Demande #{order.id}
+                    {showUser && <span className="ml-2 text-sm font-normal">({order.userName})</span>}
+                  </CardTitle>
+                  <p className="text-sm text-gray-500">
+                    {new Date(order.date).toLocaleDateString('fr-FR')}
+                  </p>
+                  {order.projectCode && (
+                    <div className="mt-1">
+                      <Badge variant="outline" className="font-normal">
+                        Affaire: {order.projectCode} 
+                        {getProjectName(order.projectCode) && ` - ${getProjectName(order.projectCode)}`}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                <Badge className={`${getStatusColor(order.status)} text-white`}>
+                  {getStatusLabel(order.status)}
+                </Badge>
               </div>
-            </div>
-            <div className="text-sm text-gray-500 mt-1 flex flex-col sm:flex-row sm:items-center">
-              <span>
-                {format(new Date(order.date), 'dd MMMM yyyy', { locale: fr })}
-              </span>
-              {showFullDetails && (
-                <span className="sm:ml-4">Demandeur: {order.userName}</span>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Référence</TableHead>
-                    <TableHead>Désignation</TableHead>
-                    <TableHead className="w-24 text-right">Quantité</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {order.items.map(item => (
-                    <TableRow key={`${order.id}-${item.id}`}>
-                      <TableCell className="font-mono text-sm">{item.reference}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div>{item.name}</div>
-                          <div className="text-xs text-gray-500">{item.unit}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Produit</TableHead>
+                      <TableHead>Référence</TableHead>
+                      <TableHead className="text-right">Quantité</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                  </TableHeader>
+                  <TableBody>
+                    {order.items.map((item) => (
+                      <TableRow key={`${order.id}-${item.id}`}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            {item.category && <div className="text-xs text-gray-500">Catégorie: {item.category}</div>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{item.reference}</TableCell>
+                        <TableCell className="text-right">{item.quantity} {item.unit}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-gray-50 py-2">
+              <div className="flex justify-between w-full text-sm">
+                <span>Total:</span>
+                <span className="font-semibold">
+                  {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                </span>
+              </div>
+            </CardFooter>
+          </Card>
+        ))
+      ) : (
+        <div className="py-12 text-center">
+          <div className="rounded-full bg-gray-200 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <ClipboardList className="h-8 w-8 text-gray-500" />
+          </div>
+          <h2 className="text-xl font-medium mb-2">Aucune demande</h2>
+          <p className="text-gray-500">
+            Vous n'avez aucune demande de stock pour le moment
+          </p>
+        </div>
+      )}
     </div>
   );
 };

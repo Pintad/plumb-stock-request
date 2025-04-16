@@ -1,9 +1,11 @@
+
 export interface Product {
   id: string;
   name: string;
   reference: string;
   unit: string;
   imageUrl?: string;
+  category?: string;
 }
 
 export interface CartItem extends Product {
@@ -17,6 +19,7 @@ export interface Order {
   date: string;
   items: CartItem[];
   status: 'pending' | 'processed' | 'completed';
+  projectCode?: string;
 }
 
 export interface User {
@@ -25,4 +28,10 @@ export interface User {
   password: string;
   name: string;
   role: 'worker' | 'admin';
+}
+
+export interface Project {
+  id: string;
+  code: string;
+  name: string;
 }

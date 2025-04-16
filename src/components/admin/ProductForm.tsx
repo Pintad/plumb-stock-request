@@ -11,8 +11,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Product } from '@/types';
+import { useAppContext } from '@/context/AppContext';
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -25,15 +33,18 @@ interface ProductFormData {
   reference: string;
   unit: string;
   imageUrl?: string;
+  category?: string;
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCancel }) => {
+  const { categories } = useAppContext();
   const form = useForm<ProductFormData>({
     defaultValues: {
       name: initialData?.name || '',
       reference: initialData?.reference || '',
       unit: initialData?.unit || '',
       imageUrl: initialData?.imageUrl || '',
+      category: initialData?.category || '',
     }
   });
 
@@ -44,6 +55,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         reference: initialData.reference,
         unit: initialData.unit,
         imageUrl: initialData.imageUrl || '',
+        category: initialData.category || '',
       });
     }
   }, [initialData, form]);
@@ -103,6 +115,33 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
               <FormControl>
                 <Input placeholder="Unité de mesure" required {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Catégorie</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une catégorie" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">Aucune catégorie</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

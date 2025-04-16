@@ -1,131 +1,75 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Minus, Plus, ShoppingCart, Trash, ArrowLeft, CheckCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Trash2, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
+import ProjectSelector from '@/components/ProjectSelector';
 
-const Cart = () => {
-  const { cart, removeFromCart, updateCartItemQuantity, clearCart, createOrder } = useAppContext();
+const CartPage = () => {
+  const { cart, updateCartItemQuantity, removeFromCart, clearCart, createOrder } = useAppContext();
+  const [selectedProject, setSelectedProject] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
   
-  const handleDecrement = (productId: string, currentQuantity: number) => {
-    if (currentQuantity > 1) {
-      updateCartItemQuantity(productId, currentQuantity - 1);
+  const handleCreateOrder = () => {
+    if (cart.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Panier vide",
+        description: "Votre panier est vide, impossible de créer une commande.",
+      });
+      return;
     }
-  };
-  
-  const handleIncrement = (productId: string, currentQuantity: number) => {
-    updateCartItemQuantity(productId, currentQuantity + 1);
-  };
-  
-  const handleSubmit = () => {
-    createOrder();
-    toast({
-      title: "Demande envoyée",
-      description: "Votre demande a bien été transmise",
-    });
+    
+    createOrder(selectedProject);
     navigate('/my-orders');
   };
   
-  const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
-  
-  if (cart.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-100">
-        <Header />
-        
-        <main className="flex-1 container px-4 py-6">
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              className="flex items-center text-gray-500"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au catalogue
-            </Button>
-          </div>
-          
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <ShoppingCart className="h-12 w-12 text-gray-300 mb-2" />
-                <p className="text-lg font-medium mb-2">Votre panier est vide</p>
-                <p className="text-gray-500 mb-6">Ajoutez des produits depuis le catalogue</p>
-                <Button 
-                  className="bg-plumbing-blue hover:bg-blue-600"
-                  onClick={() => navigate('/')}
-                >
-                  Parcourir le catalogue
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
+  const total = cart.reduce((sum, item) => sum + item.quantity, 0);
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       
       <main className="flex-1 container px-4 py-6">
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            className="flex items-center text-gray-500"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour au catalogue
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Mon panier</h1>
         
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Votre panier</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
+        {cart.length > 0 ? (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Articles</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50%]">Produit</TableHead>
+                        <TableHead>Produit</TableHead>
                         <TableHead>Référence</TableHead>
                         <TableHead>Quantité</TableHead>
-                        <TableHead className="text-right"></TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {cart.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <div>
-                              <div className="font-medium">{item.name}</div>
-                              <div className="text-sm text-gray-500">{item.unit}</div>
+                            <div className="flex items-center">
+                              {item.imageUrl && (
+                                <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-contain mr-4" />
+                              )}
+                              <div>
+                                <div className="font-medium">{item.name}</div>
+                                <div className="text-xs text-gray-500">{item.unit}</div>
+                                {item.category && (
+                                  <div className="text-xs text-gray-500">Catégorie: {item.category}</div>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="font-mono text-sm">
@@ -133,89 +77,111 @@ const Cart = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleDecrement(item.id, item.quantity)}
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-8 text-center">{item.quantity}</span>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleIncrement(item.id, item.quantity)}
+                              <span className="font-medium w-10 text-center">
+                                {item.quantity}
+                              </span>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => removeFromCart(item.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
                             >
-                              <Trash className="h-4 w-4 text-red-500" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between py-4">
-                <Button variant="ghost" onClick={clearCart}>
-                  Vider le panier
-                </Button>
-                <div className="text-sm text-gray-500">
-                  {cart.length} références · {totalItems} articles
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-          
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Récapitulatif</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-2">
-                  <div className="flex justify-between">
-                    <dt>Nombre de références</dt>
-                    <dd>{cart.length}</dd>
+                </CardContent>
+                <CardFooter>
+                  <div className="flex justify-between items-center w-full">
+                    <Button 
+                      variant="outline" 
+                      onClick={clearCart}
+                    >
+                      Vider le panier
+                    </Button>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">
+                        {total} {total > 1 ? 'articles' : 'article'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-medium">
-                    <dt>Total articles</dt>
-                    <dd>{totalItems}</dd>
-                  </div>
-                </dl>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full bg-plumbing-blue hover:bg-blue-600"
-                  onClick={handleSubmit}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Valider la demande
-                </Button>
-              </CardFooter>
-            </Card>
+                </CardFooter>
+              </Card>
+            </div>
             
-            <Alert className="mt-6">
-              <AlertDescription>
-                Cette demande sera transmise au responsable du stock pour préparation.
-              </AlertDescription>
-            </Alert>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Résumé</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ProjectSelector 
+                    selectedProject={selectedProject}
+                    onSelectProject={setSelectedProject}
+                  />
+                  
+                  <div className="my-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Total</span>
+                      <span className="text-xl font-bold">{total} {total > 1 ? 'articles' : 'article'}</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full bg-plumbing-blue hover:bg-blue-600"
+                    onClick={handleCreateOrder}
+                    disabled={cart.length === 0}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Valider ma demande
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="py-12 text-center">
+            <div className="rounded-full bg-gray-200 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="h-8 w-8 text-gray-500" />
+            </div>
+            <h2 className="text-xl font-medium mb-2">Votre panier est vide</h2>
+            <p className="text-gray-500 mb-6">
+              Vous n'avez aucun produit dans votre panier
+            </p>
+            <Button 
+              className="bg-plumbing-blue hover:bg-blue-600"
+              onClick={() => navigate('/')}
+            >
+              Parcourir les produits
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );
 };
 
-export default Cart;
+export default CartPage;

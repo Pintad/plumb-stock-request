@@ -20,25 +20,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 const Catalog = () => {
-  const { products, cart } = useAppContext();
+  const { products, cart, categories, projects } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
-  const [uniqueCategories, setUniqueCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-
-  // Extraire des catégories simples depuis les noms de produits
-  useEffect(() => {
-    const categories = new Set<string>();
-    products.forEach(product => {
-      // Extraire le premier mot comme catégorie simple
-      const firstWord = product.name.split(' ')[0];
-      if (firstWord.length > 2) { // Ignorer les mots trop courts
-        categories.add(firstWord);
-      }
-    });
-    setUniqueCategories(Array.from(categories).sort());
-  }, [products]);
-
+  
   // Filtrer les produits basés sur la recherche et les catégories
   useEffect(() => {
     const term = searchTerm.toLowerCase().trim();
@@ -51,9 +37,7 @@ const Catalog = () => {
       
       // Filtre par catégories sélectionnées
       const matchesCategory = selectedCategories.length === 0 ||
-        selectedCategories.some(category => 
-          product.name.toLowerCase().startsWith(category.toLowerCase())
-        );
+        (product.category && selectedCategories.includes(product.category));
       
       return matchesSearch && matchesCategory;
     });
@@ -98,7 +82,7 @@ const Catalog = () => {
                 </SheetHeader>
                 <div className="mt-6">
                   <div className="space-y-4">
-                    {uniqueCategories.map(category => (
+                    {categories.map(category => (
                       <div key={category} className="flex items-center space-x-2">
                         <Checkbox 
                           id={`category-${category}`} 

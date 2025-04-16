@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAppContext } from '@/context/AppContext';
 import { toast } from '@/components/ui/use-toast';
 
-const CSVImport: React.FC = () => {
-  const { loadProductsFromCSV } = useAppContext();
+const ProjectCSVImport: React.FC = () => {
+  const { loadProjectsFromCSV } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -35,7 +35,7 @@ const CSVImport: React.FC = () => {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        loadProductsFromCSV(content);
+        loadProjectsFromCSV(content);
       } catch (error) {
         toast({
           variant: "destructive",
@@ -70,9 +70,9 @@ const CSVImport: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Importer des produits</CardTitle>
+        <CardTitle>Importer des affaires</CardTitle>
         <CardDescription>
-          Chargez un fichier CSV contenant la liste de produits
+          Chargez un fichier CSV contenant la liste des affaires
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -95,7 +95,7 @@ const CSVImport: React.FC = () => {
           </Button>
           <div className="mt-4 text-sm text-gray-500 text-center">
             <p>Le fichier CSV doit contenir les colonnes suivantes:</p>
-            <p><strong>designation</strong>, <strong>reference</strong>, <strong>unite</strong>, <strong>categorie</strong></p>
+            <p><strong>code</strong>, <strong>nom</strong></p>
           </div>
         </div>
       </CardContent>
@@ -103,4 +103,4 @@ const CSVImport: React.FC = () => {
   );
 };
 
-export default CSVImport;
+export default ProjectCSVImport;
