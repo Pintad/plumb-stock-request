@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ClipboardList, MessageSquare, Settings } from 'lucide-react';
+import { ClipboardList, MessageSquare, Settings, FileDown, Printer } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 
@@ -68,6 +68,109 @@ const OrderList = ({
     if (!code) return null;
     const project = projects.find(p => p.code === code);
     return project ? project.name : code;
+  };
+
+  const exportToCSV = (order: Order) => {
+    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité', 'Unité'];
+    let csvContent = header.join(',') + '\n';
+    
+    order.items.forEach(item => {
+      const row = [
+        order.id,
+        order.userName,
+        order.date,
+        order.projectCode || 'Sans affaire',
+        order.status,
+        item.name,
+        item.reference,
+        item.quantity,
+        item.unit
+      ].map(value => `"${value}"`).join(',');
+      csvContent += row + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `commande_${order.id}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const printOrder = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    let htmlContent = `
+      <html>
+      <head>
+        <title>Demande de Stock #${order.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          h2 { margin-top: 20px; }
+          .header { display: flex; justify-content: space-between; }
+          .date { text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Demande de stock #${order.id}</h1>
+          <p class="date">Date: ${new Date().toLocaleDateString('fr-FR')}</p>
+        </div>
+        <p>Utilisateur: ${order.userName}</p>
+        <p>Date: ${new Date(order.date).toLocaleDateString('fr-FR')}</p>
+        <p>Affaire: ${order.projectCode || 'Sans affaire'}</p>
+        <p>Statut: ${order.status === 'pending' ? 'En attente' : order.status === 'processed' ? 'En cours' : 'Terminée'}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Référence</th>
+              <th>Quantité</th>
+              <th>Unité</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+      
+    order.items.forEach(item => {
+      htmlContent += `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.reference}</td>
+          <td>${item.quantity}</td>
+          <td>${item.unit}</td>
+        </tr>
+      `;
+    });
+      
+    htmlContent += `
+        </tbody>
+      </table>
+    `;
+      
+    if (order.message) {
+      htmlContent += `
+        <p><strong>Message:</strong> ${order.message}</p>
+      `;
+    }
+    
+    htmlContent += `
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.setTimeout(() => {
+      printWindow.print();
+    }, 250);
   };
 
   return (
@@ -154,17 +257,42 @@ const OrderList = ({
                   </span>
                 </span>
                 
-                {isAdmin && onManageOrder && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-1"
-                    onClick={() => onManageOrder(order)}
-                  >
-                    <Settings className="h-4 w-4" />
-                    Gérer
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1"
+                        onClick={() => exportToCSV(order)}
+                      >
+                        <FileDown className="h-4 w-4" />
+                        CSV
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1"
+                        onClick={() => printOrder(order)}
+                      >
+                        <Printer className="h-4 w-4" />
+                        PDF
+                      </Button>
+                    </>
+                  )}
+                  
+                  {isAdmin && onManageOrder && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={() => onManageOrder(order)}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Gérer
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardFooter>
           </Card>
