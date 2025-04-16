@@ -25,7 +25,8 @@ const CartPage = () => {
       return;
     }
     
-    createOrder(selectedProject);
+    // If selectedProject is empty, pass undefined instead
+    createOrder(selectedProject || undefined);
     navigate('/my-orders');
   };
   
