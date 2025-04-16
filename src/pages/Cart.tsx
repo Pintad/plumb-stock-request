@@ -12,7 +12,7 @@ import ProjectSelector from '@/components/ProjectSelector';
 
 const CartPage = () => {
   const { cart, updateCartItemQuantity, removeFromCart, clearCart, createOrder } = useAppContext();
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState('none');
   const navigate = useNavigate();
   
   const handleCreateOrder = () => {
@@ -25,8 +25,8 @@ const CartPage = () => {
       return;
     }
     
-    // If selectedProject is empty, pass undefined instead
-    createOrder(selectedProject || undefined);
+    // If selectedProject is "none", pass undefined instead
+    createOrder(selectedProject === 'none' ? undefined : selectedProject);
     navigate('/my-orders');
   };
   

@@ -28,7 +28,7 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProject, onSe
           <SelectValue placeholder="Sélectionner une affaire" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Aucune affaire</SelectItem>
+          <SelectItem value="none">Aucune affaire</SelectItem>
           {projects.map(project => (
             <SelectItem key={project.id} value={project.code}>
               {project.code} - {project.name}
