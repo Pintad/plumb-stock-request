@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, User, Order } from '../types';
 import { demoProducts, demoUsers, demoOrders } from '../data/demoData';
@@ -30,7 +29,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [orders, setOrders] = useState<Order[]>(demoOrders);
   const isAdmin = user?.role === 'admin';
 
-  // Charge l'état sauvegardé au démarrage
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -42,20 +40,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCart(JSON.parse(savedCart));
     }
     
-    // Chargement des produits CSV sauvegardés s'ils existent
     const savedProducts = localStorage.getItem('products');
     if (savedProducts) {
       setProducts(JSON.parse(savedProducts));
     }
     
-    // Chargement des commandes
     const savedOrders = localStorage.getItem('orders');
     if (savedOrders) {
       setOrders(JSON.parse(savedOrders));
     }
   }, []);
 
-  // Sauvegarde l'état quand il change
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -98,10 +93,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const existingItem = cart.find(item => item.id === product.id);
     
     if (existingItem) {
-      // Mettre à jour la quantité si le produit est déjà dans le panier
       updateCartItemQuantity(product.id, existingItem.quantity + quantity);
     } else {
-      // Ajouter un nouveau produit au panier
       setCart([...cart, { ...product, quantity }]);
     }
     
@@ -155,13 +148,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadProductsFromCSV = (csvContent: string) => {
     try {
-      // Diviser par lignes et supprimer la ligne d'en-tête
       const lines = csvContent.split('\n');
       if (lines.length <= 1) {
         throw new Error("Le fichier CSV est vide ou mal formaté");
       }
       
-      // Extraire l'en-tête pour vérifier les colonnes
       const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
       const nameIndex = headers.findIndex(h => h === 'designation' || h === 'nom' || h === 'name');
       const referenceIndex = headers.findIndex(h => h === 'reference' || h === 'ref');
@@ -171,11 +162,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error("Format CSV invalide: colonnes manquantes");
       }
       
-      // Convertir les lignes CSV en objets produits
       const newProducts: Product[] = [];
       
       for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue; // Ignorer les lignes vides
+        if (!lines[i].trim()) continue;
         
         const values = lines[i].split(',').map(value => value.trim());
         
@@ -184,7 +174,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             id: `csv-${i}`,
             name: values[nameIndex],
             reference: values[referenceIndex],
-            unit: values[unitIndex]
+            unit: values[unitIndex],
+            imageUrl: undefined
           };
           
           newProducts.push(product);

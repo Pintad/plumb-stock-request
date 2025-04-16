@@ -1,9 +1,9 @@
-
 export interface Product {
   id: string;
   name: string;
   reference: string;
   unit: string;
+  imageUrl?: string;
 }
 
 export interface CartItem extends Product {

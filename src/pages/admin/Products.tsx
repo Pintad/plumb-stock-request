@@ -1,21 +1,55 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import CSVImport from '@/components/CSVImport';
 import { useAppContext } from '@/context/AppContext';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import ProductForm from '@/components/admin/ProductForm';
+import { Product } from '@/types';
+import { toast } from '@/components/ui/use-toast';
 
 const AdminProducts = () => {
-  const { products } = useAppContext();
-  const [searchTerm, setSearchTerm] = React.useState('');
+  const { products, setProducts } = useAppContext();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
   
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     product.reference.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleAddProduct = async (formData: any) => {
+    const newProduct: Product = {
+      id: `manual-${Date.now()}`,
+      name: formData.name,
+      reference: formData.reference,
+      unit: formData.unit,
+    };
+
+    if (formData.image?.[0]) {
+      const imageUrl = URL.createObjectURL(formData.image[0]);
+      newProduct.imageUrl = imageUrl;
+    }
+
+    setProducts([...products, newProduct]);
+    setShowAddForm(false);
+    toast({
+      title: "Produit ajouté",
+      description: "Le produit a été ajouté avec succès",
+    });
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    setProducts(products.filter(p => p.id !== productId));
+    toast({
+      title: "Produit supprimé",
+      description: "Le produit a été supprimé avec succès",
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -28,7 +62,16 @@ const AdminProducts = () => {
           <div className="md:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">Catalogue de produits</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl">Catalogue de produits</CardTitle>
+                  <Button 
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Plus className="mr-2" size={18} />
+                    Ajouter un produit
+                  </Button>
+                </div>
                 <div className="relative mt-4">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <Input
@@ -40,27 +83,58 @@ const AdminProducts = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                {showAddForm && (
+                  <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                    <h3 className="text-lg font-medium mb-4">Ajouter un nouveau produit</h3>
+                    <ProductForm onSubmit={handleAddProduct} />
+                  </div>
+                )}
+                
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Image</TableHead>
                         <TableHead>Référence</TableHead>
                         <TableHead>Désignation</TableHead>
                         <TableHead>Conditionnement</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredProducts.length > 0 ? (
                         filteredProducts.map((product) => (
                           <TableRow key={product.id}>
+                            <TableCell>
+                              {product.imageUrl ? (
+                                <img 
+                                  src={product.imageUrl} 
+                                  alt={product.name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                  <ImageIcon className="text-gray-400" size={24} />
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell className="font-mono">{product.reference}</TableCell>
                             <TableCell>{product.name}</TableCell>
                             <TableCell>{product.unit}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center py-6">
+                          <TableCell colSpan={5} className="text-center py-6">
                             {searchTerm 
                               ? "Aucun produit ne correspond à votre recherche" 
                               : "Aucun produit dans le catalogue"}
