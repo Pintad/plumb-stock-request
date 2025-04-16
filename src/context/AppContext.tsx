@@ -2,38 +2,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, User, Order, Project } from '../types';
 import { demoProducts, demoUsers, demoOrders } from '../data/demoData';
-import { toast } from '@/components/ui/use-toast';
-
-interface AppContextType {
-  user: User | null;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
-  
-  products: Product[];
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  
-  categories: string[];
-  addCategory: (category: string) => void;
-  deleteCategory: (category: string) => void;
-  
-  projects: Project[];
-  addProject: (project: Project) => void;
-  deleteProject: (projectId: string) => void;
-  
-  cart: CartItem[];
-  addToCart: (product: Product, quantity: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateCartItemQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
-  
-  orders: Order[];
-  createOrder: (projectCode?: string) => void;
-  
-  loadProductsFromCSV: (csvContent: string) => void;
-  loadProjectsFromCSV: (csvContent: string) => void;
-  
-  isAdmin: boolean;
-}
+import { AppContextType } from './types';
+import { addToCart, removeFromCart, updateCartItemQuantity, clearCart as clearCartUtil } from './cartUtils';
+import { loadProductsFromCSV, loadProjectsFromCSV } from './importUtils';
+import { createOrder as createOrderUtil } from './orderUtils';
+import { addCategory as addCategoryUtil, deleteCategory as deleteCategoryUtil } from './categoryUtils';
+import { addProject as addProjectUtil, deleteProject as deleteProjectUtil } from './projectUtils';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -55,6 +29,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCategories(uniqueCategories);
   }, []);
 
+  // Chargement des données depuis le localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -87,6 +62,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // Sauvegarde des données dans le localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -130,209 +106,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = () => {
     setUser(null);
-    clearCart();
-  };
-
-  const addToCart = (product: Product, quantity: number) => {
-    const existingItem = cart.find(item => item.id === product.id);
-    
-    if (existingItem) {
-      updateCartItemQuantity(product.id, existingItem.quantity + quantity);
-    } else {
-      setCart([...cart, { ...product, quantity }]);
-    }
-    
-    toast({
-      title: "Produit ajouté",
-      description: `${quantity} ${product.name} ajouté au panier`,
-    });
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
-  const updateCartItemQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    
-    setCart(
-      cart.map(item => 
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const clearCart = () => {
-    setCart([]);
-  };
-
-  const createOrder = (projectCode?: string) => {
-    if (!user || cart.length === 0) return;
-    
-    const newOrder: Order = {
-      id: `${orders.length + 1}`,
-      userId: user.id,
-      userName: user.name,
-      date: new Date().toISOString().split('T')[0],
-      items: [...cart],
-      status: 'pending',
-      projectCode
-    };
-    
-    setOrders([...orders, newOrder]);
-    clearCart();
-    
-    toast({
-      title: "Demande envoyée",
-      description: "Votre demande a bien été transmise",
-    });
-  };
-
-  const addCategory = (category: string) => {
-    if (categories.includes(category)) return;
-    setCategories([...categories, category].sort());
-  };
-
-  const deleteCategory = (category: string) => {
-    // Supprimer la catégorie de la liste
-    setCategories(categories.filter(c => c !== category));
-    
-    // Mettre à jour les produits qui utilisent cette catégorie
-    setProducts(products.map(product => 
-      product.category === category 
-        ? { ...product, category: undefined } 
-        : product
-    ));
-  };
-
-  const addProject = (project: Project) => {
-    setProjects([...projects, project]);
-  };
-
-  const deleteProject = (projectId: string) => {
-    setProjects(projects.filter(project => project.id !== projectId));
-  };
-
-  const loadProductsFromCSV = (csvContent: string) => {
-    try {
-      const lines = csvContent.split('\n');
-      if (lines.length <= 1) {
-        throw new Error("Le fichier CSV est vide ou mal formaté");
-      }
-      
-      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-      const nameIndex = headers.findIndex(h => h === 'designation' || h === 'nom' || h === 'name');
-      const referenceIndex = headers.findIndex(h => h === 'reference' || h === 'ref');
-      const unitIndex = headers.findIndex(h => h === 'unite' || h === 'unit' || h === 'conditionnement');
-      const categoryIndex = headers.findIndex(h => h === 'categorie' || h === 'category');
-      
-      if (nameIndex === -1 || referenceIndex === -1 || unitIndex === -1) {
-        throw new Error("Format CSV invalide: colonnes manquantes");
-      }
-      
-      const newProducts: Product[] = [];
-      const newCategories = new Set(categories);
-      
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const values = lines[i].split(',').map(value => value.trim());
-        
-        if (values.length >= Math.max(nameIndex, referenceIndex, unitIndex) + 1) {
-          const category = categoryIndex !== -1 && values[categoryIndex] ? values[categoryIndex] : undefined;
-          
-          if (category) {
-            newCategories.add(category);
-          }
-          
-          const product: Product = {
-            id: `csv-${i}`,
-            name: values[nameIndex],
-            reference: values[referenceIndex],
-            unit: values[unitIndex],
-            category,
-            imageUrl: undefined
-          };
-          
-          newProducts.push(product);
-        }
-      }
-      
-      if (newProducts.length === 0) {
-        throw new Error("Aucun produit valide n'a pu être importé");
-      }
-      
-      setProducts(newProducts);
-      setCategories([...newCategories].sort());
-      
-      toast({
-        title: "Import réussi",
-        description: `${newProducts.length} produits importés avec succès`,
-      });
-      
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur d'importation",
-        description: error instanceof Error ? error.message : "Une erreur est survenue",
-      });
-    }
-  };
-
-  const loadProjectsFromCSV = (csvContent: string) => {
-    try {
-      const lines = csvContent.split('\n');
-      if (lines.length <= 1) {
-        throw new Error("Le fichier CSV est vide ou mal formaté");
-      }
-      
-      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-      const codeIndex = headers.findIndex(h => h === 'code');
-      const nameIndex = headers.findIndex(h => h === 'nom' || h === 'name');
-      
-      if (codeIndex === -1 || nameIndex === -1) {
-        throw new Error("Format CSV invalide: colonnes manquantes (code, nom)");
-      }
-      
-      const newProjects: Project[] = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const values = lines[i].split(',').map(value => value.trim());
-        
-        if (values.length >= Math.max(codeIndex, nameIndex) + 1) {
-          const project: Project = {
-            id: `csv-project-${i}`,
-            code: values[codeIndex],
-            name: values[nameIndex],
-          };
-          
-          newProjects.push(project);
-        }
-      }
-      
-      if (newProjects.length === 0) {
-        throw new Error("Aucune affaire valide n'a pu être importée");
-      }
-      
-      setProjects(newProjects);
-      
-      toast({
-        title: "Import réussi",
-        description: `${newProjects.length} affaires importées avec succès`,
-      });
-      
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur d'importation",
-        description: error instanceof Error ? error.message : "Une erreur est survenue",
-      });
-    }
+    clearCartUtil(setCart);
   };
 
   return (
@@ -344,20 +118,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         products,
         setProducts,
         categories,
-        addCategory,
-        deleteCategory,
+        addCategory: (category) => addCategoryUtil(categories, setCategories, category),
+        deleteCategory: (category) => deleteCategoryUtil(categories, setCategories, products, setProducts, category),
         projects,
-        addProject,
-        deleteProject,
+        addProject: (project) => addProjectUtil(projects, setProjects, project),
+        deleteProject: (projectId) => deleteProjectUtil(projects, setProjects, projectId),
         cart,
-        addToCart,
-        removeFromCart,
-        updateCartItemQuantity,
-        clearCart,
+        addToCart: (product, quantity) => addToCart(cart, setCart, product, quantity),
+        removeFromCart: (productId) => removeFromCart(cart, setCart, productId),
+        updateCartItemQuantity: (productId, quantity) => updateCartItemQuantity(cart, setCart, productId, quantity),
+        clearCart: () => clearCartUtil(setCart),
         orders,
-        createOrder,
-        loadProductsFromCSV,
-        loadProjectsFromCSV,
+        createOrder: (projectCode) => createOrderUtil(user, cart, orders, setOrders, () => clearCartUtil(setCart), projectCode),
+        loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts, setCategories, categories),
+        loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, setProjects),
         isAdmin
       }}
     >

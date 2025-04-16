@@ -1,0 +1,33 @@
+
+import { Product, CartItem, User, Order, Project } from '../types';
+
+export interface AppContextType {
+  user: User | null;
+  login: (username: string, password: string) => boolean;
+  logout: () => void;
+  
+  products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  
+  categories: string[];
+  addCategory: (category: string) => void;
+  deleteCategory: (category: string) => void;
+  
+  projects: Project[];
+  addProject: (project: Project) => void;
+  deleteProject: (projectId: string) => void;
+  
+  cart: CartItem[];
+  addToCart: (product: Product, quantity: number) => void;
+  removeFromCart: (productId: string) => void;
+  updateCartItemQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  
+  orders: Order[];
+  createOrder: (projectCode?: string) => void;
+  
+  loadProductsFromCSV: (csvContent: string) => void;
+  loadProjectsFromCSV: (csvContent: string) => void;
+  
+  isAdmin: boolean;
+}
