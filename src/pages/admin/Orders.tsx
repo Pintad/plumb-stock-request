@@ -1,11 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AdminOrders = () => {
-  const { orders } = useAppContext();
+  const { orders, projects } = useAppContext();
+  const [selectedProject, setSelectedProject] = useState<string>("all");
+  
+  // Filter orders by project if a project is selected
+  const filteredOrders = selectedProject === "all" 
+    ? orders 
+    : orders.filter(order => 
+        selectedProject === "none" 
+          ? !order.projectCode 
+          : order.projectCode === selectedProject);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -14,7 +25,34 @@ const AdminOrders = () => {
       <main className="flex-1 container px-4 py-6">
         <h1 className="text-2xl font-bold mb-6">Gestion des demandes</h1>
         
-        <OrderList orders={orders} showFullDetails={true} />
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="w-full md:w-80">
+                <label className="block text-sm font-medium mb-2">Filtrer par affaire</label>
+                <Select 
+                  value={selectedProject} 
+                  onValueChange={setSelectedProject}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Toutes les affaires" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les affaires</SelectItem>
+                    <SelectItem value="none">Sans affaire</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.code}>
+                        {project.code} - {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <OrderList orders={filteredOrders} showUser={true} showFullDetails={true} />
       </main>
     </div>
   );
