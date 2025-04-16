@@ -17,8 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, MessageSquare, Settings } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
+import { Button } from '@/components/ui/button';
 
 const getStatusColor = (status: Order['status']) => {
   switch (status) {
@@ -50,9 +51,17 @@ interface OrderListProps {
   orders: Order[];
   showUser?: boolean;
   showFullDetails?: boolean;
+  onManageOrder?: (order: Order) => void;
+  isAdmin?: boolean;
 }
 
-const OrderList = ({ orders, showUser = false, showFullDetails = false }: OrderListProps) => {
+const OrderList = ({ 
+  orders, 
+  showUser = false, 
+  showFullDetails = false,
+  onManageOrder,
+  isAdmin = false
+}: OrderListProps) => {
   const { projects } = useAppContext();
   
   const getProjectName = (code?: string) => {
@@ -86,9 +95,17 @@ const OrderList = ({ orders, showUser = false, showFullDetails = false }: OrderL
                     </div>
                   )}
                 </div>
-                <Badge className={`${getStatusColor(order.status)} text-white`}>
-                  {getStatusLabel(order.status)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {order.message && !isAdmin && (
+                    <div className="flex items-center text-sm text-gray-600 mr-2">
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      {order.message}
+                    </div>
+                  )}
+                  <Badge className={`${getStatusColor(order.status)} text-white`}>
+                    {getStatusLabel(order.status)}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -99,19 +116,30 @@ const OrderList = ({ orders, showUser = false, showFullDetails = false }: OrderL
                       <TableHead>Produit</TableHead>
                       <TableHead>Référence</TableHead>
                       <TableHead className="text-right">Quantité</TableHead>
+                      {isAdmin && order.items.some(item => item.completed) && (
+                        <TableHead>Statut</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {order.items.map((item) => (
                       <TableRow key={`${order.id}-${item.id}`}>
                         <TableCell>
-                          <div>
+                          <div className={item.completed ? "line-through text-gray-400" : ""}>
                             <div className="font-medium">{item.name}</div>
                             {item.category && <div className="text-xs text-gray-500">Catégorie: {item.category}</div>}
                           </div>
                         </TableCell>
                         <TableCell className="font-mono">{item.reference}</TableCell>
                         <TableCell className="text-right">{item.quantity} {item.unit}</TableCell>
+                        {isAdmin && order.items.some(item => item.completed) && (
+                          <TableCell>
+                            {item.completed ? 
+                              <span className="text-green-500 text-sm">Terminé</span> : 
+                              <span className="text-gray-400 text-sm">En attente</span>
+                            }
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -119,11 +147,24 @@ const OrderList = ({ orders, showUser = false, showFullDetails = false }: OrderL
               </div>
             </CardContent>
             <CardFooter className="bg-gray-50 py-2">
-              <div className="flex justify-between w-full text-sm">
-                <span>Total:</span>
-                <span className="font-semibold">
-                  {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+              <div className="flex justify-between w-full text-sm items-center">
+                <span>
+                  Total: <span className="font-semibold">
+                    {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                  </span>
                 </span>
+                
+                {isAdmin && onManageOrder && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={() => onManageOrder(order)}
+                  >
+                    <Settings className="h-4 w-4" />
+                    Gérer
+                  </Button>
+                )}
               </div>
             </CardFooter>
           </Card>

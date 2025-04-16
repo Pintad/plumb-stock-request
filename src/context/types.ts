@@ -25,6 +25,7 @@ export interface AppContextType {
   
   orders: Order[];
   createOrder: (projectCode?: string) => void;
+  updateOrder: (order: Order) => void;
   
   loadProductsFromCSV: (csvContent: string) => void;
   loadProjectsFromCSV: (csvContent: string) => void;

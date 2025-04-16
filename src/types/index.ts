@@ -10,6 +10,7 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  completed?: boolean;
 }
 
 export interface Order {
@@ -20,6 +21,7 @@ export interface Order {
   items: CartItem[];
   status: 'pending' | 'processed' | 'completed';
   projectCode?: string;
+  message?: string;
 }
 
 export interface User {
