@@ -11,7 +11,7 @@ import OrderManager from '@/components/OrderManager';
 import { Order } from '@/types';
 
 const AdminOrders = () => {
-  const { orders, projects, updateOrderStatus } = useAppContext();
+  const { orders, projects, updateOrder } = useAppContext();
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
