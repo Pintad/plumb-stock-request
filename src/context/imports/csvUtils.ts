@@ -83,23 +83,25 @@ export const parseCSV = (csvContent: string) => {
  * Show a success toast for imported items
  * @param count Number of items imported
  * @param itemType Type of items imported (e.g., "produits", "affaires")
+ * @param isLocalImport Whether the import is local or synchronized with database
  */
-export const showImportSuccess = (count: number, itemType: string) => {
+export const showImportSuccess = (count: number, itemType: string, isLocalImport = false) => {
   toast({
     title: "Import réussi",
-    description: `${count} ${itemType} importés avec succès`,
+    description: `${count} ${itemType} ${isLocalImport ? 'chargés localement' : 'importés en base de données'} avec succès`,
   });
 };
 
 /**
  * Show an error toast for import errors
  * @param error The error object
+ * @param isLocalImport Whether the import is local or synchronized with database
  */
-export const showImportError = (error: unknown) => {
-  console.error("Erreur d'importation:", error);
+export const showImportError = (error: unknown, isLocalImport = false) => {
+  console.error(`Erreur d'${isLocalImport ? 'importation locale' : 'importation en base de données'}:`, error);
   toast({
     variant: "destructive",
-    title: "Erreur d'importation",
+    title: `Erreur d'${isLocalImport ? 'importation locale' : 'importation en base de données'}`,
     description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'importation",
   });
 };
