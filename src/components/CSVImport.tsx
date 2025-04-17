@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/context/AppContext';
 import { readCSVFile } from '@/context/imports/csvUtils';
+import { toast } from '@/components/ui/use-toast';
 
 const CSVImport: React.FC = () => {
   const { loadProductsFromCSV } = useAppContext();
@@ -23,6 +24,17 @@ const CSVImport: React.FC = () => {
     readCSVFile(file, (content) => {
       try {
         loadProductsFromCSV(content);
+        toast({
+          title: "Import en cours",
+          description: "Les produits sont en cours d'importation dans la base de données",
+        });
+      } catch (error) {
+        console.error("Erreur lors de l'importation CSV:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur d'importation",
+          description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'importation",
+        });
       } finally {
         setIsLoading(false);
         // Reset input

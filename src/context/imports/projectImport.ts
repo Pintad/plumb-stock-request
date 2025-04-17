@@ -38,6 +38,15 @@ export const loadProjectsFromCSV = async (
       addProject(project);
     });
     
+    // Synchroniser avec la base de données pour s'assurer que tous les projets sont à jour
+    const { data: allProjects, error: fetchError } = await supabase
+      .from('projects')
+      .select('*');
+    
+    if (fetchError) {
+      console.error("Erreur lors de la récupération des projets:", fetchError);
+    }
+    
     showImportSuccess(newProjects.length, "affaires");
     
   } catch (error) {

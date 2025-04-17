@@ -58,7 +58,7 @@ export const parseCSV = (csvContent: string) => {
   }
   
   const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-  return { headers, lines };
+  return { headers, lines: lines.slice(1) };
 };
 
 /**
