@@ -20,6 +20,7 @@ export const loadProductsFromCSV = (
     const unitIndex = headers.findIndex(h => h === 'unite' || h === 'unit' || h === 'conditionnement');
     const categoryIndex = headers.findIndex(h => h === 'categorie' || h === 'category');
     const variantIndex = headers.findIndex(h => h === 'variante' || h === 'variant' || h === 'dimension');
+    const imageUrlIndex = headers.findIndex(h => h === 'image_url' || h === 'imageurl' || h === 'image');
     
     if (nameIndex === -1 || referenceIndex === -1 || unitIndex === -1) {
       throw new Error("Format CSV invalide: colonnes manquantes");
@@ -39,6 +40,7 @@ export const loadProductsFromCSV = (
         const reference = values[referenceIndex];
         const unit = values[unitIndex];
         const variant = variantIndex !== -1 && values[variantIndex] ? values[variantIndex] : reference;
+        const imageUrl = imageUrlIndex !== -1 && values[imageUrlIndex] ? values[imageUrlIndex] : undefined;
         
         if (category) {
           newCategories.add(category);
@@ -53,7 +55,7 @@ export const loadProductsFromCSV = (
             id: `csv-${i}`,
             name,
             category,
-            imageUrl: undefined,
+            imageUrl, // Ajout de l'imageUrl au niveau du produit
             variants: [{
               id: `var-${i}`,
               variantName: variant,
@@ -64,6 +66,12 @@ export const loadProductsFromCSV = (
         } else {
           // Produit déjà existant, ajouter une variante
           const existingProduct = productGroups.get(productKey)!;
+          
+          // Si on a une URL d'image et que le produit n'en a pas encore, on l'ajoute
+          if (imageUrl && !existingProduct.imageUrl) {
+            existingProduct.imageUrl = imageUrl;
+          }
+          
           existingProduct.variants!.push({
             id: `var-${i}`,
             variantName: variant,
