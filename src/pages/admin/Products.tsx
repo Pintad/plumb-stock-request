@@ -1,6 +1,5 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import CSVImport from '@/components/CSVImport';
 import { useAppContext } from '@/context/AppContext';
@@ -12,10 +11,9 @@ import { Search, Plus, Trash2, Image as ImageIcon, Edit } from 'lucide-react';
 import ProductForm from '@/components/admin/ProductForm';
 import { Product } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const AdminProducts = () => {
-  const { products, setProducts } = useAppContext();
+  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -27,7 +25,7 @@ const AdminProducts = () => {
 
   const handleAddProduct = async (formData: any) => {
     const newProduct: Product = {
-      id: `manual-${Date.now()}`,
+      id: `temp-${Date.now()}`, // ID temporaire, sera remplacé par l'ID de Supabase
       name: formData.name,
       reference: formData.reference,
       unit: formData.unit,
@@ -36,30 +34,20 @@ const AdminProducts = () => {
       variants: formData.variants
     };
 
-    setProducts([...products, newProduct]);
-    setShowAddForm(false);
-    toast({
-      title: "Produit ajouté",
-      description: "Le produit a été ajouté avec succès",
-    });
+    const success = await addProduct(newProduct);
     
-    // No need to modify types, just use the existing types with Supabase
-    try {
-      // Insert the product into Supabase
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          name: formData.name,
-          reference: formData.reference,
-          unit: formData.unit,
-          image_url: formData.imageUrl
-        });
-      
-      if (error) throw error;
-      
-      // Handle variants if needed
-    } catch (error) {
-      console.error("Error saving product to Supabase:", error);
+    if (success) {
+      setShowAddForm(false);
+      toast({
+        title: "Produit ajouté",
+        description: "Le produit a été ajouté avec succès",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout du produit",
+      });
     }
   };
 
@@ -76,89 +64,39 @@ const AdminProducts = () => {
       variants: formData.variants
     };
 
-    setProducts(products.map(p => p.id === editingProduct.id ? updatedProduct : p));
-    setEditingProduct(null);
-    toast({
-      title: "Produit modifié",
-      description: "Le produit a été modifié avec succès",
-    });
+    const success = await updateProduct(updatedProduct);
     
-    // Update in Supabase if it's a Supabase product (has a UUID)
-    if (editingProduct.id && editingProduct.id.includes('-')) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .update({
-            name: formData.name,
-            reference: formData.reference,
-            unit: formData.unit,
-            image_url: formData.imageUrl
-          })
-          .eq('id', editingProduct.id);
-        
-        if (error) throw error;
-      } catch (error) {
-        console.error("Error updating product in Supabase:", error);
-      }
+    if (success) {
+      setEditingProduct(null);
+      toast({
+        title: "Produit modifié",
+        description: "Le produit a été modifié avec succès",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la modification du produit",
+      });
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    setProducts(products.filter(p => p.id !== productId));
-    toast({
-      title: "Produit supprimé",
-      description: "Le produit a été supprimé avec succès",
-    });
+    const success = await deleteProduct(productId);
     
-    // Delete from Supabase if it's a Supabase product
-    if (productId && productId.includes('-')) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', productId);
-        
-        if (error) throw error;
-      } catch (error) {
-        console.error("Error deleting product from Supabase:", error);
-      }
+    if (success) {
+      toast({
+        title: "Produit supprimé",
+        description: "Le produit a été supprimé avec succès",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression du produit",
+      });
     }
   };
-
-  // Load products from Supabase on component mount
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*');
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          // Convert Supabase products to application format
-          const supabaseProducts = data.map(product => ({
-            id: product.id,
-            name: product.name,
-            reference: product.reference || undefined,
-            unit: product.unit || undefined,
-            category: undefined, // We'll need to fetch categories separately
-            imageUrl: product.image_url || undefined,
-            variants: [] // We'll need to fetch variants separately
-          }));
-          
-          // Merge with existing local products
-          const localProducts = products.filter(p => !p.id.includes('-'));
-          setProducts([...localProducts, ...supabaseProducts]);
-        }
-      } catch (error) {
-        console.error("Error loading products from Supabase:", error);
-      }
-    };
-    
-    loadProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -226,7 +164,13 @@ const AdminProducts = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.length > 0 ? (
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            Chargement des produits...
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredProducts.length > 0 ? (
                         filteredProducts.map((product) => (
                           <TableRow key={product.id}>
                             <TableCell>

@@ -1,8 +1,9 @@
 
 import { Product, ProductVariant, Project } from '../types';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-export const loadProductsFromCSV = (
+export const loadProductsFromCSV = async (
   csvContent: string,
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>,
   setCategories: React.Dispatch<React.SetStateAction<string[]>>,
@@ -28,7 +29,9 @@ export const loadProductsFromCSV = (
     
     const productGroups = new Map<string, Product>();
     const newCategories = new Set(categories);
+    const categoryIds = new Map<string, string>(); // Stockage des ids des catégories
     
+    // Première passe: regrouper les produits et préparer les catégories
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
@@ -52,12 +55,12 @@ export const loadProductsFromCSV = (
         if (!productGroups.has(productKey)) {
           // Premier produit de ce groupe
           productGroups.set(productKey, {
-            id: `csv-${i}`,
+            id: `csv-${i}`, // Temporaire, sera remplacé par l'ID Supabase
             name,
             category,
-            imageUrl, // Ajout de l'imageUrl au niveau du produit
+            imageUrl,
             variants: [{
-              id: `var-${i}`,
+              id: `var-${i}`, // Temporaire
               variantName: variant,
               reference,
               unit
@@ -67,7 +70,6 @@ export const loadProductsFromCSV = (
           // Produit déjà existant, ajouter une variante
           const existingProduct = productGroups.get(productKey)!;
           
-          // Si on a une URL d'image et que le produit n'en a pas encore, on l'ajoute
           if (imageUrl && !existingProduct.imageUrl) {
             existingProduct.imageUrl = imageUrl;
           }
@@ -82,27 +84,117 @@ export const loadProductsFromCSV = (
       }
     }
     
-    const newProducts = Array.from(productGroups.values());
-    
-    if (newProducts.length === 0) {
-      throw new Error("Aucun produit valide n'a pu être importé");
+    // Vérifier les catégories et les créer dans Supabase si nécessaires
+    for (const category of newCategories) {
+      if (!categories.includes(category)) {
+        // Vérifier si la catégorie existe déjà dans Supabase
+        const { data, error } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('name', category)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+          console.error(`Erreur lors de la vérification de la catégorie ${category}:`, error);
+          continue;
+        }
+        
+        if (data) {
+          // La catégorie existe déjà
+          categoryIds.set(category, data.id);
+        } else {
+          // Créer la catégorie
+          const { data: newCategory, error: insertError } = await supabase
+            .from('categories')
+            .insert({ name: category })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error(`Erreur lors de la création de la catégorie ${category}:`, insertError);
+            continue;
+          }
+          
+          categoryIds.set(category, newCategory.id);
+        }
+      }
     }
     
-    // Pour les produits avec une seule variante, on simplifie en remontant les informations au niveau du produit
-    newProducts.forEach(product => {
+    // Insérer les produits dans Supabase
+    const supabaseProducts = [];
+    const productVariants = [];
+    
+    for (const product of productGroups.values()) {
+      // Pour les produits avec une seule variante, on simplifie
       if (product.variants && product.variants.length === 1) {
         product.reference = product.variants[0].reference;
         product.unit = product.variants[0].unit;
-        delete product.variants;
       }
-    });
+      
+      // Déterminer l'ID de catégorie
+      let categoryId = null;
+      if (product.category && categoryIds.has(product.category)) {
+        categoryId = categoryIds.get(product.category);
+      }
+      
+      // Préparer le produit pour l'insertion
+      const productToInsert = {
+        name: product.name,
+        reference: product.reference || null,
+        unit: product.unit || null,
+        category_id: categoryId,
+        image_url: product.imageUrl || null
+      };
+      
+      // Insérer le produit
+      const { data: insertedProduct, error: productError } = await supabase
+        .from('products')
+        .insert(productToInsert)
+        .select()
+        .single();
+      
+      if (productError) {
+        console.error(`Erreur lors de l'insertion du produit ${product.name}:`, productError);
+        continue;
+      }
+      
+      // Mettre à jour l'ID du produit
+      product.id = insertedProduct.id;
+      supabaseProducts.push(product);
+      
+      // Insérer les variantes si nécessaire (uniquement pour les produits avec plusieurs variantes)
+      if (product.variants && product.variants.length > 1) {
+        for (const variant of product.variants) {
+          const variantToInsert = {
+            product_id: insertedProduct.id,
+            variant_name: variant.variantName,
+            reference: variant.reference,
+            unit: variant.unit
+          };
+          
+          productVariants.push(variantToInsert);
+        }
+      }
+    }
     
-    setProducts(newProducts);
+    // Insérer toutes les variantes en une fois
+    if (productVariants.length > 0) {
+      const { error: variantsError } = await supabase
+        .from('product_variants')
+        .insert(productVariants);
+      
+      if (variantsError) {
+        console.error("Erreur lors de l'insertion des variantes:", variantsError);
+      }
+    }
+    
+    // Mettre à jour l'interface
+    setProducts(prev => [...prev, ...supabaseProducts]);
     setCategories([...newCategories].sort());
     
     toast({
       title: "Import réussi",
-      description: `${newProducts.length} produits importés avec succès`,
+      description: `${supabaseProducts.length} produits importés avec succès`,
     });
     
   } catch (error) {
@@ -114,7 +206,7 @@ export const loadProductsFromCSV = (
   }
 };
 
-export const loadProjectsFromCSV = (
+export const loadProjectsFromCSV = async (
   csvContent: string,
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>
 ) => {
@@ -133,6 +225,7 @@ export const loadProjectsFromCSV = (
     }
     
     const newProjects: Project[] = [];
+    const projectsToInsert = [];
     
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
@@ -140,13 +233,35 @@ export const loadProjectsFromCSV = (
       const values = lines[i].split(',').map(value => value.trim());
       
       if (values.length >= Math.max(codeIndex, nameIndex) + 1) {
-        const project: Project = {
-          id: `csv-project-${i}`,
-          code: values[codeIndex],
-          name: values[nameIndex],
-        };
+        const projectCode = values[codeIndex];
+        const projectName = values[nameIndex];
         
-        newProjects.push(project);
+        projectsToInsert.push({
+          code: projectCode,
+          name: projectName
+        });
+      }
+    }
+    
+    // Insérer les projets dans Supabase
+    if (projectsToInsert.length > 0) {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(projectsToInsert)
+        .select();
+      
+      if (error) {
+        throw new Error(`Erreur lors de l'insertion des projets: ${error.message}`);
+      }
+      
+      if (data) {
+        for (const project of data) {
+          newProjects.push({
+            id: project.id,
+            code: project.code,
+            name: project.name
+          });
+        }
       }
     }
     
@@ -154,7 +269,7 @@ export const loadProjectsFromCSV = (
       throw new Error("Aucune affaire valide n'a pu être importée");
     }
     
-    setProjects(newProjects);
+    setProjects(prev => [...prev, ...newProjects]);
     
     toast({
       title: "Import réussi",
