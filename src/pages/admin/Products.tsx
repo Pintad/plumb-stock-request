@@ -20,7 +20,7 @@ const AdminProducts = () => {
   
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    product.reference.toLowerCase().includes(searchTerm.toLowerCase())
+    (product.reference && product.reference.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddProduct = async (formData: any) => {
@@ -29,12 +29,10 @@ const AdminProducts = () => {
       name: formData.name,
       reference: formData.reference,
       unit: formData.unit,
+      category: formData.category === 'none' ? undefined : formData.category,
+      imageUrl: formData.imageUrl || undefined,
+      variants: formData.variants
     };
-
-    if (formData.image?.[0]) {
-      const imageUrl = URL.createObjectURL(formData.image[0]);
-      newProduct.imageUrl = imageUrl;
-    }
 
     setProducts([...products, newProduct]);
     setShowAddForm(false);
@@ -52,12 +50,10 @@ const AdminProducts = () => {
       name: formData.name,
       reference: formData.reference,
       unit: formData.unit,
+      category: formData.category === 'none' ? undefined : formData.category,
+      imageUrl: formData.imageUrl || undefined,
+      variants: formData.variants
     };
-
-    if (formData.image?.[0]) {
-      const imageUrl = URL.createObjectURL(formData.image[0]);
-      updatedProduct.imageUrl = imageUrl;
-    }
 
     setProducts(products.map(p => p.id === editingProduct.id ? updatedProduct : p));
     setEditingProduct(null);
@@ -150,12 +146,16 @@ const AdminProducts = () => {
                                   src={product.imageUrl} 
                                   alt={product.name}
                                   className="w-12 h-12 object-cover rounded"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling;
+                                    if (fallback) fallback.classList.remove('hidden');
+                                  }}
                                 />
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                                  <ImageIcon className="text-gray-400" size={24} />
-                                </div>
-                              )}
+                              ) : null}
+                              <div className={product.imageUrl ? "hidden" : "w-12 h-12 bg-gray-100 rounded flex items-center justify-center"}>
+                                <ImageIcon className="text-gray-400" size={24} />
+                              </div>
                             </TableCell>
                             <TableCell className="font-mono">{product.reference}</TableCell>
                             <TableCell>{product.name}</TableCell>

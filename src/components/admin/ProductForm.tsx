@@ -21,7 +21,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { Product, ProductVariant } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { Plus, Trash } from 'lucide-react';
+import { Plus, Trash, Image as ImageIcon } from 'lucide-react';
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -53,6 +53,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
   const [variants, setVariants] = useState<ProductVariantFormData[]>(
     initialData?.variants || []
   );
+  const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.imageUrl);
   
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -75,8 +76,19 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
       });
       setVariants(initialData.variants || []);
       setHasVariants(initialData.variants && initialData.variants.length > 0);
+      setImagePreview(initialData.imageUrl);
     }
   }, [initialData, form]);
+
+  // Surveillance du champ imageUrl pour mettre à jour le prévisualiseur
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (value.imageUrl !== undefined) {
+        setImagePreview(value.imageUrl);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
@@ -98,6 +110,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         form.reset();
         setVariants([]);
         setHasVariants(false);
+        setImagePreview(undefined);
       }
     } catch (error) {
       toast({
@@ -143,6 +156,18 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
     if (useVariants && variants.length === 0) {
       addVariant();
     }
+  };
+
+  const validateImageUrl = (url: string): boolean => {
+    if (!url) return false;
+    // Regex simple pour valider que la chaîne ressemble à une URL
+    const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocole
+      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // nom de domaine
+      '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OU adresse IP
+      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port et chemin
+      '(\\?[;&a-z\\d%_.~+=-]*)?'+ // paramètres de requête
+      '(\\#[-a-z\\d_]*)?$','i'); // fragment
+    return urlPattern.test(url);
   };
 
   return (
@@ -312,21 +337,38 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
             <FormItem>
               <FormLabel>URL de l'image</FormLabel>
               <FormControl>
-                <Input placeholder="URL de l'image du produit" {...field} />
+                <Input 
+                  placeholder="URL de l'image du produit" 
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {(form.watch('imageUrl') || initialData?.imageUrl) && (
+        {imagePreview && (
           <div className="mt-2">
             <p className="text-xs text-gray-500 mb-1">Aperçu de l'image:</p>
-            <img 
-              src={form.watch('imageUrl') || initialData?.imageUrl} 
-              alt="Aperçu du produit" 
-              className="h-32 object-contain border rounded p-1" 
-            />
+            <div className="relative h-32 border rounded p-1 flex items-center justify-center">
+              <img 
+                src={imagePreview} 
+                alt="Aperçu du produit" 
+                className="h-full max-h-32 object-contain" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  document.getElementById('image-error')?.classList.remove('hidden');
+                }}
+                onLoad={(e) => {
+                  e.currentTarget.style.display = 'block';
+                  document.getElementById('image-error')?.classList.add('hidden');
+                }}
+              />
+              <div id="image-error" className="hidden text-center text-gray-400">
+                <ImageIcon size={32} className="mx-auto mb-2" />
+                <p className="text-xs">Impossible de charger l'image</p>
+              </div>
+            </div>
           </div>
         )}
 
