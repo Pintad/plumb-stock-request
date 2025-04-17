@@ -21,7 +21,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isAdmin = user?.role === 'admin';
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialiser les catégories à partir des produits
   useEffect(() => {
     const uniqueCategories = [...new Set(products
       .map(product => product.category)
@@ -30,12 +29,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCategories(uniqueCategories);
   }, []);
 
-  // Charger les données depuis Supabase
   useEffect(() => {
     const loadSupabaseData = async () => {
       setIsLoading(true);
       try {
-        // Charger les produits depuis Supabase
         const { data: productsData, error: productsError } = await supabase
           .from('products')
           .select('*, product_variants(*)');
@@ -43,7 +40,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (productsError) {
           console.error("Erreur lors du chargement des produits:", productsError);
         } else if (productsData) {
-          // Convertir les produits Supabase au format de l'application
           const formattedProducts: Product[] = productsData.map(product => {
             const variants = product.product_variants 
               ? product.product_variants.map((variant: any) => ({
@@ -54,10 +50,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }))
               : undefined;
             
-            // Fix: Get category name from separate query if needed
             let categoryName;
             if (product.category_id) {
-              categoryName = undefined; // We'll resolve categories in a separate step
+              categoryName = undefined;
             }
             
             return {
@@ -65,7 +60,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               name: product.name,
               reference: product.reference || undefined,
               unit: product.unit || undefined,
-              category: categoryName, // Will be updated later
+              category: categoryName,
               imageUrl: product.image_url || undefined,
               variants: variants && variants.length > 0 ? variants : undefined
             };
@@ -73,7 +68,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           
           setProducts(formattedProducts);
           
-          // Fetch category names for products with category_id
           const productsWithCategoryIds = productsData.filter(p => p.category_id);
           if (productsWithCategoryIds.length > 0) {
             const categoryIds = [...new Set(productsWithCategoryIds.map(p => p.category_id))];
@@ -83,10 +77,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               .in('id', categoryIds);
               
             if (!catError && categoriesData) {
-              // Create a map of category id to name
               const categoryMap = new Map(categoriesData.map(cat => [cat.id, cat.name]));
-              
-              // Update products with their category names
               setProducts(prevProducts => 
                 prevProducts.map(product => {
                   const originalProduct = productsData.find(p => p.id === product.id);
@@ -103,7 +94,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        // Charger les catégories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('categories')
           .select('name');
@@ -114,7 +104,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCategories(categoriesData.map(cat => cat.name).sort());
         }
 
-        // Charger les projets
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select('*');
@@ -130,7 +119,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setProjects(formattedProjects);
         }
 
-        // Charger les commandes si l'utilisateur est connecté
         if (user) {
           const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
@@ -140,7 +128,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (ordersError) {
             console.error("Erreur lors du chargement des commandes:", ordersError);
           } else if (ordersData) {
-            // TODO: Implémenter la conversion des commandes au format de l'application
           }
         }
 
@@ -151,15 +138,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    // Si l'utilisateur est connecté, charger les données depuis Supabase
     if (user) {
       loadSupabaseData();
     } else {
-      // Essayer de charger au moins les données publiques (produits, catégories, projets)
       loadSupabaseData();
     }
 
-    // Chargement des données depuis le localStorage (comme fallback ou pour le panier)
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -170,12 +154,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCart(JSON.parse(savedCart));
     }
     
-    // Ne plus utiliser les données localStorage pour produits, projets, catégories
-    // car ils viennent maintenant de Supabase
-    
+    localStorage.removeItem('products');
+    localStorage.removeItem('categories');
+    localStorage.removeItem('orders');
+    localStorage.removeItem('projects');
   }, [user?.id]);
 
-  // Sauvegarde des données dans le localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -188,7 +172,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  // Supprimer les sauvegardes localStorage des données qui viennent maintenant de Supabase
   useEffect(() => {
     localStorage.removeItem('products');
     localStorage.removeItem('categories');
@@ -198,10 +181,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addProduct = async (product: Product) => {
     try {
-      // D'abord insérer dans Supabase
       let categoryId = null;
       
-      // Si le produit a une catégorie, vérifier si elle existe déjà
       if (product.category) {
         const { data: existingCategories } = await supabase
           .from('categories')
@@ -212,7 +193,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (existingCategories) {
           categoryId = existingCategories.id;
         } else {
-          // Créer la catégorie si elle n'existe pas
           const { data: newCategory, error: categoryError } = await supabase
             .from('categories')
             .insert({ name: product.category })
@@ -224,7 +204,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Insérer le produit
       const { data: newProduct, error: productError } = await supabase
         .from('products')
         .insert({
@@ -239,7 +218,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       if (productError) throw productError;
       
-      // Si le produit a des variantes, les insérer aussi
       if (product.variants && product.variants.length > 0) {
         const variantsToInsert = product.variants.map(variant => ({
           product_id: newProduct.id,
@@ -255,10 +233,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (variantError) throw variantError;
       }
 
-      // Mettre à jour l'état local
       setProducts(prev => [...prev, { ...product, id: newProduct.id }]);
       
-      // Mettre à jour les catégories si nécessaire
       if (product.category && !categories.includes(product.category)) {
         setCategories(prev => [...prev, product.category!].sort());
       }
@@ -274,7 +250,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       let categoryId = null;
       
-      // Gestion de la catégorie
       if (product.category) {
         const { data: existingCategories } = await supabase
           .from('categories')
@@ -285,7 +260,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (existingCategories) {
           categoryId = existingCategories.id;
         } else {
-          // Créer la catégorie si elle n'existe pas
           const { data: newCategory, error: categoryError } = await supabase
             .from('categories')
             .insert({ name: product.category })
@@ -297,7 +271,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Mettre à jour le produit
       const { error: productError } = await supabase
         .from('products')
         .update({
@@ -311,15 +284,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       if (productError) throw productError;
 
-      // Gérer les variantes
       if (product.variants && product.variants.length > 0) {
-        // Supprimer les anciennes variantes
         await supabase
           .from('product_variants')
           .delete()
           .eq('product_id', product.id);
         
-        // Insérer les nouvelles variantes
         const variantsToInsert = product.variants.map(variant => ({
           product_id: product.id,
           variant_name: variant.variantName,
@@ -334,7 +304,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (variantError) throw variantError;
       }
 
-      // Mettre à jour l'état local
       setProducts(prev => prev.map(p => p.id === product.id ? product : p));
       return true;
     } catch (error) {
@@ -345,15 +314,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteProduct = async (productId: string) => {
     try {
-      // Supprimer de Supabase
+      const { error: variantError } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', productId);
+      
+      if (variantError) {
+        console.error("Erreur lors de la suppression des variantes:", variantError);
+      }
+      
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', productId);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur lors de la suppression du produit:", error);
+        return false;
+      }
 
-      // Mettre à jour l'état local
       setProducts(prev => prev.filter(p => p.id !== productId));
       return true;
     } catch (error) {
@@ -380,14 +359,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearCartUtil(setCart);
   };
 
-  // Fix: Updated createOrder function to ensure it returns an Order and not void
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
     if (!user || cart.length === 0) return undefined;
     
     return createOrderUtil(user, cart, orders, setOrders, () => clearCartUtil(setCart), projectCode);
   };
 
-  // New function to archive an order
   const archiveOrderWrapper = async (orderId: string): Promise<boolean> => {
     return archiveOrder(orders, setOrders, orderId);
   };
@@ -419,7 +396,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, setProjects),
         isAdmin,
         isLoading,
-        // Nouvelles méthodes pour gérer les produits avec Supabase
         addProduct,
         updateProduct,
         deleteProduct

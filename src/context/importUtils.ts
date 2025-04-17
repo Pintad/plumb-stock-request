@@ -87,35 +87,39 @@ export const loadProductsFromCSV = async (
     // Vérifier les catégories et les créer dans Supabase si nécessaires
     for (const category of newCategories) {
       if (!categories.includes(category)) {
-        // Vérifier si la catégorie existe déjà dans Supabase
-        const { data, error } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('name', category)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-          console.error(`Erreur lors de la vérification de la catégorie ${category}:`, error);
-          continue;
-        }
-        
-        if (data) {
-          // La catégorie existe déjà
-          categoryIds.set(category, data.id);
-        } else {
-          // Créer la catégorie
-          const { data: newCategory, error: insertError } = await supabase
+        try {
+          // Vérifier si la catégorie existe déjà dans Supabase
+          const { data, error } = await supabase
             .from('categories')
-            .insert({ name: category })
-            .select()
-            .single();
+            .select('id')
+            .eq('name', category)
+            .maybeSingle(); // Utiliser maybeSingle au lieu de single
           
-          if (insertError) {
-            console.error(`Erreur lors de la création de la catégorie ${category}:`, insertError);
+          if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+            console.error(`Erreur lors de la vérification de la catégorie ${category}:`, error);
             continue;
           }
           
-          categoryIds.set(category, newCategory.id);
+          if (data) {
+            // La catégorie existe déjà
+            categoryIds.set(category, data.id);
+          } else {
+            // Créer la catégorie
+            const { data: newCategory, error: insertError } = await supabase
+              .from('categories')
+              .insert({ name: category })
+              .select()
+              .single();
+            
+            if (insertError) {
+              console.error(`Erreur lors de la création de la catégorie ${category}:`, insertError);
+              continue;
+            }
+            
+            categoryIds.set(category, newCategory.id);
+          }
+        } catch (error) {
+          console.error(`Erreur lors de la gestion de la catégorie ${category}:`, error);
         }
       }
     }
@@ -125,66 +129,74 @@ export const loadProductsFromCSV = async (
     const productVariants = [];
     
     for (const product of productGroups.values()) {
-      // Pour les produits avec une seule variante, on simplifie
-      if (product.variants && product.variants.length === 1) {
-        product.reference = product.variants[0].reference;
-        product.unit = product.variants[0].unit;
-      }
-      
-      // Déterminer l'ID de catégorie
-      let categoryId = null;
-      if (product.category && categoryIds.has(product.category)) {
-        categoryId = categoryIds.get(product.category);
-      }
-      
-      // Préparer le produit pour l'insertion
-      const productToInsert = {
-        name: product.name,
-        reference: product.reference || null,
-        unit: product.unit || null,
-        category_id: categoryId,
-        image_url: product.imageUrl || null
-      };
-      
-      // Insérer le produit
-      const { data: insertedProduct, error: productError } = await supabase
-        .from('products')
-        .insert(productToInsert)
-        .select()
-        .single();
-      
-      if (productError) {
-        console.error(`Erreur lors de l'insertion du produit ${product.name}:`, productError);
-        continue;
-      }
-      
-      // Mettre à jour l'ID du produit
-      product.id = insertedProduct.id;
-      supabaseProducts.push(product);
-      
-      // Insérer les variantes si nécessaire (uniquement pour les produits avec plusieurs variantes)
-      if (product.variants && product.variants.length > 1) {
-        for (const variant of product.variants) {
-          const variantToInsert = {
-            product_id: insertedProduct.id,
-            variant_name: variant.variantName,
-            reference: variant.reference,
-            unit: variant.unit
-          };
-          
-          productVariants.push(variantToInsert);
+      try {
+        // Pour les produits avec une seule variante, on simplifie
+        if (product.variants && product.variants.length === 1) {
+          product.reference = product.variants[0].reference;
+          product.unit = product.variants[0].unit;
         }
+        
+        // Déterminer l'ID de catégorie
+        let categoryId = null;
+        if (product.category && categoryIds.has(product.category)) {
+          categoryId = categoryIds.get(product.category);
+        }
+        
+        // Préparer le produit pour l'insertion
+        const productToInsert = {
+          name: product.name,
+          reference: product.reference || null,
+          unit: product.unit || null,
+          category_id: categoryId,
+          image_url: product.imageUrl || null
+        };
+        
+        // Insérer le produit
+        const { data: insertedProduct, error: productError } = await supabase
+          .from('products')
+          .insert(productToInsert)
+          .select()
+          .single();
+        
+        if (productError) {
+          console.error(`Erreur lors de l'insertion du produit ${product.name}:`, productError);
+          continue;
+        }
+        
+        // Mettre à jour l'ID du produit
+        product.id = insertedProduct.id;
+        supabaseProducts.push(product);
+        
+        // Insérer les variantes si nécessaire (uniquement pour les produits avec plusieurs variantes)
+        if (product.variants && product.variants.length > 1) {
+          for (const variant of product.variants) {
+            const variantToInsert = {
+              product_id: insertedProduct.id,
+              variant_name: variant.variantName,
+              reference: variant.reference,
+              unit: variant.unit
+            };
+            
+            productVariants.push(variantToInsert);
+          }
+        }
+      } catch (error) {
+        console.error(`Erreur lors de l'insertion du produit:`, error);
       }
     }
     
     // Insérer toutes les variantes en une fois
     if (productVariants.length > 0) {
-      const { error: variantsError } = await supabase
-        .from('product_variants')
-        .insert(productVariants);
-      
-      if (variantsError) {
-        console.error("Erreur lors de l'insertion des variantes:", variantsError);
+      try {
+        const { error: variantsError } = await supabase
+          .from('product_variants')
+          .insert(productVariants);
+        
+        if (variantsError) {
+          console.error("Erreur lors de l'insertion des variantes:", variantsError);
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'insertion des variantes:", error);
       }
     }
     
@@ -198,6 +210,7 @@ export const loadProductsFromCSV = async (
     });
     
   } catch (error) {
+    console.error("Erreur d'importation:", error);
     toast({
       variant: "destructive",
       title: "Erreur d'importation",
@@ -245,23 +258,29 @@ export const loadProjectsFromCSV = async (
     
     // Insérer les projets dans Supabase
     if (projectsToInsert.length > 0) {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert(projectsToInsert)
-        .select();
-      
-      if (error) {
-        throw new Error(`Erreur lors de l'insertion des projets: ${error.message}`);
-      }
-      
-      if (data) {
-        for (const project of data) {
-          newProjects.push({
-            id: project.id,
-            code: project.code,
-            name: project.name
-          });
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .insert(projectsToInsert)
+          .select();
+        
+        if (error) {
+          console.error("Erreur lors de l'insertion des projets:", error);
+          throw new Error(`Erreur lors de l'insertion des projets: ${error.message}`);
         }
+        
+        if (data) {
+          for (const project of data) {
+            newProjects.push({
+              id: project.id,
+              code: project.code,
+              name: project.name
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'insertion des projets:", error);
+        throw error;
       }
     }
     
@@ -277,6 +296,7 @@ export const loadProjectsFromCSV = async (
     });
     
   } catch (error) {
+    console.error("Erreur d'importation des projets:", error);
     toast({
       variant: "destructive",
       title: "Erreur d'importation",
