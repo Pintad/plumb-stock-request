@@ -14,6 +14,7 @@ export interface Product {
   imageUrl?: string;
   category?: string;
   variants?: ProductVariant[];
+  selectedVariantId?: string; // Adding this missing property
 }
 
 export interface CartItem extends Product {

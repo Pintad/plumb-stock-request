@@ -1,5 +1,5 @@
 
-import { Product, ProductVariant } from '../types';
+import { Product, ProductVariant, Project } from '../types';
 import { toast } from '@/components/ui/use-toast';
 
 export const loadProductsFromCSV = (
