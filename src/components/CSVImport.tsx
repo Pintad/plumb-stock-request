@@ -95,7 +95,15 @@ const CSVImport: React.FC = () => {
           </Button>
           <div className="mt-4 text-sm text-gray-500 text-center">
             <p>Le fichier CSV doit contenir les colonnes suivantes:</p>
-            <p><strong>designation</strong>, <strong>reference</strong>, <strong>unite</strong>, <strong>categorie</strong></p>
+            <p><strong>categorie</strong>, <strong>designation</strong>, <strong>variante</strong>, <strong>reference</strong>, <strong>unite</strong></p>
+            <div className="mt-4 p-3 bg-gray-50 rounded-md text-xs">
+              <p className="font-semibold mb-1">Exemple :</p>
+              <p>categorie,designation,variante,reference,unite</p>
+              <p>Raccords,Coude PER à sertir,16,1234A,u</p>
+              <p>Raccords,Coude PER à sertir,20,1234B,u</p>
+              <p>Tubes,Tube PER nu,16,5678A,m</p>
+              <p>Tubes,Tube PER nu,20,5678B,m</p>
+            </div>
           </div>
         </div>
       </CardContent>

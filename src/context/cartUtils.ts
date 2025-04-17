@@ -3,27 +3,44 @@ import { Product, CartItem } from '../types';
 import { toast } from '@/components/ui/use-toast';
 
 export const addToCart = (
-  cart: CartItem[], 
+  cart: CartItem[],
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>,
-  product: Product, 
+  product: Product,
   quantity: number
 ) => {
-  const existingItem = cart.find(item => item.id === product.id);
-  
-  if (existingItem) {
-    updateCartItemQuantity(cart, setCart, product.id, existingItem.quantity + quantity);
+  // Vérifier si le produit est déjà dans le panier
+  // Pour les produits avec variantes, on vérifie aussi l'ID de variante
+  const existingItemIndex = cart.findIndex(item => 
+    item.id === product.id && 
+    (
+      (!item.selectedVariantId && !product.selectedVariantId) ||
+      (item.selectedVariantId === product.selectedVariantId)
+    )
+  );
+
+  if (existingItemIndex !== -1) {
+    // Mise à jour de la quantité si le produit existe déjà
+    const updatedCart = [...cart];
+    updatedCart[existingItemIndex].quantity += quantity;
+    setCart(updatedCart);
   } else {
-    setCart([...cart, { ...product, quantity }]);
+    // Ajout d'un nouveau produit au panier
+    const newItem: CartItem = {
+      ...product,
+      quantity,
+      completed: false
+    };
+    setCart([...cart, newItem]);
   }
-  
+
   toast({
-    title: "Produit ajouté",
-    description: `${quantity} ${product.name} ajouté au panier`,
+    title: "Produit ajouté au panier",
+    description: `${quantity} × ${product.name}${product.selectedVariantId ? ` (${product.variants?.find(v => v.id === product.selectedVariantId)?.variantName})` : ''}`,
   });
 };
 
 export const removeFromCart = (
-  cart: CartItem[], 
+  cart: CartItem[],
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>,
   productId: string
 ) => {
@@ -31,21 +48,20 @@ export const removeFromCart = (
 };
 
 export const updateCartItemQuantity = (
-  cart: CartItem[], 
+  cart: CartItem[],
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>,
-  productId: string, 
+  productId: string,
   quantity: number
 ) => {
   if (quantity <= 0) {
     removeFromCart(cart, setCart, productId);
     return;
   }
-  
-  setCart(
-    cart.map(item => 
-      item.id === productId ? { ...item, quantity } : item
-    )
+
+  const updatedCart = cart.map(item =>
+    item.id === productId ? { ...item, quantity } : item
   );
+  setCart(updatedCart);
 };
 
 export const clearCart = (

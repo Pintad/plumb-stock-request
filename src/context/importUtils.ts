@@ -1,5 +1,5 @@
 
-import { Product, Project } from '../types';
+import { Product, ProductVariant } from '../types';
 import { toast } from '@/components/ui/use-toast';
 
 export const loadProductsFromCSV = (
@@ -19,12 +19,13 @@ export const loadProductsFromCSV = (
     const referenceIndex = headers.findIndex(h => h === 'reference' || h === 'ref');
     const unitIndex = headers.findIndex(h => h === 'unite' || h === 'unit' || h === 'conditionnement');
     const categoryIndex = headers.findIndex(h => h === 'categorie' || h === 'category');
+    const variantIndex = headers.findIndex(h => h === 'variante' || h === 'variant' || h === 'dimension');
     
     if (nameIndex === -1 || referenceIndex === -1 || unitIndex === -1) {
       throw new Error("Format CSV invalide: colonnes manquantes");
     }
     
-    const newProducts: Product[] = [];
+    const productGroups = new Map<string, Product>();
     const newCategories = new Set(categories);
     
     for (let i = 1; i < lines.length; i++) {
@@ -34,27 +35,59 @@ export const loadProductsFromCSV = (
       
       if (values.length >= Math.max(nameIndex, referenceIndex, unitIndex) + 1) {
         const category = categoryIndex !== -1 && values[categoryIndex] ? values[categoryIndex] : undefined;
+        const name = values[nameIndex];
+        const reference = values[referenceIndex];
+        const unit = values[unitIndex];
+        const variant = variantIndex !== -1 && values[variantIndex] ? values[variantIndex] : reference;
         
         if (category) {
           newCategories.add(category);
         }
         
-        const product: Product = {
-          id: `csv-${i}`,
-          name: values[nameIndex],
-          reference: values[referenceIndex],
-          unit: values[unitIndex],
-          category,
-          imageUrl: undefined
-        };
+        // Créer une clé unique pour regrouper les produits ayant la même désignation et catégorie
+        const productKey = `${name}${category || ''}`;
         
-        newProducts.push(product);
+        if (!productGroups.has(productKey)) {
+          // Premier produit de ce groupe
+          productGroups.set(productKey, {
+            id: `csv-${i}`,
+            name,
+            category,
+            imageUrl: undefined,
+            variants: [{
+              id: `var-${i}`,
+              variantName: variant,
+              reference,
+              unit
+            }]
+          });
+        } else {
+          // Produit déjà existant, ajouter une variante
+          const existingProduct = productGroups.get(productKey)!;
+          existingProduct.variants!.push({
+            id: `var-${i}`,
+            variantName: variant,
+            reference,
+            unit
+          });
+        }
       }
     }
+    
+    const newProducts = Array.from(productGroups.values());
     
     if (newProducts.length === 0) {
       throw new Error("Aucun produit valide n'a pu être importé");
     }
+    
+    // Pour les produits avec une seule variante, on simplifie en remontant les informations au niveau du produit
+    newProducts.forEach(product => {
+      if (product.variants && product.variants.length === 1) {
+        product.reference = product.variants[0].reference;
+        product.unit = product.variants[0].unit;
+        delete product.variants;
+      }
+    });
     
     setProducts(newProducts);
     setCategories([...newCategories].sort());

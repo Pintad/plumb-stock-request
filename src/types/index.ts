@@ -1,16 +1,25 @@
 
+export interface ProductVariant {
+  id: string;
+  variantName: string;
+  reference: string;
+  unit: string;
+}
+
 export interface Product {
   id: string;
   name: string;
-  reference: string;
-  unit: string;
+  reference?: string;
+  unit?: string;
   imageUrl?: string;
   category?: string;
+  variants?: ProductVariant[];
 }
 
 export interface CartItem extends Product {
   quantity: number;
   completed?: boolean;
+  selectedVariantId?: string;
 }
 
 export interface Order {

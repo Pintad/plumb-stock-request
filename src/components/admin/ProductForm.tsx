@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Product } from '@/types';
+import { Product, ProductVariant } from '@/types';
 import { useAppContext } from '@/context/AppContext';
+import { Plus, Trash } from 'lucide-react';
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -30,14 +31,29 @@ interface ProductFormProps {
 
 interface ProductFormData {
   name: string;
-  reference: string;
-  unit: string;
+  reference?: string;
+  unit?: string;
   imageUrl?: string;
   category?: string;
+  variants?: ProductVariantFormData[];
+}
+
+interface ProductVariantFormData {
+  id: string;
+  variantName: string;
+  reference: string;
+  unit: string;
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCancel }) => {
   const { categories } = useAppContext();
+  const [hasVariants, setHasVariants] = useState<boolean>(
+    initialData?.variants && initialData.variants.length > 0 ? true : false
+  );
+  const [variants, setVariants] = useState<ProductVariantFormData[]>(
+    initialData?.variants || []
+  );
+  
   const form = useForm<ProductFormData>({
     defaultValues: {
       name: initialData?.name || '',
@@ -52,19 +68,36 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
     if (initialData) {
       form.reset({
         name: initialData.name,
-        reference: initialData.reference,
-        unit: initialData.unit,
+        reference: initialData.reference || '',
+        unit: initialData.unit || '',
         imageUrl: initialData.imageUrl || '',
         category: initialData.category || '',
       });
+      setVariants(initialData.variants || []);
+      setHasVariants(initialData.variants && initialData.variants.length > 0);
     }
   }, [initialData, form]);
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
-      await onSubmit(data);
+      const formattedData = { ...data };
+      
+      if (hasVariants && variants.length > 0) {
+        formattedData.variants = variants;
+        // Si on utilise des variantes, on supprime les champs reference et unit du produit principal
+        delete formattedData.reference;
+        delete formattedData.unit;
+      } else {
+        // Si on n'utilise pas de variantes, on s'assure de ne pas avoir de tableau variants
+        delete formattedData.variants;
+      }
+      
+      await onSubmit(formattedData);
+      
       if (!initialData) {
         form.reset();
+        setVariants([]);
+        setHasVariants(false);
       }
     } catch (error) {
       toast({
@@ -72,6 +105,43 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         title: "Erreur",
         description: "Une erreur est survenue lors de la sauvegarde du produit",
       });
+    }
+  };
+
+  const addVariant = () => {
+    const newVariant: ProductVariantFormData = {
+      id: `var-${Date.now()}`,
+      variantName: '',
+      reference: '',
+      unit: ''
+    };
+    setVariants([...variants, newVariant]);
+  };
+
+  const updateVariant = (index: number, field: keyof ProductVariantFormData, value: string) => {
+    const updatedVariants = [...variants];
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: value
+    };
+    setVariants(updatedVariants);
+  };
+
+  const removeVariant = (index: number) => {
+    const updatedVariants = [...variants];
+    updatedVariants.splice(index, 1);
+    setVariants(updatedVariants);
+    
+    // Si plus aucune variante, désactiver l'option variantes
+    if (updatedVariants.length === 0) {
+      setHasVariants(false);
+    }
+  };
+
+  const toggleVariants = (useVariants: boolean) => {
+    setHasVariants(useVariants);
+    if (useVariants && variants.length === 0) {
+      addVariant();
     }
   };
 
@@ -86,34 +156,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
               <FormLabel>Désignation</FormLabel>
               <FormControl>
                 <Input placeholder="Nom du produit" required {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="reference"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Référence</FormLabel>
-              <FormControl>
-                <Input placeholder="Référence du produit" required {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="unit"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Unité</FormLabel>
-              <FormControl>
-                <Input placeholder="Unité de mesure" required {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -146,6 +188,122 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
             </FormItem>
           )}
         />
+
+        <div className="flex items-center">
+          <label className="text-sm font-medium flex items-center">
+            <input
+              type="checkbox"
+              checked={hasVariants}
+              onChange={(e) => toggleVariants(e.target.checked)}
+              className="mr-2 h-4 w-4"
+            />
+            Ce produit possède plusieurs variantes
+          </label>
+        </div>
+
+        {!hasVariants && (
+          <>
+            <FormField
+              control={form.control}
+              name="reference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Référence</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Référence du produit" required={!hasVariants} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="unit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unité</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Unité de mesure" required={!hasVariants} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+
+        {hasVariants && (
+          <div className="space-y-4 pt-2">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-medium">Variantes du produit</h3>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={addVariant}
+                className="text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Ajouter une variante
+              </Button>
+            </div>
+            
+            {variants.map((variant, index) => (
+              <div key={variant.id} className="p-3 border rounded-md bg-gray-50">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium">Variante {index + 1}</h4>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => removeVariant(index)}
+                    className="text-xs h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="grid gap-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Nom de la variante</label>
+                    <Input
+                      placeholder="ex: 16/21"
+                      value={variant.variantName}
+                      onChange={(e) => updateVariant(index, 'variantName', e.target.value)}
+                      required
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Référence</label>
+                    <Input
+                      placeholder="Référence de cette variante"
+                      value={variant.reference}
+                      onChange={(e) => updateVariant(index, 'reference', e.target.value)}
+                      required
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Unité</label>
+                    <Input
+                      placeholder="Unité de mesure pour cette variante"
+                      value={variant.unit}
+                      onChange={(e) => updateVariant(index, 'unit', e.target.value)}
+                      required
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {variants.length === 0 && (
+              <div className="p-4 border border-dashed rounded-md text-center text-gray-500 text-sm">
+                Aucune variante ajoutée. Cliquez sur "Ajouter une variante" pour commencer.
+              </div>
+            )}
+          </div>
+        )}
 
         <FormField
           control={form.control}
