@@ -40,12 +40,13 @@ export const useAuth = () => {
           
           // Créer l'objet utilisateur à partir des données Supabase
           if (profile) {
+            // Utiliser une assertion de type pour s'assurer que TypeScript accepte l'objet
             setUser({
               id: session.user.id,
               username: session.user.email || '',
               name: profile.name,
               role: profile.role as 'admin' | 'worker'
-            });
+            } as User);
           }
         } else {
           // Essayer de récupérer depuis localStorage pour compatibilité
@@ -75,12 +76,13 @@ export const useAuth = () => {
             .single();
             
           if (profile) {
+            // Utiliser une assertion de type pour s'assurer que TypeScript accepte l'objet
             setUser({
               id: session.user.id,
               username: session.user.email || '',
               name: profile.name,
               role: profile.role as 'admin' | 'worker'
-            });
+            } as User);
           }
         } else {
           setUser(null);
