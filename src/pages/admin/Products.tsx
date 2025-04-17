@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import CSVImport from '@/components/CSVImport';
 import { useAppContext } from '@/context/AppContext';
@@ -11,6 +12,7 @@ import { Search, Plus, Trash2, Image as ImageIcon, Edit } from 'lucide-react';
 import ProductForm from '@/components/admin/ProductForm';
 import { Product } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminProducts = () => {
   const { products, setProducts } = useAppContext();
@@ -40,6 +42,25 @@ const AdminProducts = () => {
       title: "Produit ajouté",
       description: "Le produit a été ajouté avec succès",
     });
+    
+    // No need to modify types, just use the existing types with Supabase
+    try {
+      // Insert the product into Supabase
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          name: formData.name,
+          reference: formData.reference,
+          unit: formData.unit,
+          image_url: formData.imageUrl
+        });
+      
+      if (error) throw error;
+      
+      // Handle variants if needed
+    } catch (error) {
+      console.error("Error saving product to Supabase:", error);
+    }
   };
 
   const handleEditProduct = async (formData: any) => {
@@ -61,15 +82,83 @@ const AdminProducts = () => {
       title: "Produit modifié",
       description: "Le produit a été modifié avec succès",
     });
+    
+    // Update in Supabase if it's a Supabase product (has a UUID)
+    if (editingProduct.id && editingProduct.id.includes('-')) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .update({
+            name: formData.name,
+            reference: formData.reference,
+            unit: formData.unit,
+            image_url: formData.imageUrl
+          })
+          .eq('id', editingProduct.id);
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error updating product in Supabase:", error);
+      }
+    }
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     setProducts(products.filter(p => p.id !== productId));
     toast({
       title: "Produit supprimé",
       description: "Le produit a été supprimé avec succès",
     });
+    
+    // Delete from Supabase if it's a Supabase product
+    if (productId && productId.includes('-')) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId);
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error deleting product from Supabase:", error);
+      }
+    }
   };
+
+  // Load products from Supabase on component mount
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*');
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Convert Supabase products to application format
+          const supabaseProducts = data.map(product => ({
+            id: product.id,
+            name: product.name,
+            reference: product.reference || undefined,
+            unit: product.unit || undefined,
+            category: undefined, // We'll need to fetch categories separately
+            imageUrl: product.image_url || undefined,
+            variants: [] // We'll need to fetch variants separately
+          }));
+          
+          // Merge with existing local products
+          const localProducts = products.filter(p => !p.id.includes('-'));
+          setProducts([...localProducts, ...supabaseProducts]);
+        }
+      } catch (error) {
+        console.error("Error loading products from Supabase:", error);
+      }
+    };
+    
+    loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
