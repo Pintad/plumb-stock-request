@@ -2,6 +2,7 @@
 import { Project } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, showImportSuccess, showImportError } from './csvUtils';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Load projects from CSV content and store them in Supabase
@@ -26,28 +27,57 @@ export const loadProjectsFromCSV = async (
     if (projectsToInsert.length === 0) {
       throw new Error("Aucune affaire valide n'a pu être extraite du fichier CSV");
     }
+
+    let insertedCount = 0;
+    let skippedCount = 0;
     
-    const newProjects = await insertProjectsIntoSupabase(projectsToInsert);
-    
-    if (newProjects.length === 0) {
-      throw new Error("Aucune affaire valide n'a pu être importée");
+    // Insérer les projets un par un pour mieux gérer les erreurs
+    for (const project of projectsToInsert) {
+      // Vérifier si le code existe déjà
+      const { data: existingProject } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('code', project.code)
+        .maybeSingle();
+        
+      if (existingProject) {
+        skippedCount++;
+        continue; // Passer au projet suivant
+      }
+      
+      // Insérer le nouveau projet
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(project)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error("Erreur lors de l'insertion du projet:", error);
+        continue; // Continuer avec les autres projets
+      }
+      
+      if (data) {
+        addProject({
+          id: data.id,
+          code: data.code,
+          name: data.name
+        });
+        insertedCount++;
+      }
     }
     
-    // Add each project individually using the addProject function
-    newProjects.forEach(project => {
-      addProject(project);
-    });
-    
-    // Synchroniser avec la base de données pour s'assurer que tous les projets sont à jour
-    const { data: allProjects, error: fetchError } = await supabase
-      .from('projects')
-      .select('*');
-    
-    if (fetchError) {
-      console.error("Erreur lors de la récupération des projets:", fetchError);
+    if (insertedCount > 0) {
+      showImportSuccess(insertedCount, "affaires");
     }
     
-    showImportSuccess(newProjects.length, "affaires");
+    if (skippedCount > 0) {
+      toast({
+        variant: "warning",
+        title: "Import partiel",
+        description: `${skippedCount} affaires ont été ignorées car elles existent déjà.`,
+      });
+    }
     
   } catch (error) {
     showImportError(error);
@@ -69,7 +99,7 @@ const parseProjectsFromCSV = (
     
     const values = lines[i].split(',').map(value => value.trim());
     
-    if (values.length >= Math.max(codeIndex, nameIndex) + 1) {
+    if (values.length > Math.max(codeIndex, nameIndex)) {
       const projectCode = values[codeIndex];
       const projectName = values[nameIndex];
       
