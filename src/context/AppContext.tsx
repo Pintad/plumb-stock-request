@@ -46,8 +46,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOrder: createOrderWrapper,
         updateOrder,
         archiveOrder,
-        loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts, setCategories, categories),
-        loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, setProjects),
+        // Fix: We need to pass appropriate arguments to the imported functions
+        loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts),
+        loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,
         isLoading,
         addProduct,
