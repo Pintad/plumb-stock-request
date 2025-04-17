@@ -38,7 +38,7 @@ export interface Order {
 export interface User {
   id: string;
   username: string;
-  password: string;
+  password?: string; // Rendu optionnel pour compatibilité avec Supabase
   name: string;
   role: 'worker' | 'admin';
 }
