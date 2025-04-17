@@ -1,9 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, User, Order, Project } from '../types';
 import { demoProducts, demoUsers, demoOrders } from '../data/demoData';
 import { AppContextType } from './types';
 import { addToCart, removeFromCart, updateCartItemQuantity, clearCart as clearCartUtil } from './cartUtils';
-import { loadProductsFromCSV, loadProjectsFromCSV } from './importUtils';
+import { loadProductsFromCSV, loadProjectsFromCSV } from './imports';
 import { createOrder as createOrderUtil, updateOrder as updateOrderUtil, archiveOrder } from './orderUtils';
 import { addCategory as addCategoryUtil, deleteCategory as deleteCategoryUtil } from './categoryUtils';
 import { addProject as addProjectUtil, deleteProject as deleteProjectUtil } from './projectUtils';
