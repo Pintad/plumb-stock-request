@@ -15,19 +15,31 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    if (login(username, password)) {
-      // Redirection basée sur le rôle
-      navigate(isAdmin ? '/admin' : '/');
-    } else {
+    try {
+      const success = await login(username, password);
+      
+      if (success) {
+        // Redirection basée sur le rôle
+        navigate(isAdmin ? '/admin' : '/');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: "Identifiants incorrects",
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la connexion:", error);
       toast({
         variant: "destructive",
         title: "Erreur de connexion",
-        description: "Identifiants incorrects",
+        description: "Une erreur est survenue lors de la tentative de connexion.",
       });
+    } finally {
       setIsLoading(false);
     }
   };
