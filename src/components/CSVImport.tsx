@@ -20,14 +20,14 @@ const CSVImport: React.FC = () => {
     }
     
     setIsLoading(true);
+    toast({
+      title: "Début de l'import",
+      description: "Traitement du fichier CSV en cours...",
+    });
     
     readCSVFile(file, (content) => {
       try {
         loadProductsFromCSV(content);
-        toast({
-          title: "Import en cours",
-          description: "Les produits sont en cours d'importation dans la base de données",
-        });
       } catch (error) {
         console.error("Erreur lors de l'importation CSV:", error);
         toast({
@@ -73,7 +73,7 @@ const CSVImport: React.FC = () => {
             disabled={isLoading}
           >
             <Upload className="mr-2" size={18} />
-            {isLoading ? "Importation..." : "Charger un fichier CSV"}
+            {isLoading ? "Importation en cours..." : "Charger un fichier CSV"}
           </Button>
           <div className="mt-4 text-sm text-gray-500 text-center">
             <p>Le fichier CSV doit contenir les colonnes suivantes:</p>

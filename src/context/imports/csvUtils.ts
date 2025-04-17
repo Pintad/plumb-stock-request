@@ -25,6 +25,16 @@ export const readCSVFile = (
   reader.onload = (e) => {
     try {
       const content = e.target?.result as string;
+      
+      if (!content || content.trim().length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Fichier vide",
+          description: "Le fichier CSV est vide",
+        });
+        return;
+      }
+      
       onSuccess(content);
     } catch (error) {
       toast({
@@ -53,12 +63,20 @@ export const readCSVFile = (
  */
 export const parseCSV = (csvContent: string) => {
   const lines = csvContent.split('\n');
-  if (lines.length <= 1) {
-    throw new Error("Le fichier CSV est vide ou mal formaté");
+  if (lines.length === 0) {
+    throw new Error("Le fichier CSV est vide");
+  }
+  
+  if (lines.length === 1 && lines[0].trim() === '') {
+    throw new Error("Le fichier CSV est vide");
   }
   
   const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-  return { headers, lines: lines.slice(1) };
+  if (headers.length === 0) {
+    throw new Error("Le fichier CSV ne contient pas d'en-têtes");
+  }
+  
+  return { headers, lines: lines.slice(1).filter(line => line.trim() !== '') };
 };
 
 /**
@@ -82,6 +100,6 @@ export const showImportError = (error: unknown) => {
   toast({
     variant: "destructive",
     title: "Erreur d'importation",
-    description: error instanceof Error ? error.message : "Une erreur est survenue",
+    description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'importation",
   });
 };

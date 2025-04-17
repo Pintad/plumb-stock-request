@@ -28,10 +28,6 @@ export const loadProductsFromCSV = async (
     if (referenceIndex === -1) {
       throw new Error("Format CSV invalide: colonne 'reference' manquante");
     }
-
-    if (categorieIndex === -1) {
-      throw new Error("Format CSV invalide: colonne 'categorie' manquante");
-    }
     
     const productsToInsert: { 
       name: string;
@@ -58,7 +54,7 @@ export const loadProductsFromCSV = async (
       variants: { variantName: string, reference: string, unit: string }[] 
     }} = {};
     
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
       const values = lines[i].split(',').map(value => value.trim());
@@ -119,9 +115,27 @@ export const loadProductsFromCSV = async (
     }
     
     // Insérer les produits dans Supabase et récupérer les nouveaux produits
-    const newProducts = await insertProductsIntoSupabase(productsToInsert);
+    const insertedProducts = await insertProductsIntoSupabase(productsToInsert);
     
-    // Récupérer tous les produits de Supabase pour mettre à jour le state
+    // Mise à jour du state avec les produits formatés
+    await refreshProductList(setProducts);
+    
+    showImportSuccess(insertedProducts.length, "produits");
+    
+  } catch (error) {
+    console.error("Erreur d'importation:", error);
+    showImportError(error);
+  }
+};
+
+/**
+ * Rafraîchit la liste des produits depuis Supabase
+ */
+export const refreshProductList = async (
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>
+) => {
+  try {
+    // Récupérer tous les produits de Supabase
     const { data: allProducts, error: fetchError } = await supabase
       .from('products')
       .select('*, product_variants(*)');
@@ -131,57 +145,61 @@ export const loadProductsFromCSV = async (
       throw new Error("Erreur lors de la récupération des produits");
     }
     
-    if (allProducts) {
-      // Formater les produits pour le state
-      const formattedProducts: Product[] = allProducts.map(product => {
-        const variants = product.product_variants 
-          ? product.product_variants.map((variant: any) => ({
-              id: variant.id,
-              variantName: variant.variant_name,
-              reference: variant.reference,
-              unit: variant.unit
-            }))
-          : undefined;
-        
-        return {
-          id: product.id,
-          name: product.name,
-          reference: product.reference || undefined,
-          unit: product.unit || undefined,
-          category: product.category_id ? undefined : undefined, // Sera mis à jour ci-dessous
-          imageUrl: product.image_url || undefined,
-          variants: variants && variants.length > 0 ? variants : undefined
-        };
-      });
+    if (!allProducts) {
+      throw new Error("Aucun produit n'a été trouvé");
+    }
+    
+    // Formater les produits pour le state
+    const formattedProducts: Product[] = allProducts.map(product => {
+      const variants = product.product_variants 
+        ? product.product_variants.map((variant: any) => ({
+            id: variant.id,
+            variantName: variant.variant_name,
+            reference: variant.reference,
+            unit: variant.unit
+          }))
+        : undefined;
       
-      // Récupérer les catégories pour compléter les produits
-      const productsWithCategoryIds = allProducts.filter((p: any) => p.category_id);
-      if (productsWithCategoryIds.length > 0) {
-        const categoryIds = [...new Set(productsWithCategoryIds.map((p: any) => p.category_id))];
-        const { data: categoriesData, error: catError } = await supabase
-          .from('categories')
-          .select('id, name');
-          
-        if (!catError && categoriesData) {
-          const categoryMap = new Map(categoriesData.map((cat: any) => [cat.id, cat.name]));
-          for (let i = 0; i < formattedProducts.length; i++) {
-            const originalProduct = allProducts[i];
-            if (originalProduct?.category_id) {
-              formattedProducts[i].category = categoryMap.get(originalProduct.category_id) || undefined;
-            }
+      return {
+        id: product.id,
+        name: product.name,
+        reference: product.reference || undefined,
+        unit: product.unit || undefined,
+        category: undefined, // Sera mis à jour ci-dessous
+        imageUrl: product.image_url || undefined,
+        variants: variants && variants.length > 0 ? variants : undefined
+      };
+    });
+    
+    // Récupérer les catégories pour compléter les produits
+    try {
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id, name');
+        
+      if (categoriesData && categoriesData.length > 0) {
+        const categoryMap = new Map(categoriesData.map((cat: any) => [cat.id, cat.name]));
+        
+        // Mettre à jour les catégories des produits
+        for (let i = 0; i < formattedProducts.length; i++) {
+          const originalProduct = allProducts[i];
+          if (originalProduct?.category_id) {
+            formattedProducts[i].category = categoryMap.get(originalProduct.category_id) || undefined;
           }
         }
       }
-      
-      // Mettre à jour l'état avec tous les produits
-      setProducts(formattedProducts);
+    } catch (catError) {
+      console.error("Erreur lors de la récupération des catégories:", catError);
+      // On continue même en cas d'erreur pour les catégories
     }
     
-    showImportSuccess(newProducts.length, "produits");
+    // Mettre à jour l'état avec tous les produits
+    setProducts(formattedProducts);
     
+    return formattedProducts;
   } catch (error) {
-    console.error("Erreur d'importation:", error);
-    showImportError(error);
+    console.error("Erreur lors du rafraîchissement de la liste des produits:", error);
+    throw error;
   }
 };
 
@@ -209,27 +227,32 @@ const insertProductsIntoSupabase = async (
       // Vérifier si la catégorie existe déjà ou doit être créée
       let categoryId = null;
       if (productData.category) {
-        const { data: existingCategory } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('name', productData.category)
-          .single();
-        
-        if (existingCategory) {
-          categoryId = existingCategory.id;
-        } else {
-          const { data: newCategory, error: categoryError } = await supabase
+        try {
+          const { data: existingCategory } = await supabase
             .from('categories')
-            .insert({ name: productData.category })
-            .select()
-            .single();
+            .select('id')
+            .eq('name', productData.category)
+            .maybeSingle();
           
-          if (categoryError) {
-            console.error("Erreur lors de la création de la catégorie:", categoryError);
-            continue;
+          if (existingCategory) {
+            categoryId = existingCategory.id;
+          } else {
+            const { data: newCategory, error: categoryError } = await supabase
+              .from('categories')
+              .insert({ name: productData.category })
+              .select()
+              .single();
+            
+            if (categoryError) {
+              console.error("Erreur lors de la création de la catégorie:", categoryError);
+              continue;
+            }
+            
+            categoryId = newCategory.id;
           }
-          
-          categoryId = newCategory.id;
+        } catch (categoryError) {
+          console.error("Erreur lors de la vérification/création de la catégorie:", categoryError);
+          // Continuer sans catégorie en cas d'erreur
         }
       }
       
@@ -260,13 +283,17 @@ const insertProductsIntoSupabase = async (
           unit: variant.unit
         }));
         
-        const { error: variantError } = await supabase
-          .from('product_variants')
-          .insert(variantsToInsert);
-        
-        if (variantError) {
-          console.error("Erreur lors de l'insertion des variantes:", variantError);
-          // On continue même en cas d'erreur pour les variantes
+        try {
+          const { error: variantError } = await supabase
+            .from('product_variants')
+            .insert(variantsToInsert);
+          
+          if (variantError) {
+            console.error("Erreur lors de l'insertion des variantes:", variantError);
+            // On continue même en cas d'erreur pour les variantes
+          }
+        } catch (variantError) {
+          console.error("Exception lors de l'insertion des variantes:", variantError);
         }
       }
       
