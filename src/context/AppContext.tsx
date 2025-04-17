@@ -46,7 +46,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOrder: createOrderWrapper,
         updateOrder,
         archiveOrder,
-        // Fix: pass the correct functions with proper arguments
+        // Pass the correct functions with proper arguments
         loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts),
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,

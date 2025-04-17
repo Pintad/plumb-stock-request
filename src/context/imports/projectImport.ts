@@ -8,7 +8,7 @@ import { parseCSV, showImportSuccess, showImportError } from './csvUtils';
  */
 export const loadProjectsFromCSV = async (
   csvContent: string,
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>
+  addProject: (project: Project) => void
 ) => {
   try {
     const { headers, lines } = parseCSV(csvContent);
@@ -27,7 +27,11 @@ export const loadProjectsFromCSV = async (
       throw new Error("Aucune affaire valide n'a pu être importée");
     }
     
-    setProjects(prev => [...prev, ...newProjects]);
+    // Add each project individually using the addProject function
+    newProjects.forEach(project => {
+      addProject(project);
+    });
+    
     showImportSuccess(newProjects.length, "affaires");
     
   } catch (error) {
