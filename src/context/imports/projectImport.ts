@@ -17,10 +17,16 @@ export const loadProjectsFromCSV = async (
     const nameIndex = headers.findIndex(h => h === 'nom' || h === 'name');
     
     if (codeIndex === -1 || nameIndex === -1) {
-      throw new Error("Format CSV invalide: colonnes manquantes (code, nom)");
+      console.error("Headers:", headers);
+      throw new Error("Format CSV invalide: colonnes manquantes ('code', 'nom'). Colonnes trouvées: " + headers.join(', '));
     }
     
     const projectsToInsert = parseProjectsFromCSV(lines, codeIndex, nameIndex);
+    
+    if (projectsToInsert.length === 0) {
+      throw new Error("Aucune affaire valide n'a pu être extraite du fichier CSV");
+    }
+    
     const newProjects = await insertProjectsIntoSupabase(projectsToInsert);
     
     if (newProjects.length === 0) {
@@ -49,7 +55,7 @@ const parseProjectsFromCSV = (
 ) => {
   const projectsToInsert: { code: string; name: string }[] = [];
   
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
     
     const values = lines[i].split(',').map(value => value.trim());
@@ -58,10 +64,12 @@ const parseProjectsFromCSV = (
       const projectCode = values[codeIndex];
       const projectName = values[nameIndex];
       
-      projectsToInsert.push({
-        code: projectCode,
-        name: projectName
-      });
+      if (projectCode && projectName) {
+        projectsToInsert.push({
+          code: projectCode,
+          name: projectName
+        });
+      }
     }
   }
   

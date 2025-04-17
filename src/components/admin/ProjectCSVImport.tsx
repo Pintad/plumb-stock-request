@@ -23,6 +23,8 @@ const ProjectCSVImport: React.FC = () => {
     readCSVFile(file, (content) => {
       try {
         loadProjectsFromCSV(content);
+      } catch (error) {
+        console.error("Erreur lors du traitement CSV:", error);
       } finally {
         setIsLoading(false);
         // Reset input
@@ -66,6 +68,12 @@ const ProjectCSVImport: React.FC = () => {
           <div className="mt-4 text-sm text-gray-500 text-center">
             <p>Le fichier CSV doit contenir les colonnes suivantes:</p>
             <p><strong>code</strong>, <strong>nom</strong></p>
+            <div className="mt-4 p-3 bg-gray-50 rounded-md text-xs">
+              <p className="font-semibold mb-1">Exemple :</p>
+              <p>code,nom</p>
+              <p>PRJ001,Projet Renovation</p>
+              <p>PRJ002,Projet Construction</p>
+            </div>
           </div>
         </div>
       </CardContent>
