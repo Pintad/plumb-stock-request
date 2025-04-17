@@ -177,7 +177,7 @@ const OrderList = ({
     <div className="space-y-4">
       {orders.length > 0 ? (
         orders.map((order) => (
-          <Card key={order.id} className="overflow-hidden">
+          <Card key={order.id} className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div>
@@ -208,6 +208,11 @@ const OrderList = ({
                   <Badge className={`${getStatusColor(order.status)} text-white`}>
                     {getStatusLabel(order.status)}
                   </Badge>
+                  {order.archived && (
+                    <Badge variant="outline" className="bg-gray-200">
+                      Archivée
+                    </Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>

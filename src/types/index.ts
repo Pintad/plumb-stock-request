@@ -14,7 +14,7 @@ export interface Product {
   imageUrl?: string;
   category?: string;
   variants?: ProductVariant[];
-  selectedVariantId?: string; // Adding this missing property
+  selectedVariantId?: string;
 }
 
 export interface CartItem extends Product {
@@ -32,6 +32,7 @@ export interface Order {
   status: 'pending' | 'processed' | 'completed';
   projectCode?: string;
   message?: string;
+  archived?: boolean;
 }
 
 export interface User {

@@ -5,6 +5,8 @@ import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import OrderManager from '@/components/OrderManager';
 import { Order } from '@/types';
 
@@ -12,14 +14,20 @@ const AdminOrders = () => {
   const { orders, projects, updateOrder } = useAppContext();
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showArchived, setShowArchived] = useState<boolean>(false);
   
-  // Filter orders by project if a project is selected
-  const filteredOrders = selectedProject === "all" 
-    ? orders 
-    : orders.filter(order => 
-        selectedProject === "none" 
-          ? !order.projectCode 
-          : order.projectCode === selectedProject);
+  // Filter orders by project and archived status
+  const filteredOrders = orders.filter(order => {
+    // Filter by archived status
+    if (!showArchived && order.archived) return false;
+    
+    // Filter by project
+    return selectedProject === "all" 
+      ? true 
+      : selectedProject === "none" 
+        ? !order.projectCode 
+        : order.projectCode === selectedProject;
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -50,6 +58,15 @@ const AdminOrders = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-archived" 
+                  checked={showArchived}
+                  onCheckedChange={(checked) => setShowArchived(!!checked)} 
+                />
+                <Label htmlFor="show-archived">Afficher les demandes archivées</Label>
               </div>
             </div>
           </CardContent>

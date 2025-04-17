@@ -21,6 +21,7 @@ export interface AppContextType {
   orders: Order[];
   createOrder: (projectCode?: string) => Order | undefined;
   updateOrder: (order: Order) => void;
+  archiveOrder: (orderId: string) => Promise<boolean>;
   loadProductsFromCSV: (csvContent: string) => void;
   loadProjectsFromCSV: (csvContent: string) => void;
   isAdmin: boolean;

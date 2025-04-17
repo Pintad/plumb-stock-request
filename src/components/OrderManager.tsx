@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MessageSquare, CheckCircle, Save, FileDown, Printer } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckCircle, Save, FileDown, Printer, Archive } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useAppContext } from '@/context/AppContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 interface OrderManagerProps {
   order: Order;
@@ -17,7 +17,7 @@ interface OrderManagerProps {
 }
 
 const OrderManager: React.FC<OrderManagerProps> = ({ order, onClose }) => {
-  const { updateOrder } = useAppContext();
+  const { updateOrder, archiveOrder } = useAppContext();
   const [message, setMessage] = useState<string>(order.message || '');
   const [items, setItems] = useState<CartItem[]>(
     order.items.map(item => ({
@@ -50,6 +50,15 @@ const OrderManager: React.FC<OrderManagerProps> = ({ order, onClose }) => {
       description: "Les changements ont été enregistrés",
     });
     onClose();
+  };
+
+  const handleArchiveOrder = async () => {
+    if (order.status === 'completed') {
+      const success = await archiveOrder(order.id);
+      if (success) {
+        onClose();
+      }
+    }
   };
 
   const getProjectName = (code?: string) => {
@@ -198,6 +207,16 @@ const OrderManager: React.FC<OrderManagerProps> = ({ order, onClose }) => {
             <Printer className="h-4 w-4" />
             Imprimer / PDF
           </Button>
+          {order.status === 'completed' && !order.archived && (
+            <Button 
+              variant="outline" 
+              onClick={handleArchiveOrder} 
+              className="flex items-center gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              Archiver
+            </Button>
+          )}
         </div>
       </div>
       

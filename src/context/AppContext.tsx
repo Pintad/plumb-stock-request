@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, User, Order, Project } from '../types';
 import { demoProducts, demoUsers, demoOrders } from '../data/demoData';
 import { AppContextType } from './types';
 import { addToCart, removeFromCart, updateCartItemQuantity, clearCart as clearCartUtil } from './cartUtils';
 import { loadProductsFromCSV, loadProjectsFromCSV } from './importUtils';
-import { createOrder as createOrderUtil, updateOrder as updateOrderUtil } from './orderUtils';
+import { createOrder as createOrderUtil, updateOrder as updateOrderUtil, archiveOrder } from './orderUtils';
 import { addCategory as addCategoryUtil, deleteCategory as deleteCategoryUtil } from './categoryUtils';
 import { addProject as addProjectUtil, deleteProject as deleteProjectUtil } from './projectUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -388,6 +387,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return createOrderUtil(user, cart, orders, setOrders, () => clearCartUtil(setCart), projectCode);
   };
 
+  // New function to archive an order
+  const archiveOrderWrapper = async (orderId: string): Promise<boolean> => {
+    return archiveOrder(orders, setOrders, orderId);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -410,6 +414,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         orders,
         createOrder: createOrderWrapper,
         updateOrder: (order) => updateOrderUtil(orders, setOrders, order),
+        archiveOrder: archiveOrderWrapper,
         loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts, setCategories, categories),
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, setProjects),
         isAdmin,
