@@ -55,18 +55,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }))
               : undefined;
             
+            // Fix: Get category name from separate query if needed
+            let categoryName;
+            if (product.category_id) {
+              categoryName = undefined; // We'll resolve categories in a separate step
+            }
+            
             return {
               id: product.id,
               name: product.name,
               reference: product.reference || undefined,
               unit: product.unit || undefined,
-              category: product.category_id ? product.category_name || undefined : undefined,
+              category: categoryName, // Will be updated later
               imageUrl: product.image_url || undefined,
               variants: variants && variants.length > 0 ? variants : undefined
             };
           });
           
           setProducts(formattedProducts);
+          
+          // Fetch category names for products with category_id
+          const productsWithCategoryIds = productsData.filter(p => p.category_id);
+          if (productsWithCategoryIds.length > 0) {
+            const categoryIds = [...new Set(productsWithCategoryIds.map(p => p.category_id))];
+            const { data: categoriesData, error: catError } = await supabase
+              .from('categories')
+              .select('id, name')
+              .in('id', categoryIds);
+              
+            if (!catError && categoriesData) {
+              // Create a map of category id to name
+              const categoryMap = new Map(categoriesData.map(cat => [cat.id, cat.name]));
+              
+              // Update products with their category names
+              setProducts(prevProducts => 
+                prevProducts.map(product => {
+                  const originalProduct = productsData.find(p => p.id === product.id);
+                  if (originalProduct?.category_id) {
+                    return {
+                      ...product,
+                      category: categoryMap.get(originalProduct.category_id) || undefined
+                    };
+                  }
+                  return product;
+                })
+              );
+            }
+          }
         }
 
         // Charger les catégories
@@ -346,6 +381,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearCartUtil(setCart);
   };
 
+  // Fix: Updated createOrder function to ensure it returns an Order and not void
+  const createOrderWrapper = (projectCode?: string): Order | undefined => {
+    if (!user || cart.length === 0) return undefined;
+    
+    return createOrderUtil(user, cart, orders, setOrders, () => clearCartUtil(setCart), projectCode);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -366,7 +408,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCartItemQuantity: (productId, quantity) => updateCartItemQuantity(cart, setCart, productId, quantity),
         clearCart: () => clearCartUtil(setCart),
         orders,
-        createOrder: (projectCode) => createOrderUtil(user, cart, orders, setOrders, () => clearCartUtil(setCart), projectCode),
+        createOrder: createOrderWrapper,
         updateOrder: (order) => updateOrderUtil(orders, setOrders, order),
         loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts, setCategories, categories),
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, setProjects),

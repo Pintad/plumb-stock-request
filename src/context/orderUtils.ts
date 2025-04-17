@@ -1,6 +1,6 @@
 
 import { Order, User, CartItem } from '../types';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 export const createOrder = (
   user: User | null, 
@@ -9,8 +9,8 @@ export const createOrder = (
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>,
   clearCart: () => void,
   projectCode?: string
-) => {
-  if (!user || cart.length === 0) return;
+): Order | undefined => {
+  if (!user || cart.length === 0) return undefined;
   
   const newOrder: Order = {
     id: `${orders.length + 1}`,
@@ -29,6 +29,8 @@ export const createOrder = (
     title: "Demande envoyée",
     description: "Votre demande a bien été transmise",
   });
+  
+  return newOrder;
 };
 
 export const updateOrder = (
