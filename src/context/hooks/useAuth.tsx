@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { User } from '../../types';
-import { demoUsers } from '@/data/demoData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -49,13 +48,8 @@ export const useAuth = () => {
             } as User);
           }
         } else {
-          // Essayer de récupérer depuis localStorage pour compatibilité
-          const savedUser = localStorage.getItem('user');
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          } else {
-            setUser(null);
-          }
+          setUser(null);
+          localStorage.removeItem('user'); // Supprimer toute ancienne donnée locale
         }
       } catch (error) {
         console.error("Erreur inattendue lors de la vérification de la session:", error);
@@ -86,6 +80,7 @@ export const useAuth = () => {
           }
         } else {
           setUser(null);
+          localStorage.removeItem('user'); // Supprimer toute ancienne donnée locale
         }
       }
     );
@@ -97,37 +92,21 @@ export const useAuth = () => {
     };
   }, []);
 
-  // Garder la compatibilité avec le localStorage pour faciliter la transition
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
-
-  // Fonction de login modifiée pour utiliser Supabase
+  // Fonction de login utilisant uniquement Supabase
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Dans un premier temps, essayer l'authentification Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
         password: password,
       });
       
       if (error) {
-        console.log("Erreur d'authentification Supabase, tentative avec les utilisateurs de démo:", error);
-        
-        // En cas d'erreur, essayer avec les utilisateurs de démo pour la compatibilité
-        const foundUser = demoUsers.find(
-          (u) => u.username === username && u.password === password
-        );
-        
-        if (foundUser) {
-          setUser(foundUser);
-          return true;
-        }
-        
+        console.error("Erreur d'authentification:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur d'authentification",
+          description: "Identifiants incorrects ou compte inexistant.",
+        });
         return false;
       }
       
@@ -149,7 +128,7 @@ export const useAuth = () => {
     }
   };
 
-  // Fonction de déconnexion modifiée pour utiliser Supabase
+  // Fonction de déconnexion utilisant Supabase
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
