@@ -73,7 +73,7 @@ export const loadProjectsFromCSV = async (
     
     if (skippedCount > 0) {
       toast({
-        variant: "warning",
+        variant: "default", // Changed from "warning" to "default" to match the allowed variants
         title: "Import partiel",
         description: `${skippedCount} affaires ont été ignorées car elles existent déjà.`,
       });
