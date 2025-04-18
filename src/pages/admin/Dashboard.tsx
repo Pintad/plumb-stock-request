@@ -87,7 +87,7 @@ const Dashboard = () => {
                           </div>
                         </div>
                         <div className="text-sm">
-                          {order.quantite} articles
+                          {order.articles?.length || 0} articles
                         </div>
                       </div>
                     </Link>

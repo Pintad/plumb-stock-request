@@ -1,3 +1,4 @@
+
 export interface ProductVariant {
   id: string;
   variantName: string;
@@ -34,6 +35,7 @@ export interface Order {
   // Frontend fields for UI rendering
   archived?: boolean;
   projectCode?: string;
+  status?: 'pending' | 'processed' | 'completed';
 }
 
 export interface User {

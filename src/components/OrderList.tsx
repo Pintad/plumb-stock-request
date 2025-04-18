@@ -72,16 +72,19 @@ const OrderList = ({
     const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité'];
     let csvContent = header.join(',') + '\n';
     
+    // Get the first article for basic info
+    const firstArticle = order.articles && order.articles.length > 0 ? order.articles[0] : null;
+    
     // Create a row using the data directly from the order
     const row = [
       order.commandeid,
       order.clientname || '',
       order.datecommande || '',
-      '', // No project code in DB schema
+      order.projectCode || '', 
       order.termine || '',
-      order.produit || '',
-      order.reference || '',
-      order.quantite || ''
+      firstArticle?.name || '',
+      firstArticle?.reference || '',
+      firstArticle?.quantity || '0'
     ].map(value => `"${value}"`).join(',');
     csvContent += row + '\n';
     
@@ -98,6 +101,9 @@ const OrderList = ({
   const printOrder = (order: Order) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+    
+    // Get the first article for basic info
+    const firstArticle = order.articles && order.articles.length > 0 ? order.articles[0] : null;
     
     let htmlContent = `
       <html>
@@ -130,11 +136,28 @@ const OrderList = ({
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>${order.produit || ''}</td>
-              <td>${order.reference || ''}</td>
-              <td>${order.quantite || ''}</td>
-            </tr>
+    `;
+    
+    // Add all articles to the table
+    if (order.articles && order.articles.length > 0) {
+      order.articles.forEach(article => {
+        htmlContent += `
+          <tr>
+            <td>${article.name || ''}</td>
+            <td>${article.reference || ''}</td>
+            <td>${article.quantity || '0'}</td>
+          </tr>
+        `;
+      });
+    } else {
+      htmlContent += `
+        <tr>
+          <td colspan="3">Aucun article</td>
+        </tr>
+      `;
+    }
+      
+    htmlContent += `
           </tbody>
         </table>
     `;
@@ -212,16 +235,23 @@ const OrderList = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* Display the order directly as a single item */}
-                    <TableRow>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{order.produit}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{order.reference}</TableCell>
-                      <TableCell className="text-right">{order.quantite}</TableCell>
-                    </TableRow>
+                    {order.articles && order.articles.length > 0 ? (
+                      order.articles.map((article, index) => (
+                        <TableRow key={`${order.commandeid}-${index}`}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{article.name}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono">{article.reference}</TableCell>
+                          <TableCell className="text-right">{article.quantity}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center">Aucun article</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -229,8 +259,8 @@ const OrderList = ({
             <CardFooter className="bg-gray-50 py-2">
               <div className="flex justify-between w-full text-sm items-center">
                 <span>
-                  Quantité: <span className="font-semibold">
-                    {order.quantite} 
+                  Articles: <span className="font-semibold">
+                    {order.articles?.length || 0} 
                   </span>
                 </span>
                 

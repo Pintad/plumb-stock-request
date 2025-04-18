@@ -15,22 +15,17 @@ export const createOrder = (
   
   // Create an order compatible with our database structure
   const newOrder: Order = {
-    commandeid: orders.length + 1,
+    commandeid: `${orders.length + 1}`, // Convert to string as per updated type
     clientname: user.name,
     datecommande: new Date().toISOString().split('T')[0],
-    produit: cart[0].name,  // For simplicity, just use the first item
-    reference: cart[0].reference || '',
-    quantite: cart[0].quantity,
+    articles: [...cart],  // Store the complete cart
     termine: 'Non',
     messagefournisseur: null,
     
     // Frontend application fields
-    userId: user.id,
-    userName: user.name,
     projectCode,
     archived: false,
-    status: 'pending',
-    items: [...cart]
+    status: 'pending'
   };
   
   setOrders([...orders, newOrder]);
@@ -42,9 +37,8 @@ export const createOrder = (
       .from('commandes')
       .insert({
         clientname: user.name,
-        produit: cart[0].name,
-        reference: cart[0].reference || '',
-        quantite: cart[0].quantity,
+        datecommande: new Date().toISOString(),
+        articles: cart,
         termine: 'Non'
       })
       .then(({ error }) => {
@@ -83,13 +77,13 @@ export const archiveOrder = async (
 ): Promise<boolean> => {
   try {
     // Find the order to archive
-    const orderToArchive = orders.find(order => order.id === orderId);
+    const orderToArchive = orders.find(order => order.commandeid === orderId);
     if (!orderToArchive) return false;
     
     // Update the order in state
     const updatedOrder = { ...orderToArchive, archived: true };
     const newOrders = orders.map(order => 
-      order.id === orderId ? updatedOrder : order
+      order.commandeid === orderId ? updatedOrder : order
     );
     
     // For now, we're storing archive status locally

@@ -15,6 +15,9 @@ interface OrderManagerProps {
 const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
   const { updateOrderStatus } = useAppContext();
   const [message, setMessage] = useState(order.messagefournisseur || '');
+  
+  // Get first article for display
+  const firstArticle = order.articles && order.articles.length > 0 ? order.articles[0] : null;
 
   const handleStatusChange = async () => {
     await updateOrderStatus(
@@ -36,14 +39,26 @@ const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
             <p className="text-sm font-medium mb-1">Client</p>
             <p>{order.clientname}</p>
           </div>
-          <div>
-            <p className="text-sm font-medium mb-1">Produit</p>
-            <p>{order.produit}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium mb-1">Quantité</p>
-            <p>{order.quantite}</p>
-          </div>
+          
+          {order.articles && order.articles.length > 0 ? (
+            <>
+              <div>
+                <p className="text-sm font-medium mb-1">Articles</p>
+                <ul className="list-disc pl-5">
+                  {order.articles.map((article, index) => (
+                    <li key={index}>
+                      {article.name} - {article.quantity}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : (
+            <div>
+              <p className="text-sm font-medium mb-1">Aucun article</p>
+            </div>
+          )}
+          
           <div>
             <p className="text-sm font-medium mb-1">Message magasinier</p>
             <Textarea

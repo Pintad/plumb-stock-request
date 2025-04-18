@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Order, CartItem, User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -20,10 +21,11 @@ export const useOrders = () => {
         commandeid: order.commandeid,
         clientname: order.clientname,
         datecommande: order.datecommande,
-        articles: Array.isArray(order.articles) ? order.articles : [],
+        articles: Array.isArray(order.articles) ? order.articles as CartItem[] : [],
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
-        archived: false
+        archived: false,
+        status: order.termine === 'Oui' ? 'completed' : 'pending'
       })) || [];
       
       setOrders(mappedOrders);
@@ -106,10 +108,44 @@ export const useOrders = () => {
     }
   };
 
+  // Add updateOrder function
+  const updateOrder = (updatedOrder: Order) => {
+    setOrders(orders.map(order => 
+      order.commandeid === updatedOrder.commandeid ? updatedOrder : order
+    ));
+  };
+
+  // Add archiveOrder function
+  const archiveOrder = async (orderId: string): Promise<boolean> => {
+    try {
+      // Find the order to archive
+      const orderToArchive = orders.find(order => order.commandeid === orderId);
+      if (!orderToArchive) return false;
+      
+      // Update the order in state
+      const updatedOrder = { ...orderToArchive, archived: true };
+      setOrders(orders.map(order => 
+        order.commandeid === orderId ? updatedOrder : order
+      ));
+      
+      toast({
+        title: "Demande archivée",
+        description: "La demande a été déplacée dans les archives",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error archiving order:", error);
+      return false;
+    }
+  };
+
   return {
     orders,
     loadOrders,
     createOrder,
-    updateOrderStatus
+    updateOrderStatus,
+    updateOrder,
+    archiveOrder
   };
 };

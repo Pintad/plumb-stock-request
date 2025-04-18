@@ -16,7 +16,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder: createOrderBase, updateOrderStatus } = useOrders();
+  const { orders, createOrder: createOrderBase, updateOrderStatus, updateOrder, archiveOrder } = useOrders();
 
   // Wrapper function to handle order creation
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
@@ -50,6 +50,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         orders,
         createOrder: createOrderWrapper,
         updateOrderStatus,
+        updateOrder,
+        archiveOrder,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,

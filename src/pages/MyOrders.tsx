@@ -20,7 +20,7 @@ const MyOrders = () => {
   
   // Filter orders to show only those of the current user and control archived visibility
   const userOrders = orders.filter(order => {
-    // Match by clientname instead of userId
+    // Match by clientname
     return (order.clientname === user?.name) && (showArchived || !order.archived);
   });
 
