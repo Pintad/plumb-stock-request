@@ -1,4 +1,3 @@
-
 export interface ProductVariant {
   id: string;
   variantName: string;
@@ -24,15 +23,14 @@ export interface CartItem extends Product {
 }
 
 export interface Order {
-  id: string;
-  userId: string;
-  userName: string;
-  date: string;
-  items: CartItem[];
-  status: 'pending' | 'processed' | 'completed';
-  projectCode?: string;
-  message?: string;
-  archived?: boolean;
+  commandeid: number;
+  clientname: string | null;
+  datecommande: string | null;
+  produit: string | null;
+  reference: string | null;
+  quantite: number | null;
+  termine: string | null;
+  messagefournisseur: string | null;
 }
 
 export interface User {
