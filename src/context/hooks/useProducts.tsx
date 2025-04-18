@@ -141,6 +141,24 @@ export const useProducts = (initialProducts: Product[] = []) => {
     ));
   };
 
+  // Méthode pour rafraîchir les produits depuis Supabase
+  const loadProductsFromCSV = async () => {
+    try {
+      setIsLoading(true);
+      await refreshProductList(setProducts);
+    } catch (error) {
+      console.error("Erreur lors du chargement des données:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de chargement",
+        description: "Une erreur est survenue lors du chargement des produits",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     products,
     setProducts,
@@ -151,17 +169,6 @@ export const useProducts = (initialProducts: Product[] = []) => {
     updateProduct,
     deleteProduct,
     isLoading,
-    loadProductsFromCSV: async () => {
-      try {
-        await refreshProductList(setProducts);
-      } catch (error) {
-        console.error("Erreur lors du chargement des données:", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur de chargement",
-          description: "Une erreur est survenue lors du chargement des produits",
-        });
-      }
-    }
+    loadProductsFromCSV
   };
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
@@ -25,8 +24,22 @@ const AdminProducts = () => {
 
   const handleRefreshProducts = async () => {
     setRefreshing(true);
-    await loadProductsFromCSV();
-    setRefreshing(false);
+    try {
+      await loadProductsFromCSV();
+      toast({
+        title: "Catalogue mis à jour",
+        description: "Les produits ont été rafraîchis depuis la base de données"
+      });
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement des produits:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de rafraîchir les produits depuis la base de données"
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleAddProduct = async (formData: any) => {
