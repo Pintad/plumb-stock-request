@@ -37,7 +37,6 @@ export const readCSVFile = (
       
       onSuccess(content);
     } catch (error) {
-      console.error("Erreur de lecture CSV:", error);
       toast({
         variant: "destructive",
         title: "Erreur de traitement",
@@ -46,8 +45,7 @@ export const readCSVFile = (
     }
   };
   
-  reader.onerror = (e) => {
-    console.error("Erreur FileReader:", e);
+  reader.onerror = () => {
     toast({
       variant: "destructive",
       title: "Erreur de lecture",
@@ -64,10 +62,7 @@ export const readCSVFile = (
  * @returns An object with headers and lines
  */
 export const parseCSV = (csvContent: string) => {
-  // Normaliser les fins de ligne
-  const normalizedContent = csvContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const lines = normalizedContent.split('\n');
-  
+  const lines = csvContent.split('\n');
   if (lines.length === 0) {
     throw new Error("Le fichier CSV est vide");
   }
@@ -76,17 +71,12 @@ export const parseCSV = (csvContent: string) => {
     throw new Error("Le fichier CSV est vide");
   }
   
-  // Extraire les en-têtes et les normaliser pour éviter les problèmes de casse et d'espaces
   const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-  
   if (headers.length === 0) {
     throw new Error("Le fichier CSV ne contient pas d'en-têtes");
   }
   
-  // Filtrer les lignes vides
-  const dataLines = lines.slice(1).filter(line => line.trim() !== '');
-  
-  return { headers, lines: dataLines };
+  return { headers, lines: lines.slice(1).filter(line => line.trim() !== '') };
 };
 
 /**
@@ -108,15 +98,10 @@ export const showImportSuccess = (count: number, itemType: string, isLocalImport
  * @param isLocalImport Whether the import is local or synchronized with database
  */
 export const showImportError = (error: unknown, isLocalImport = false) => {
-  const errorMessage = error instanceof Error 
-    ? error.message 
-    : "Une erreur est survenue lors de l'importation";
-  
   console.error(`Erreur d'${isLocalImport ? 'importation locale' : 'importation en base de données'}:`, error);
-  
   toast({
     variant: "destructive",
     title: `Erreur d'${isLocalImport ? 'importation locale' : 'importation en base de données'}`,
-    description: errorMessage,
+    description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'importation",
   });
 };

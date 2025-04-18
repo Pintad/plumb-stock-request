@@ -15,31 +15,19 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      const success = await login(username, password);
-      
-      if (success) {
-        // Redirection basée sur le rôle
-        navigate(isAdmin ? '/admin' : '/');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erreur de connexion",
-          description: "Identifiants incorrects",
-        });
-      }
-    } catch (error) {
-      console.error("Erreur lors de la connexion:", error);
+    if (login(username, password)) {
+      // Redirection basée sur le rôle
+      navigate(isAdmin ? '/admin' : '/');
+    } else {
       toast({
         variant: "destructive",
         title: "Erreur de connexion",
-        description: "Une erreur est survenue lors de la tentative de connexion.",
+        description: "Identifiants incorrects",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -56,11 +44,11 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Email</Label>
+              <Label htmlFor="username">Identifiant</Label>
               <Input
                 id="username"
-                type="email"
-                placeholder="Votre email"
+                type="text"
+                placeholder="Votre identifiant"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -84,6 +72,12 @@ const Login = () => {
             >
               {isLoading ? "Connexion..." : "Se connecter"}
             </Button>
+            
+            <div className="mt-4 text-sm text-center text-gray-500">
+              <p>Utilisateurs de démo :</p>
+              <p>Ouvrier : dupont / test123</p>
+              <p>Admin : admin / admin123</p>
+            </div>
           </form>
         </CardContent>
       </Card>

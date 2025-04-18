@@ -3,9 +3,8 @@ import { Product, CartItem, User, Order, Project } from '../types';
 
 export interface AppContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => boolean;
   logout: () => void;
-  loading: boolean; // Ajout de la propriété loading
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   categories: string[];

@@ -12,7 +12,7 @@ import { AppContextType } from './types';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, login, logout, isAdmin, loading } = useAuth();
+  const { user, login, logout, isAdmin } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
@@ -29,7 +29,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         user,
         login,
         logout,
-        loading,
         products,
         setProducts,
         categories,
