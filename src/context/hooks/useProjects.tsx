@@ -9,19 +9,10 @@ export const useProjects = (initialProjects: Project[] = []) => {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select('*');
-        
-        if (projectsError) {
-          console.error("Erreur lors du chargement des projets:", projectsError);
-        } else if (projectsData) {
-          const formattedProjects: Project[] = projectsData.map(project => ({
-            id: project.id,
-            code: project.code,
-            name: project.name
-          }));
-          setProjects(formattedProjects);
+        // Store projects locally for now since there's no projects table in Supabase yet
+        const storedProjects = localStorage.getItem('projects');
+        if (storedProjects) {
+          setProjects(JSON.parse(storedProjects));
         }
       } catch (error) {
         console.error("Erreur lors du chargement des projets:", error);
@@ -29,15 +20,22 @@ export const useProjects = (initialProjects: Project[] = []) => {
     };
 
     loadProjects();
-    localStorage.removeItem('projects');
   }, []);
 
   const addProject = (project: Project) => {
-    setProjects(prev => [...prev, project]);
+    setProjects(prev => {
+      const updated = [...prev, project];
+      localStorage.setItem('projects', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const deleteProject = (projectId: string) => {
-    setProjects(prev => prev.filter(p => p.id !== projectId));
+    setProjects(prev => {
+      const updated = prev.filter(p => p.id !== projectId);
+      localStorage.setItem('projects', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return {

@@ -27,6 +27,24 @@ export const createOrder = (
   setOrders([...orders, newOrder]);
   clearCart();
   
+  // Try to save to Supabase if possible
+  try {
+    supabase
+      .from('commandes')
+      .insert({
+        utilisateur: user.name,
+        articles: JSON.stringify(cart),
+        statut: 'En attente'
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("Erreur d'insertion dans la base de données:", error);
+        }
+      });
+  } catch (error) {
+    console.error("Erreur lors de la création de la commande:", error);
+  }
+  
   toast({
     title: "Demande envoyée",
     description: "Votre demande a bien été transmise",
@@ -63,20 +81,9 @@ export const archiveOrder = async (
       order.id === orderId ? updatedOrder : order
     );
     
-    // Update in Supabase if connected
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ archived: true })
-        .eq('id', orderId);
-      
-      if (error) console.error("Error archiving order in Supabase:", error);
-    } catch (error) {
-      console.error("Failed to archive order in Supabase:", error);
-      // Continue with local update even if Supabase update fails
-    }
+    // For now, we're storing archive status locally
+    // as the commandes table doesn't have an archived column
     
-    // Update local state
     setOrders(newOrders);
     
     toast({

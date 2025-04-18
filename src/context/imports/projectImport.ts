@@ -1,10 +1,9 @@
 
 import { Project } from '../../types';
-import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, showImportSuccess, showImportError } from './csvUtils';
 
 /**
- * Load projects from CSV content and store them in Supabase
+ * Load projects from CSV content and store them locally
  */
 export const loadProjectsFromCSV = async (
   csvContent: string,
@@ -27,24 +26,19 @@ export const loadProjectsFromCSV = async (
       throw new Error("Aucune affaire valide n'a pu être extraite du fichier CSV");
     }
     
-    const newProjects = await insertProjectsIntoSupabase(projectsToInsert);
+    // Generate locally stored projects
+    const newProjects: Project[] = [];
     
-    if (newProjects.length === 0) {
-      throw new Error("Aucune affaire valide n'a pu être importée");
-    }
-    
-    // Add each project individually using the addProject function
-    newProjects.forEach(project => {
-      addProject(project);
-    });
-    
-    // Synchroniser avec la base de données pour s'assurer que tous les projets sont à jour
-    const { data: allProjects, error: fetchError } = await supabase
-      .from('projects')
-      .select('*');
-    
-    if (fetchError) {
-      console.error("Erreur lors de la récupération des projets:", fetchError);
+    for (const projectData of projectsToInsert) {
+      const newProject = {
+        id: `project-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        code: projectData.code,
+        name: projectData.name
+      };
+      
+      newProjects.push(newProject);
+      // Add each project individually using the addProject function
+      addProject(newProject);
     }
     
     showImportSuccess(newProjects.length, "affaires");
@@ -83,42 +77,4 @@ const parseProjectsFromCSV = (
   }
   
   return projectsToInsert;
-};
-
-/**
- * Insert projects into Supabase database
- */
-const insertProjectsIntoSupabase = async (
-  projectsToInsert: { code: string; name: string }[]
-) => {
-  const newProjects: Project[] = [];
-  
-  if (projectsToInsert.length > 0) {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert(projectsToInsert)
-        .select();
-      
-      if (error) {
-        console.error("Erreur lors de l'insertion des projets:", error);
-        throw new Error(`Erreur lors de l'insertion des projets: ${error.message}`);
-      }
-      
-      if (data) {
-        for (const project of data) {
-          newProjects.push({
-            id: project.id,
-            code: project.code,
-            name: project.name
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de l'insertion des projets:", error);
-      throw error;
-    }
-  }
-  
-  return newProjects;
 };
