@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Product } from '../../types';
+import { Product, CatalogueItem } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -8,6 +8,62 @@ export const useProducts = (initialProducts: Product[] = []) => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Fonction pour convertir les éléments du catalogue en produits
+  const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Product[] => {
+    const productMap = new Map<string, Product>();
+    const variantMap = new Map<string, Map<string, ProductVariant>>();
+    
+    // Traiter d'abord les éléments sans variante
+    catalogueItems.filter(item => !item.variante).forEach(item => {
+      productMap.set(item.designation, {
+        id: item.id,
+        name: item.designation,
+        reference: item.reference || undefined,
+        unit: item.unite || undefined,
+        category: item.categorie || undefined,
+        imageUrl: item.image_url || undefined,
+        variants: []
+      });
+    });
+    
+    // Traiter ensuite les variantes
+    catalogueItems.filter(item => item.variante).forEach(item => {
+      if (!variantMap.has(item.designation)) {
+        variantMap.set(item.designation, new Map());
+      }
+      
+      const productVariants = variantMap.get(item.designation)!;
+      
+      productVariants.set(item.variante!, {
+        id: `${item.id}-${item.variante}`,
+        variantName: item.variante!,
+        reference: item.reference || '',
+        unit: item.unite || ''
+      });
+      
+      // Créer ou mettre à jour le produit
+      if (!productMap.has(item.designation)) {
+        productMap.set(item.designation, {
+          id: item.id,
+          name: item.designation,
+          category: item.categorie || undefined,
+          imageUrl: item.image_url || undefined,
+          variants: []
+        });
+      }
+    });
+    
+    // Ajouter les variantes aux produits
+    for (const [designation, variants] of variantMap.entries()) {
+      if (productMap.has(designation)) {
+        const product = productMap.get(designation)!;
+        product.variants = Array.from(variants.values());
+      }
+    }
+    
+    return Array.from(productMap.values());
+  };
 
   useEffect(() => {
     const uniqueCategories = [...new Set(products
@@ -21,75 +77,25 @@ export const useProducts = (initialProducts: Product[] = []) => {
     const loadSupabaseData = async () => {
       setIsLoading(true);
       try {
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*, product_variants(*)');
+        // Charger directement depuis la table catalogue au lieu de products
+        const { data: catalogueData, error: catalogueError } = await supabase
+          .from('catalogue')
+          .select('*');
         
-        if (productsError) {
-          console.error("Erreur lors du chargement des produits:", productsError);
-        } else if (productsData) {
-          const formattedProducts: Product[] = productsData.map(product => {
-            const variants = product.product_variants 
-              ? product.product_variants.map((variant: any) => ({
-                  id: variant.id,
-                  variantName: variant.variant_name,
-                  reference: variant.reference,
-                  unit: variant.unit
-                }))
-              : undefined;
-            
-            let categoryName;
-            if (product.category_id) {
-              categoryName = undefined;
-            }
-            
-            return {
-              id: product.id,
-              name: product.name,
-              reference: product.reference || undefined,
-              unit: product.unit || undefined,
-              category: categoryName,
-              imageUrl: product.image_url || undefined,
-              variants: variants && variants.length > 0 ? variants : undefined
-            };
-          });
-          
+        if (catalogueError) {
+          console.error("Erreur lors du chargement du catalogue:", catalogueError);
+        } else if (catalogueData) {
+          // Convertir les données du catalogue en produits
+          const formattedProducts = convertCatalogueToProducts(catalogueData);
           setProducts(formattedProducts);
           
-          const productsWithCategoryIds = productsData.filter(p => p.category_id);
-          if (productsWithCategoryIds.length > 0) {
-            const categoryIds = [...new Set(productsWithCategoryIds.map(p => p.category_id))];
-            const { data: categoriesData, error: catError } = await supabase
-              .from('categories')
-              .select('id, name')
-              .in('id', categoryIds);
-              
-            if (!catError && categoriesData) {
-              const categoryMap = new Map(categoriesData.map(cat => [cat.id, cat.name]));
-              setProducts(prevProducts => 
-                prevProducts.map(product => {
-                  const originalProduct = productsData.find(p => p.id === product.id);
-                  if (originalProduct?.category_id) {
-                    return {
-                      ...product,
-                      category: categoryMap.get(originalProduct.category_id) || undefined
-                    };
-                  }
-                  return product;
-                })
-              );
-            }
-          }
-        }
-
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('name');
-        
-        if (categoriesError) {
-          console.error("Erreur lors du chargement des catégories:", categoriesError);
-        } else if (categoriesData) {
-          setCategories(categoriesData.map(cat => cat.name).sort());
+          // Extraire les catégories uniques du catalogue
+          const catalogueCategories = [...new Set(catalogueData
+            .map(item => item.categorie)
+            .filter(Boolean)
+          )].sort();
+          
+          setCategories(catalogueCategories);
         }
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
@@ -103,6 +109,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
     localStorage.removeItem('categories');
   }, []);
 
+  // La fonction addProduct utilise maintenant les triggers pour synchroniser avec le catalogue
   const addProduct = async (product: Product) => {
     try {
       let categoryId = null;
@@ -112,7 +119,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
           .from('categories')
           .select('id')
           .eq('name', product.category)
-          .single();
+          .maybeSingle();
         
         if (existingCategories) {
           categoryId = existingCategories.id;
@@ -157,7 +164,19 @@ export const useProducts = (initialProducts: Product[] = []) => {
         if (variantError) throw variantError;
       }
 
-      setProducts(prev => [...prev, { ...product, id: newProduct.id }]);
+      // Le produit sera automatiquement ajouté au catalogue par le trigger
+      // Charger les dernières données pour s'assurer que tout est synchronisé
+      const { data: catalogueData } = await supabase
+        .from('catalogue')
+        .select('*');
+        
+      if (catalogueData) {
+        const updatedProducts = convertCatalogueToProducts(catalogueData);
+        setProducts(updatedProducts);
+      } else {
+        // Fallback si la requête du catalogue échoue
+        setProducts(prev => [...prev, { ...product, id: newProduct.id }]);
+      }
       
       if (product.category && !categories.includes(product.category)) {
         setCategories(prev => [...prev, product.category!].sort());
@@ -179,7 +198,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
           .from('categories')
           .select('id')
           .eq('name', product.category)
-          .single();
+          .maybeSingle();
         
         if (existingCategories) {
           categoryId = existingCategories.id;
@@ -228,7 +247,20 @@ export const useProducts = (initialProducts: Product[] = []) => {
         if (variantError) throw variantError;
       }
 
-      setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+      // Le produit sera automatiquement mis à jour dans le catalogue par le trigger
+      // Charger les dernières données pour s'assurer que tout est synchronisé
+      const { data: catalogueData } = await supabase
+        .from('catalogue')
+        .select('*');
+        
+      if (catalogueData) {
+        const updatedProducts = convertCatalogueToProducts(catalogueData);
+        setProducts(updatedProducts);
+      } else {
+        // Fallback si la requête du catalogue échoue
+        setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+      }
+      
       return true;
     } catch (error) {
       console.error("Erreur lors de la mise à jour du produit:", error);
@@ -238,6 +270,8 @@ export const useProducts = (initialProducts: Product[] = []) => {
 
   const deleteProduct = async (productId: string) => {
     try {
+      // Supprimer le produit de Supabase
+      // Les triggers s'occuperont de supprimer les entrées correspondantes du catalogue
       const { error: variantError } = await supabase
         .from('product_variants')
         .delete()
@@ -270,9 +304,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
     setCategories([...categories, category].sort());
   };
 
-  const deleteCategory = (
-    category: string
-  ) => {
+  const deleteCategory = (category: string) => {
     setCategories(categories.filter(c => c !== category));
     setProducts(products.map(product => 
       product.category === category 

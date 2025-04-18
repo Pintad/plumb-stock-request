@@ -48,3 +48,13 @@ export interface Project {
   code: string;
   name: string;
 }
+
+export interface CatalogueItem {
+  id: string;
+  designation: string;
+  reference?: string;
+  unite?: string;
+  categorie?: string;
+  image_url?: string;
+  variante?: string;
+}

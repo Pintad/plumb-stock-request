@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAppContext } from '@/context/AppContext';
 import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
 import { toast } from '@/components/ui/use-toast';
-import { Product } from '@/types';
+import { Product, CatalogueItem } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 const CSVImport: React.FC = () => {
@@ -14,7 +14,7 @@ const CSVImport: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocallyLoaded, setIsLocallyLoaded] = useState(false);
-  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const [localCatalogueItems, setLocalCatalogueItems] = useState<CatalogueItem[]>([]);
   const [isSyncingToDb, setIsSyncingToDb] = useState(false);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,13 +32,67 @@ const CSVImport: React.FC = () => {
     
     readCSVFile(file, (content) => {
       try {
-        // Importer localement les produits
-        const parsedProducts = parseCSVForLocalImport(content);
-        setLocalProducts(parsedProducts);
-        setProducts([...products, ...parsedProducts]);
+        // Importer localement les produits du catalogue
+        const parsedItems = parseCSVForCatalogueImport(content);
+        setLocalCatalogueItems(parsedItems);
+        
+        // Convertir les éléments du catalogue en produits pour l'affichage local
+        const productMap = new Map<string, Product>();
+        const variantMap = new Map<string, Map<string, any>>();
+        
+        // Traiter d'abord les éléments sans variante
+        parsedItems.filter(item => !item.variante).forEach(item => {
+          productMap.set(item.designation, {
+            id: item.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: item.designation,
+            reference: item.reference || undefined,
+            unit: item.unite || undefined,
+            category: item.categorie || undefined,
+            imageUrl: item.image_url || undefined,
+            variants: []
+          });
+        });
+        
+        // Traiter ensuite les variantes
+        parsedItems.filter(item => item.variante).forEach(item => {
+          if (!variantMap.has(item.designation)) {
+            variantMap.set(item.designation, new Map());
+          }
+          
+          const productVariants = variantMap.get(item.designation)!;
+          
+          productVariants.set(item.variante!, {
+            id: `temp-${Date.now()}-${item.variante}-${Math.random().toString(36).substr(2, 9)}`,
+            variantName: item.variante!,
+            reference: item.reference || '',
+            unit: item.unite || ''
+          });
+          
+          // Créer ou mettre à jour le produit
+          if (!productMap.has(item.designation)) {
+            productMap.set(item.designation, {
+              id: item.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: item.designation,
+              category: item.categorie || undefined,
+              imageUrl: item.image_url || undefined,
+              variants: []
+            });
+          }
+        });
+        
+        // Ajouter les variantes aux produits
+        for (const [designation, variants] of variantMap.entries()) {
+          if (productMap.has(designation)) {
+            const product = productMap.get(designation)!;
+            product.variants = Array.from(variants.values());
+          }
+        }
+        
+        const newProducts = Array.from(productMap.values());
+        setProducts([...products, ...newProducts]);
         
         setIsLocallyLoaded(true);
-        showImportSuccess(parsedProducts.length, "produits", true);
+        showImportSuccess(parsedItems.length, "produits", true);
       } catch (error) {
         console.error("Erreur lors de l'importation locale CSV:", error);
         showImportError(error, true);
@@ -53,7 +107,7 @@ const CSVImport: React.FC = () => {
   };
   
   const handleSyncToDatabase = async () => {
-    if (localProducts.length === 0) {
+    if (localCatalogueItems.length === 0) {
       toast({
         variant: "destructive",
         title: "Aucun produit à synchroniser",
@@ -69,9 +123,85 @@ const CSVImport: React.FC = () => {
     });
     
     try {
-      await loadProductsFromCSV(convertProductsToCSV(localProducts));
-      setLocalProducts([]);
+      // Insérer directement dans la table catalogue
+      const { data, error } = await supabase
+        .from('catalogue')
+        .insert(localCatalogueItems.map(item => ({
+          designation: item.designation,
+          reference: item.reference || null,
+          unite: item.unite || null,
+          categorie: item.categorie || null,
+          image_url: item.image_url || null,
+          variante: item.variante || null
+        })));
+      
+      if (error) throw error;
+      
+      setLocalCatalogueItems([]);
       setIsLocallyLoaded(false);
+      
+      // Rafraîchir la liste des produits
+      const { data: catalogueItems } = await supabase
+        .from('catalogue')
+        .select('*');
+        
+      if (catalogueItems) {
+        // Convertir les éléments du catalogue en produits
+        const productMap = new Map<string, Product>();
+        const variantMap = new Map<string, Map<string, any>>();
+        
+        // Traiter d'abord les éléments sans variante
+        catalogueItems.filter(item => !item.variante).forEach(item => {
+          productMap.set(item.designation, {
+            id: item.id,
+            name: item.designation,
+            reference: item.reference || undefined,
+            unit: item.unite || undefined,
+            category: item.categorie || undefined,
+            imageUrl: item.image_url || undefined,
+            variants: []
+          });
+        });
+        
+        // Traiter ensuite les variantes
+        catalogueItems.filter(item => item.variante).forEach(item => {
+          if (!variantMap.has(item.designation)) {
+            variantMap.set(item.designation, new Map());
+          }
+          
+          const productVariants = variantMap.get(item.designation)!;
+          
+          productVariants.set(item.variante!, {
+            id: `${item.id}-${item.variante}`,
+            variantName: item.variante!,
+            reference: item.reference || '',
+            unit: item.unite || ''
+          });
+          
+          // Créer ou mettre à jour le produit
+          if (!productMap.has(item.designation)) {
+            productMap.set(item.designation, {
+              id: item.id,
+              name: item.designation,
+              category: item.categorie || undefined,
+              imageUrl: item.image_url || undefined,
+              variants: []
+            });
+          }
+        });
+        
+        // Ajouter les variantes aux produits
+        for (const [designation, variants] of variantMap.entries()) {
+          if (productMap.has(designation)) {
+            const product = productMap.get(designation)!;
+            product.variants = Array.from(variants.values());
+          }
+        }
+        
+        const formattedProducts = Array.from(productMap.values());
+        setProducts(formattedProducts);
+      }
+      
       toast({
         title: "Synchronisation réussie",
         description: "Les produits ont été enregistrés dans la base de données",
@@ -83,31 +213,10 @@ const CSVImport: React.FC = () => {
     }
   };
   
-  // Fonction pour convertir un objet produit en format CSV
-  const convertProductsToCSV = (products: Product[]): string => {
-    // En-têtes CSV
-    const headers = "categorie,designation,variante,reference,unite,image_url";
-    
-    // Lignes de produits
-    const rows = products.map(product => {
-      if (product.variants && product.variants.length > 0) {
-        // Produit avec variantes
-        return product.variants.map(variant => {
-          return `${product.category || ""},${product.name},${variant.variantName},${variant.reference},${variant.unit},${product.imageUrl || ""}`;
-        }).join('\n');
-      } else {
-        // Produit sans variante
-        return `${product.category || ""},${product.name},,${product.reference || ""},${product.unit || ""},${product.imageUrl || ""}`;
-      }
-    }).join('\n');
-    
-    return `${headers}\n${rows}`;
-  };
-  
-  // Fonction pour parser le CSV en objets produits
-  const parseCSVForLocalImport = (csvContent: string): Product[] => {
+  // Fonction pour parser le CSV en éléments du catalogue
+  const parseCSVForCatalogueImport = (csvContent: string): CatalogueItem[] => {
     const { headers, lines } = parseCSV(csvContent);
-    const products: Product[] = [];
+    const catalogueItems: CatalogueItem[] = [];
     
     // Mapping pour les noms de colonnes du format fourni
     const designationIndex = headers.findIndex(h => h === 'designation');
@@ -125,73 +234,23 @@ const CSVImport: React.FC = () => {
       throw new Error("Format CSV invalide: colonne 'reference' manquante");
     }
     
-    // Groupe les produits par designation et categorie
-    const productGroups: Map<string, {
-      baseProduct: Partial<Product>,
-      variants: Array<{variantName: string, reference: string, unit: string}>
-    }> = new Map();
-    
     for (const line of lines) {
       if (!line.trim()) continue;
       
       const values = line.split(',').map(value => value.trim());
       
-      const designation = values[designationIndex] || '';
-      const category = categorieIndex !== -1 ? values[categorieIndex] : '';
-      const variant = varianteIndex !== -1 ? values[varianteIndex] : '';
-      const reference = referenceIndex !== -1 ? values[referenceIndex] : '';
-      const unit = uniteIndex !== -1 ? values[uniteIndex] : '';
-      const imageUrl = imageUrlIndex !== -1 ? values[imageUrlIndex] : '';
-      
-      // Clé unique pour chaque produit (designation + category)
-      const productKey = `${designation}-${category}`;
-      
-      if (!productGroups.has(productKey)) {
-        productGroups.set(productKey, {
-          baseProduct: {
-            id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: designation,
-            category: category || undefined,
-            reference: reference || undefined,
-            unit: unit || undefined,
-            imageUrl: imageUrl || undefined,
-          },
-          variants: []
-        });
-      }
-      
-      // Si une variante est définie, l'ajouter au groupe
-      if (variant) {
-        const group = productGroups.get(productKey)!;
-        group.variants.push({
-          variantName: variant,
-          reference: reference,
-          unit: unit
-        });
-      }
+      catalogueItems.push({
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        designation: values[designationIndex] || '',
+        categorie: categorieIndex !== -1 ? values[categorieIndex] : undefined,
+        variante: varianteIndex !== -1 ? values[varianteIndex] : undefined,
+        reference: referenceIndex !== -1 ? values[referenceIndex] : undefined,
+        unite: uniteIndex !== -1 ? values[uniteIndex] : undefined,
+        image_url: imageUrlIndex !== -1 ? values[imageUrlIndex] : undefined
+      });
     }
     
-    // Convertir les groupes en produits
-    productGroups.forEach((group) => {
-      const product: Product = {
-        ...group.baseProduct,
-        id: group.baseProduct.id!,
-        name: group.baseProduct.name!
-      };
-      
-      if (group.variants.length > 0) {
-        product.variants = group.variants.map((v, index) => ({
-          id: `temp-variant-${Date.now()}-${index}`,
-          variantName: v.variantName,
-          reference: v.reference,
-          unit: v.unit
-        }));
-      }
-      
-      products.push(product);
-    });
-    
-    return products;
+    return catalogueItems;
   };
   
   const handleButtonClick = () => {

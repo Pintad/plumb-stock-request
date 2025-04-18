@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      catalogue: {
+        Row: {
+          categorie: string | null
+          designation: string | null
+          id: string
+          image_url: string | null
+          reference: string | null
+          unite: string | null
+          variante: string | null
+        }
+        Insert: {
+          categorie?: string | null
+          designation?: string | null
+          id?: string
+          image_url?: string | null
+          reference?: string | null
+          unite?: string | null
+          variante?: string | null
+        }
+        Update: {
+          categorie?: string | null
+          designation?: string | null
+          id?: string
+          image_url?: string | null
+          reference?: string | null
+          unite?: string | null
+          variante?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -87,8 +117,8 @@ export type Database = {
           message: string | null
           project_code: string | null
           status: string
-          user_id: string
           user_name: string
+          utilisateur_id: string
         }
         Insert: {
           archived?: boolean
@@ -97,8 +127,8 @@ export type Database = {
           message?: string | null
           project_code?: string | null
           status: string
-          user_id: string
           user_name: string
+          utilisateur_id: string
         }
         Update: {
           archived?: boolean
@@ -107,8 +137,8 @@ export type Database = {
           message?: string | null
           project_code?: string | null
           status?: string
-          user_id?: string
           user_name?: string
+          utilisateur_id?: string
         }
         Relationships: [
           {
@@ -240,7 +270,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

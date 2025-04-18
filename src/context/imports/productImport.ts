@@ -1,4 +1,3 @@
-
 import { Product } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, showImportSuccess, showImportError } from './csvUtils';
@@ -29,98 +28,51 @@ export const loadProductsFromCSV = async (
       throw new Error("Format CSV invalide: colonne 'reference' manquante");
     }
     
-    const productsToInsert: { 
-      name: string;
-      category?: string;
+    const catalogueItemsToInsert: { 
+      designation: string;
+      categorie?: string;
       reference?: string;
-      unit?: string;
+      unite?: string;
       image_url?: string;
-      variants?: Array<{
-        variantName: string;
-        reference: string;
-        unit: string;
-      }>;
+      variante?: string;
     }[] = [];
     
-    // Groupe les produits par designation et categorie
-    const productGroups: { [key: string]: { 
-      productBase: {
-        name: string;
-        category?: string;
-        reference?: string;
-        unit?: string;
-        image_url?: string;
-      }, 
-      variants: { variantName: string, reference: string, unit: string }[] 
-    }} = {};
-    
+    // Préparer les éléments à insérer dans la table catalogue
     for (let i = 0; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
       const values = lines[i].split(',').map(value => value.trim());
       
       if (values.length > designationIndex) {
-        const designation = values[designationIndex];
-        const categorie = categorieIndex !== -1 ? values[categorieIndex] : undefined;
-        const variante = varianteIndex !== -1 ? values[varianteIndex] : undefined;
-        const reference = referenceIndex !== -1 ? values[referenceIndex] : undefined;
-        const unite = uniteIndex !== -1 ? values[uniteIndex] : undefined;
-        const imageUrl = imageUrlIndex !== -1 && values[imageUrlIndex] ? values[imageUrlIndex] : undefined;
-        
-        // Clé unique pour chaque produit (designation + categorie)
-        const productKey = `${designation}-${categorie || 'uncategorized'}`;
-        
-        if (!productGroups[productKey]) {
-          // Créer un nouveau groupe de produit
-          productGroups[productKey] = {
-            productBase: {
-              name: designation,
-              category: categorie,
-              reference: reference,
-              unit: unite,
-              image_url: imageUrl,
-            },
-            variants: []
-          };
-        }
-        
-        // Si une variante est définie, l'ajouter au groupe
-        if (variante && reference) {
-          productGroups[productKey].variants.push({
-            variantName: variante,
-            reference: reference,
-            unit: unite || ''
-          });
-        }
+        catalogueItemsToInsert.push({
+          designation: values[designationIndex],
+          categorie: categorieIndex !== -1 ? values[categorieIndex] : undefined,
+          reference: referenceIndex !== -1 ? values[referenceIndex] : undefined,
+          unite: uniteIndex !== -1 ? values[uniteIndex] : undefined,
+          image_url: imageUrlIndex !== -1 && values[imageUrlIndex] ? values[imageUrlIndex] : undefined,
+          variante: varianteIndex !== -1 ? values[varianteIndex] : undefined
+        });
       }
     }
     
-    // Convertir les groupes en produits à insérer
-    Object.values(productGroups).forEach(group => {
-      const product = { ...group.productBase };
-      
-      // Préparer l'objet pour insertion dans Supabase
-      productsToInsert.push({
-        name: product.name,
-        category: product.category,
-        reference: group.variants.length === 0 ? product.reference : undefined,
-        unit: group.variants.length === 0 ? product.unit : undefined,
-        image_url: product.image_url,
-        variants: group.variants.length > 0 ? group.variants : undefined
-      });
-    });
-    
-    if (productsToInsert.length === 0) {
+    if (catalogueItemsToInsert.length === 0) {
       throw new Error("Aucun produit valide n'a pu être extrait du fichier CSV");
     }
     
-    // Insérer les produits dans Supabase et récupérer les nouveaux produits
-    const insertedProducts = await insertProductsIntoSupabase(productsToInsert);
+    // Insérer directement dans la table catalogue
+    const { data: insertedItems, error } = await supabase
+      .from('catalogue')
+      .insert(catalogueItemsToInsert)
+      .select();
+    
+    if (error) {
+      throw error;
+    }
     
     // Mise à jour du state avec les produits formatés
     await refreshProductList(setProducts);
     
-    showImportSuccess(insertedProducts.length, "produits");
+    showImportSuccess(insertedItems.length, "produits");
     
   } catch (error) {
     console.error("Erreur d'importation:", error);
@@ -135,63 +87,75 @@ export const refreshProductList = async (
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>
 ) => {
   try {
-    // Récupérer tous les produits de Supabase
-    const { data: allProducts, error: fetchError } = await supabase
-      .from('products')
-      .select('*, product_variants(*)');
+    // Récupérer tous les éléments du catalogue
+    const { data: catalogueItems, error: fetchError } = await supabase
+      .from('catalogue')
+      .select('*');
     
     if (fetchError) {
-      console.error("Erreur lors de la récupération des produits:", fetchError);
+      console.error("Erreur lors de la récupération du catalogue:", fetchError);
       throw new Error("Erreur lors de la récupération des produits");
     }
     
-    if (!allProducts) {
-      throw new Error("Aucun produit n'a été trouvé");
+    if (!catalogueItems || catalogueItems.length === 0) {
+      console.warn("Aucun produit n'a été trouvé dans le catalogue");
+      setProducts([]);
+      return [];
     }
     
-    // Formater les produits pour le state
-    const formattedProducts: Product[] = allProducts.map(product => {
-      const variants = product.product_variants 
-        ? product.product_variants.map((variant: any) => ({
-            id: variant.id,
-            variantName: variant.variant_name,
-            reference: variant.reference,
-            unit: variant.unit
-          }))
-        : undefined;
-      
-      return {
-        id: product.id,
-        name: product.name,
-        reference: product.reference || undefined,
-        unit: product.unit || undefined,
-        category: undefined, // Sera mis à jour ci-dessous
-        imageUrl: product.image_url || undefined,
-        variants: variants && variants.length > 0 ? variants : undefined
-      };
+    // Convertir les éléments du catalogue en produits
+    const productMap = new Map<string, Product>();
+    const variantMap = new Map<string, Map<string, any>>();
+    
+    // Traiter d'abord les éléments sans variante
+    catalogueItems.filter(item => !item.variante).forEach(item => {
+      productMap.set(item.designation, {
+        id: item.id,
+        name: item.designation,
+        reference: item.reference || undefined,
+        unit: item.unite || undefined,
+        category: item.categorie || undefined,
+        imageUrl: item.image_url || undefined,
+        variants: []
+      });
     });
     
-    // Récupérer les catégories pour compléter les produits
-    try {
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('id, name');
-        
-      if (categoriesData && categoriesData.length > 0) {
-        const categoryMap = new Map(categoriesData.map((cat: any) => [cat.id, cat.name]));
-        
-        // Mettre à jour les catégories des produits
-        for (let i = 0; i < formattedProducts.length; i++) {
-          const originalProduct = allProducts[i];
-          if (originalProduct?.category_id) {
-            formattedProducts[i].category = categoryMap.get(originalProduct.category_id) || undefined;
-          }
-        }
+    // Traiter ensuite les variantes
+    catalogueItems.filter(item => item.variante).forEach(item => {
+      if (!variantMap.has(item.designation)) {
+        variantMap.set(item.designation, new Map());
       }
-    } catch (catError) {
-      console.error("Erreur lors de la récupération des catégories:", catError);
-      // On continue même en cas d'erreur pour les catégories
+      
+      const productVariants = variantMap.get(item.designation)!;
+      
+      productVariants.set(item.variante!, {
+        id: `${item.id}-${item.variante}`,
+        variantName: item.variante!,
+        reference: item.reference || '',
+        unit: item.unite || ''
+      });
+      
+      // Créer ou mettre à jour le produit
+      if (!productMap.has(item.designation)) {
+        productMap.set(item.designation, {
+          id: item.id,
+          name: item.designation,
+          category: item.categorie || undefined,
+          imageUrl: item.image_url || undefined,
+          variants: []
+        });
+      }
+    });
+    
+    // Ajouter les variantes aux produits
+    for (const [designation, variants] of variantMap.entries()) {
+      if (productMap.has(designation)) {
+        const product = productMap.get(designation)!;
+        product.variants = Array.from(variants.values());
+      }
     }
+    
+    const formattedProducts = Array.from(productMap.values());
     
     // Mettre à jour l'état avec tous les produits
     setProducts(formattedProducts);
@@ -204,7 +168,9 @@ export const refreshProductList = async (
 };
 
 /**
- * Insert products into Supabase database
+ * Insert products into Supabase database - Cette fonction n'est plus utilisée directement
+ * car les produits sont maintenant insérés via la table catalogue
+ * Le code est conservé à titre de référence
  */
 const insertProductsIntoSupabase = async (
   productsToInsert: { 
