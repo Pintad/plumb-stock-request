@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
@@ -6,14 +5,14 @@ import { useProjects } from './hooks/useProjects';
 import { useAuth } from './hooks/useAuth';
 import { useCart } from './hooks/useCart';
 import { useOrders } from './hooks/useOrders';
-import { loadProductsFromCSV, loadProjectsFromCSV } from './imports';
+import { loadProjectsFromCSV } from './imports';
 import { AppContextType } from './types';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, login, logout, isAdmin } = useAuth();
-  const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading } = useProducts();
+  const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder: createOrderBase, updateOrder, archiveOrder } = useOrders();
@@ -46,8 +45,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOrder: createOrderWrapper,
         updateOrder,
         archiveOrder,
-        // Pass the correct functions with proper arguments
-        loadProductsFromCSV: (csvContent) => loadProductsFromCSV(csvContent, setProducts),
+        loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,
         isLoading,
