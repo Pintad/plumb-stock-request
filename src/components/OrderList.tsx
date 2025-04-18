@@ -21,29 +21,27 @@ import { ClipboardList, MessageSquare, Settings, FileDown, Printer } from 'lucid
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 
-const getStatusColor = (status: Order['status']) => {
-  switch (status) {
-    case 'pending':
+const getStatusColor = (termineValue: string | null | undefined) => {
+  if (!termineValue) return 'bg-gray-500';
+  switch (termineValue) {
+    case 'Non':
       return 'bg-yellow-500';
-    case 'processed':
-      return 'bg-blue-500';
-    case 'completed':
+    case 'Oui':
       return 'bg-green-500';
     default:
       return 'bg-gray-500';
   }
 };
 
-const getStatusLabel = (status: Order['status']) => {
-  switch (status) {
-    case 'pending':
+const getStatusLabel = (termineValue: string | null | undefined) => {
+  if (!termineValue) return 'Non défini';
+  switch (termineValue) {
+    case 'Non':
       return 'En attente';
-    case 'processed':
-      return 'En cours';
-    case 'completed':
+    case 'Oui':
       return 'Terminée';
     default:
-      return status;
+      return termineValue;
   }
 };
 
@@ -71,29 +69,27 @@ const OrderList = ({
   };
 
   const exportToCSV = (order: Order) => {
-    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité', 'Unité'];
+    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité'];
     let csvContent = header.join(',') + '\n';
     
-    order.items.forEach(item => {
-      const row = [
-        order.id,
-        order.userName,
-        order.date,
-        order.projectCode || 'Sans affaire',
-        order.status,
-        item.name,
-        item.reference,
-        item.quantity,
-        item.unit
-      ].map(value => `"${value}"`).join(',');
-      csvContent += row + '\n';
-    });
+    // Create a row using the data directly from the order
+    const row = [
+      order.commandeid,
+      order.clientname || '',
+      order.datecommande || '',
+      '', // No project code in DB schema
+      order.termine || '',
+      order.produit || '',
+      order.reference || '',
+      order.quantite || ''
+    ].map(value => `"${value}"`).join(',');
+    csvContent += row + '\n';
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `commande_${order.id}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `commande_${order.commandeid}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -106,7 +102,7 @@ const OrderList = ({
     let htmlContent = `
       <html>
       <head>
-        <title>Demande de Stock #${order.id}</title>
+        <title>Demande de Stock #${order.commandeid}</title>
         <style>
           body { font-family: Arial, sans-serif; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -119,44 +115,33 @@ const OrderList = ({
       </head>
       <body>
         <div class="header">
-          <h1>Demande de stock #${order.id}</h1>
+          <h1>Demande de stock #${order.commandeid}</h1>
           <p class="date">Date: ${new Date().toLocaleDateString('fr-FR')}</p>
         </div>
-        <p>Utilisateur: ${order.userName}</p>
-        <p>Date: ${new Date(order.date).toLocaleDateString('fr-FR')}</p>
-        <p>Affaire: ${order.projectCode || 'Sans affaire'}</p>
-        <p>Statut: ${order.status === 'pending' ? 'En attente' : order.status === 'processed' ? 'En cours' : 'Terminée'}</p>
+        <p>Utilisateur: ${order.clientname || ''}</p>
+        <p>Date: ${order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</p>
+        <p>Statut: ${order.termine === 'Non' ? 'En attente' : 'Terminée'}</p>
         <table>
           <thead>
             <tr>
               <th>Produit</th>
               <th>Référence</th>
               <th>Quantité</th>
-              <th>Unité</th>
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <td>${order.produit || ''}</td>
+              <td>${order.reference || ''}</td>
+              <td>${order.quantite || ''}</td>
+            </tr>
+          </tbody>
+        </table>
     `;
       
-    order.items.forEach(item => {
+    if (order.messagefournisseur) {
       htmlContent += `
-        <tr>
-          <td>${item.name}</td>
-          <td>${item.reference}</td>
-          <td>${item.quantity}</td>
-          <td>${item.unit}</td>
-        </tr>
-      `;
-    });
-      
-    htmlContent += `
-        </tbody>
-      </table>
-    `;
-      
-    if (order.message) {
-      htmlContent += `
-        <p><strong>Message:</strong> ${order.message}</p>
+        <p><strong>Message:</strong> ${order.messagefournisseur}</p>
       `;
     }
     
@@ -177,17 +162,17 @@ const OrderList = ({
     <div className="space-y-4">
       {orders.length > 0 ? (
         orders.map((order) => (
-          <Card key={order.id} className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
+          <Card key={order.commandeid} className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg flex items-center">
                     <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
-                    Demande #{order.id}
-                    {showUser && <span className="ml-2 text-sm font-normal">({order.userName})</span>}
+                    Demande #{order.commandeid}
+                    {showUser && order.clientname && <span className="ml-2 text-sm font-normal">({order.clientname})</span>}
                   </CardTitle>
                   <p className="text-sm text-gray-500">
-                    {new Date(order.date).toLocaleDateString('fr-FR')}
+                    {order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}
                   </p>
                   {order.projectCode && (
                     <div className="mt-1">
@@ -199,14 +184,14 @@ const OrderList = ({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {order.message && !isAdmin && (
+                  {order.messagefournisseur && !isAdmin && (
                     <div className="flex items-center text-sm text-gray-600 mr-2">
                       <MessageSquare className="h-4 w-4 mr-1" />
-                      {order.message}
+                      {order.messagefournisseur}
                     </div>
                   )}
-                  <Badge className={`${getStatusColor(order.status)} text-white`}>
-                    {getStatusLabel(order.status)}
+                  <Badge className={`${getStatusColor(order.termine)} text-white`}>
+                    {getStatusLabel(order.termine)}
                   </Badge>
                   {order.archived && (
                     <Badge variant="outline" className="bg-gray-200">
@@ -224,32 +209,19 @@ const OrderList = ({
                       <TableHead>Produit</TableHead>
                       <TableHead>Référence</TableHead>
                       <TableHead className="text-right">Quantité</TableHead>
-                      {isAdmin && order.items.some(item => item.completed) && (
-                        <TableHead>Statut</TableHead>
-                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {order.items.map((item) => (
-                      <TableRow key={`${order.id}-${item.id}`}>
-                        <TableCell>
-                          <div className={item.completed ? "line-through text-gray-400" : ""}>
-                            <div className="font-medium">{item.name}</div>
-                            {item.category && <div className="text-xs text-gray-500">Catégorie: {item.category}</div>}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono">{item.reference}</TableCell>
-                        <TableCell className="text-right">{item.quantity} {item.unit}</TableCell>
-                        {isAdmin && order.items.some(item => item.completed) && (
-                          <TableCell>
-                            {item.completed ? 
-                              <span className="text-green-500 text-sm">Terminé</span> : 
-                              <span className="text-gray-400 text-sm">En attente</span>
-                            }
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
+                    {/* Display the order directly as a single item */}
+                    <TableRow>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{order.produit}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{order.reference}</TableCell>
+                      <TableCell className="text-right">{order.quantite}</TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
@@ -257,8 +229,8 @@ const OrderList = ({
             <CardFooter className="bg-gray-50 py-2">
               <div className="flex justify-between w-full text-sm items-center">
                 <span>
-                  Total: <span className="font-semibold">
-                    {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                  Quantité: <span className="font-semibold">
+                    {order.quantite} 
                   </span>
                 </span>
                 

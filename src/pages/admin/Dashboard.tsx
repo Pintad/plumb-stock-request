@@ -10,7 +10,7 @@ const Dashboard = () => {
   const { orders, products, user } = useAppContext();
   
   // Nombre de demandes en attente
-  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const pendingOrders = orders.filter(order => order.termine === 'Non').length;
   
   // Nombre total d'utilisateurs (ouvriers uniquement)
   const workerCount = 3; // Dans une vraie application, ce serait dynamique
@@ -72,7 +72,7 @@ const Dashboard = () => {
                 <div className="divide-y">
                   {orders.slice(0, 5).map(order => (
                     <Link 
-                      key={order.id}
+                      key={order.commandeid}
                       to="/admin/orders" 
                       className="block px-6 py-4 hover:bg-gray-50"
                     >
@@ -80,14 +80,14 @@ const Dashboard = () => {
                         <div className="flex items-center">
                           <ClipboardCheck className="h-5 w-5 text-gray-400 mr-4" />
                           <div>
-                            <p className="font-medium">Demande #{order.id}</p>
+                            <p className="font-medium">Demande #{order.commandeid}</p>
                             <p className="text-sm text-gray-500">
-                              Par {order.userName} · {order.date}
+                              Par {order.clientname} · {order.datecommande}
                             </p>
                           </div>
                         </div>
                         <div className="text-sm">
-                          {order.items.length} articles
+                          {order.quantite} articles
                         </div>
                       </div>
                     </Link>

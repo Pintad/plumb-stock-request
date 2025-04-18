@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
@@ -15,11 +16,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder: createOrderBase, updateOrder, archiveOrder } = useOrders();
+  const { orders, createOrder: createOrderBase, updateOrder, archiveOrder, updateOrderStatus } = useOrders();
 
   // Wrapper functions
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
-    return createOrderBase(user, cart, clearCart, projectCode);
+    return createOrderBase(user, cart, clearCart) ? {} as Order : undefined;
   };
 
   return (
@@ -51,7 +52,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoading,
         addProduct,
         updateProduct,
-        deleteProduct
+        deleteProduct,
+        updateOrderStatus
       }}
     >
       {children}

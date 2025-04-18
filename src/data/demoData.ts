@@ -33,6 +33,15 @@ export const demoUsers: User[] = [
 
 export const demoOrders: Order[] = [
   {
+    commandeid: 1,
+    clientname: 'Jean Dupont',
+    datecommande: '2025-04-14',
+    produit: 'Tube PER nu 12x1.1',
+    reference: 'PER-12-NU',
+    quantite: 1,
+    termine: 'Oui',
+    messagefournisseur: null,
+    // Frontend fields
     id: '1',
     userId: '1',
     userName: 'Jean Dupont',
@@ -45,6 +54,15 @@ export const demoOrders: Order[] = [
     status: 'completed'
   },
   {
+    commandeid: 2,
+    clientname: 'Sophie Martin',
+    datecommande: '2025-04-15',
+    produit: 'Tube Multicouche 16x2',
+    reference: 'MULTI-16',
+    quantite: 2,
+    termine: 'Non',
+    messagefournisseur: null,
+    // Frontend fields
     id: '2',
     userId: '2',
     userName: 'Sophie Martin',

@@ -21,12 +21,12 @@ const AdminOrders = () => {
     // Filter by archived status
     if (!showArchived && order.archived) return false;
     
-    // Filter by project
-    return selectedProject === "all" 
-      ? true 
-      : selectedProject === "none" 
-        ? !order.projectCode 
-        : order.projectCode === selectedProject;
+    // Filter by project (using the frontend projectCode field)
+    if (order.projectCode) {
+      return selectedProject === "all" || selectedProject === order.projectCode;
+    } else {
+      return selectedProject === "all" || selectedProject === "none";
+    }
   });
 
   return (

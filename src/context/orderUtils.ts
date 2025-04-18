@@ -13,15 +13,25 @@ export const createOrder = (
 ): Order | undefined => {
   if (!user || cart.length === 0) return undefined;
   
+  // Create an order compatible with our database structure
   const newOrder: Order = {
+    commandeid: orders.length + 1,
+    clientname: user.name,
+    datecommande: new Date().toISOString().split('T')[0],
+    produit: cart[0].name,  // For simplicity, just use the first item
+    reference: cart[0].reference || '',
+    quantite: cart[0].quantity,
+    termine: 'Non',
+    messagefournisseur: null,
+    
+    // Frontend application fields
     id: `${orders.length + 1}`,
     userId: user.id,
     userName: user.name,
-    date: new Date().toISOString().split('T')[0],
-    items: [...cart],
-    status: 'pending',
     projectCode,
-    archived: false
+    archived: false,
+    status: 'pending',
+    items: [...cart]
   };
   
   setOrders([...orders, newOrder]);
@@ -32,9 +42,11 @@ export const createOrder = (
     supabase
       .from('commandes')
       .insert({
-        utilisateur: user.name,
-        articles: JSON.stringify(cart),
-        statut: 'En attente'
+        clientname: user.name,
+        produit: cart[0].name,
+        reference: cart[0].reference || '',
+        quantite: cart[0].quantity,
+        termine: 'Non'
       })
       .then(({ error }) => {
         if (error) {
@@ -59,7 +71,7 @@ export const updateOrder = (
   updatedOrder: Order
 ) => {
   const newOrders = orders.map(order => 
-    order.id === updatedOrder.id ? updatedOrder : order
+    order.commandeid === updatedOrder.commandeid ? updatedOrder : order
   );
   
   setOrders(newOrders);

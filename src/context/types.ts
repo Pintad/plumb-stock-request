@@ -26,6 +26,8 @@ export interface AppContextType {
   loadProjectsFromCSV: (csvContent: string) => void;
   isAdmin: boolean;
   isLoading: boolean;
+  // Add updateOrderStatus to the interface
+  updateOrderStatus: (orderId: number, termine: string, messagefournisseur?: string) => Promise<void>;
   // Nouvelles méthodes pour gérer les produits avec Supabase
   addProduct: (product: Product) => Promise<boolean>;
   updateProduct: (product: Product) => Promise<boolean>;
