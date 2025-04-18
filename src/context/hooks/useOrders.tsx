@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Order, CartItem, User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +20,7 @@ export const useOrders = () => {
         commandeid: order.commandeid,
         clientname: order.clientname,
         datecommande: order.datecommande,
-        articles: Array.isArray(order.articles) ? order.articles as CartItem[] : [],
+        articles: (order.articles as unknown) as CartItem[],
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false,
@@ -50,7 +49,7 @@ export const useOrders = () => {
       const orderData = {
         clientname: user.name,
         datecommande: new Date().toISOString(),
-        articles: cart,
+        articles: cart as unknown as Json,
         termine: 'Non'
       };
 
@@ -108,21 +107,17 @@ export const useOrders = () => {
     }
   };
 
-  // Add updateOrder function
   const updateOrder = (updatedOrder: Order) => {
     setOrders(orders.map(order => 
       order.commandeid === updatedOrder.commandeid ? updatedOrder : order
     ));
   };
 
-  // Add archiveOrder function
   const archiveOrder = async (orderId: string): Promise<boolean> => {
     try {
-      // Find the order to archive
       const orderToArchive = orders.find(order => order.commandeid === orderId);
       if (!orderToArchive) return false;
       
-      // Update the order in state
       const updatedOrder = { ...orderToArchive, archived: true };
       setOrders(orders.map(order => 
         order.commandeid === orderId ? updatedOrder : order

@@ -2,6 +2,7 @@
 import { Order, User, CartItem } from '../types';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export const createOrder = (
   user: User | null, 
@@ -38,7 +39,7 @@ export const createOrder = (
       .insert({
         clientname: user.name,
         datecommande: new Date().toISOString(),
-        articles: cart,
+        articles: cart as unknown as Json,
         termine: 'Non'
       })
       .then(({ error }) => {

@@ -16,12 +16,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder: createOrderBase, updateOrderStatus, updateOrder, archiveOrder } = useOrders();
+  const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder } = useOrders();
 
   // Wrapper function to handle order creation
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
     if (user && cart.length > 0) {
-      createOrderBase(user, cart, clearCart);
+      createOrder(user, cart, clearCart);
       // Return undefined since we're now handling async operations
       return undefined;
     }
