@@ -1,10 +1,9 @@
 
 import { parseCatalogueCSV } from '@/utils/csvCatalogueParser';
-import { importCatalogueItems } from '@/api/catalogueImport';
+import { importCatalogueItems, fetchCatalogueItems } from '@/api/catalogueImport';
 import { showImportSuccess, showImportError } from './csvUtils';
 import { Product } from '@/types';
 import { convertCatalogueToProducts } from '@/utils/catalogueConverter';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Load products from CSV content and store them in Supabase
@@ -40,18 +39,16 @@ export const refreshProductList = async (
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>
 ) => {
   try {
-    const { data: catalogueItems, error } = await supabase
-      .from('catalogue')
-      .select('*');
-    
-    if (error) throw error;
+    const catalogueItems = await fetchCatalogueItems();
     
     if (!catalogueItems || catalogueItems.length === 0) {
+      console.log("Aucun produit trouvé dans le catalogue");
       setProducts([]);
       return [];
     }
     
     const products = convertCatalogueToProducts(catalogueItems);
+    console.log(`${products.length} produits chargés depuis le catalogue`);
     setProducts(products);
     
     return products;

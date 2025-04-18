@@ -16,7 +16,11 @@ export const importCatalogueItems = async (items: CatalogueItem[]): Promise<bool
         variante: item.variante || null
       })));
     
-    if (error) throw error;
+    if (error) {
+      console.error("Erreur d'insertion dans la table catalogue:", error);
+      throw error;
+    }
+    
     return true;
   } catch (error) {
     console.error("Erreur lors de l'importation du catalogue:", error);
@@ -26,5 +30,23 @@ export const importCatalogueItems = async (items: CatalogueItem[]): Promise<bool
       description: "Une erreur est survenue lors de l'importation des produits",
     });
     return false;
+  }
+};
+
+export const fetchCatalogueItems = async (): Promise<CatalogueItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('catalogue')
+      .select('*');
+    
+    if (error) {
+      console.error("Erreur lors de la récupération du catalogue:", error);
+      throw error;
+    }
+    
+    return data as CatalogueItem[] || [];
+  } catch (error) {
+    console.error("Erreur lors de la récupération du catalogue:", error);
+    return [];
   }
 };

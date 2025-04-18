@@ -1,13 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { Product, CatalogueItem } from '../../types';
+import { Product } from '../../types';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { refreshProductList } from '@/context/imports/productImport';
 import { 
   addProductToSupabase, 
   updateProductInSupabase, 
-  deleteProductFromSupabase,
-  fetchAllProducts
+  deleteProductFromSupabase 
 } from '@/api/productOperations';
 
 export const useProducts = (initialProducts: Product[] = []) => {
@@ -29,8 +28,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
     const loadSupabaseData = async () => {
       setIsLoading(true);
       try {
-        const productsData = await fetchAllProducts();
-        setProducts(productsData);
+        await refreshProductList(setProducts);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
         toast({
@@ -48,74 +46,84 @@ export const useProducts = (initialProducts: Product[] = []) => {
 
   // Ajouter un produit
   const addProduct = async (product: Product) => {
-    const success = await addProductToSupabase(product);
-    
-    if (success) {
-      const updatedProducts = await fetchAllProducts();
-      setProducts(updatedProducts);
+    try {
+      const success = await addProductToSupabase(product);
       
-      if (product.category && !categories.includes(product.category)) {
-        setCategories(prev => [...prev, product.category!].sort());
+      if (success) {
+        await refreshProductList(setProducts);
+        
+        if (product.category && !categories.includes(product.category)) {
+          setCategories(prev => [...prev, product.category!].sort());
+        }
+        
+        toast({
+          title: "Produit ajouté",
+          description: "Le produit a été ajouté avec succès à la base de données",
+        });
       }
       
-      toast({
-        title: "Produit ajouté",
-        description: "Le produit a été ajouté avec succès à la base de données",
-      });
-    } else {
+      return success;
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du produit:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
         description: "Une erreur est survenue lors de l'ajout du produit",
       });
+      return false;
     }
-    
-    return success;
   };
 
   // Mettre à jour un produit
   const updateProduct = async (product: Product) => {
-    const success = await updateProductInSupabase(product);
-    
-    if (success) {
-      const updatedProducts = await fetchAllProducts();
-      setProducts(updatedProducts);
+    try {
+      const success = await updateProductInSupabase(product);
       
-      toast({
-        title: "Produit mis à jour",
-        description: "Le produit a été mis à jour avec succès",
-      });
-    } else {
+      if (success) {
+        await refreshProductList(setProducts);
+        
+        toast({
+          title: "Produit mis à jour",
+          description: "Le produit a été mis à jour avec succès",
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du produit:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
         description: "Une erreur est survenue lors de la mise à jour du produit",
       });
+      return false;
     }
-    
-    return success;
   };
 
   // Supprimer un produit
   const deleteProduct = async (productId: string) => {
-    const success = await deleteProductFromSupabase(productId);
-    
-    if (success) {
-      setProducts(prev => prev.filter(p => p.id !== productId));
+    try {
+      const success = await deleteProductFromSupabase(productId);
       
-      toast({
-        title: "Produit supprimé",
-        description: "Le produit a été supprimé avec succès",
-      });
-    } else {
+      if (success) {
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        
+        toast({
+          title: "Produit supprimé",
+          description: "Le produit a été supprimé avec succès",
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error("Erreur lors de la suppression du produit:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
         description: "Une erreur est survenue lors de la suppression du produit",
       });
+      return false;
     }
-    
-    return success;
   };
 
   // Gérer les catégories
@@ -145,12 +153,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
     isLoading,
     loadProductsFromCSV: async (csvContent: string) => {
       try {
-        // Cette fonction pourrait être implémentée si nécessaire
-        // pour l'importation directe dans la table catalogue
-        toast({
-          title: "Importation",
-          description: "Fonctionnalité d'importation à implémenter",
-        });
+        await refreshProductList(setProducts);
       } catch (error) {
         console.error("Erreur lors de l'importation CSV:", error);
         toast({
