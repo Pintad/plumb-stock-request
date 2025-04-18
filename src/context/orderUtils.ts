@@ -25,7 +25,6 @@ export const createOrder = (
     messagefournisseur: null,
     
     // Frontend application fields
-    id: `${orders.length + 1}`,
     userId: user.id,
     userName: user.name,
     projectCode,

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
@@ -7,8 +7,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 const MyOrders = () => {
-  const { orders, user } = useAppContext();
+  const { orders, user, updateOrderStatus } = useAppContext();
   const [showArchived, setShowArchived] = useState<boolean>(false);
+  
+  useEffect(() => {
+    // Load orders when component mounts
+    const loadOrders = async () => {
+      // This would be where we'd load orders, but it's now handled by the context
+    };
+    loadOrders();
+  }, []);
   
   // Filter orders to show only those of the current user and control archived visibility
   const userOrders = orders.filter(order => {

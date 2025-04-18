@@ -17,7 +17,7 @@ export const useOrders = () => {
       if (error) throw error;
       
       // Map database records to frontend model
-      const mappedOrders = data?.map(order => ({
+      const mappedOrders: Order[] = data?.map(order => ({
         ...order,
         id: order.commandeid.toString(),
         userName: order.clientname,
