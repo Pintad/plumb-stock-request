@@ -41,33 +41,27 @@ export type Database = {
       }
       commandes: {
         Row: {
-          clientname: string | null
-          commandeid: number
+          articles: Json
+          clientname: string
+          commandeid: string
           datecommande: string | null
           messagefournisseur: string | null
-          produit: string | null
-          quantite: number | null
-          reference: string | null
           termine: string | null
         }
         Insert: {
-          clientname?: string | null
-          commandeid?: number
+          articles: Json
+          clientname: string
+          commandeid?: string
           datecommande?: string | null
           messagefournisseur?: string | null
-          produit?: string | null
-          quantite?: number | null
-          reference?: string | null
           termine?: string | null
         }
         Update: {
-          clientname?: string | null
-          commandeid?: number
+          articles?: Json
+          clientname?: string
+          commandeid?: string
           datecommande?: string | null
           messagefournisseur?: string | null
-          produit?: string | null
-          quantite?: number | null
-          reference?: string | null
           termine?: string | null
         }
         Relationships: []

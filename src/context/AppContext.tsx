@@ -16,17 +16,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder: createOrderBase, updateOrder, archiveOrder, updateOrderStatus } = useOrders();
+  const { orders, createOrder: createOrderBase, updateOrderStatus } = useOrders();
 
-  // Wrapper functions - adapt the createOrder function to match the expected interface
+  // Wrapper function to handle order creation
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
     if (user && cart.length > 0) {
-      // Call the actual implementation that returns a Promise<boolean>
       createOrderBase(user, cart, clearCart);
-      
-      // Return an empty object cast as Order to satisfy the interface
-      // This is a workaround since we can't change the interface
-      return {} as Order;
+      // Return undefined since we're now handling async operations
+      return undefined;
     }
     return undefined;
   };
@@ -52,16 +49,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearCart,
         orders,
         createOrder: createOrderWrapper,
-        updateOrder,
-        archiveOrder,
+        updateOrderStatus,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,
         isLoading,
         addProduct,
         updateProduct,
-        deleteProduct,
-        updateOrderStatus
+        deleteProduct
       }}
     >
       {children}

@@ -1,4 +1,3 @@
-
 export interface ProductVariant {
   id: string;
   variantName: string;
@@ -25,25 +24,16 @@ export interface CartItem extends Product {
 
 export interface Order {
   // Supabase fields (as they are in the DB)
-  commandeid: number;
-  clientname: string | null;
+  commandeid: string;
+  clientname: string;
   datecommande: string | null;
-  produit: string | null;
-  reference: string | null;
-  quantite: number | null;
-  termine: string | null;
+  articles: CartItem[];
+  termine: string;
   messagefournisseur: string | null;
   
-  // Frontend application fields (derived/mapped from DB)
-  id?: string;
-  userId?: string;
-  userName?: string;
-  date?: string;
-  items?: CartItem[];
-  status?: 'pending' | 'processed' | 'completed';
-  projectCode?: string;
+  // Frontend fields for UI rendering
   archived?: boolean;
-  message?: string;
+  projectCode?: string;
 }
 
 export interface User {

@@ -20,15 +20,11 @@ export interface AppContextType {
   clearCart: () => void;
   orders: Order[];
   createOrder: (projectCode?: string) => Order | undefined;
-  updateOrder: (order: Order) => void;
-  archiveOrder: (orderId: string) => Promise<boolean>;
+  updateOrderStatus: (orderId: string, termine: string, messagefournisseur?: string) => Promise<void>;
   loadProductsFromCSV: () => Promise<void>;
   loadProjectsFromCSV: (csvContent: string) => void;
   isAdmin: boolean;
   isLoading: boolean;
-  // Add updateOrderStatus to the interface
-  updateOrderStatus: (orderId: number, termine: string, messagefournisseur?: string) => Promise<void>;
-  // Nouvelles méthodes pour gérer les produits avec Supabase
   addProduct: (product: Product) => Promise<boolean>;
   updateProduct: (product: Product) => Promise<boolean>;
   deleteProduct: (productId: string) => Promise<boolean>;
