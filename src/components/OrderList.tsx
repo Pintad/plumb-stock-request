@@ -1,49 +1,9 @@
 
 import React from 'react';
 import { Order } from '@/types';
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { ClipboardList, MessageSquare, Settings, FileDown, Printer } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import { Button } from '@/components/ui/button';
-
-const getStatusColor = (termineValue: string | null | undefined) => {
-  if (!termineValue) return 'bg-gray-500';
-  switch (termineValue) {
-    case 'Non':
-      return 'bg-yellow-500';
-    case 'Oui':
-      return 'bg-green-500';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-const getStatusLabel = (termineValue: string | null | undefined) => {
-  if (!termineValue) return 'Non défini';
-  switch (termineValue) {
-    case 'Non':
-      return 'En attente';
-    case 'Oui':
-      return 'Terminée';
-    default:
-      return termineValue;
-  }
-};
+import EmptyOrderState from './orders/EmptyOrderState';
+import OrderListItem from './orders/OrderListItem';
 
 interface OrderListProps {
   orders: Order[];
@@ -72,21 +32,19 @@ const OrderList = ({
     const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité'];
     let csvContent = header.join(',') + '\n';
     
-    // Get the first article for basic info
-    const firstArticle = order.articles && order.articles.length > 0 ? order.articles[0] : null;
-    
-    // Create a row using the data directly from the order
-    const row = [
-      order.commandeid,
-      order.clientname || '',
-      order.datecommande || '',
-      order.projectCode || '', 
-      order.termine || '',
-      firstArticle?.name || '',
-      firstArticle?.reference || '',
-      firstArticle?.quantity || '0'
-    ].map(value => `"${value}"`).join(',');
-    csvContent += row + '\n';
+    order.articles.forEach(article => {
+      const row = [
+        order.commandeid,
+        order.clientname || '',
+        order.datecommande || '',
+        order.projectCode || '', 
+        order.termine || '',
+        article.name || '',
+        article.reference || '',
+        article.quantity || '0'
+      ].map(value => `"${value}"`).join(',');
+      csvContent += row + '\n';
+    });
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -101,9 +59,6 @@ const OrderList = ({
   const printOrder = (order: Order) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    
-    // Get the first article for basic info
-    const firstArticle = order.articles && order.articles.length > 0 ? order.articles[0] : null;
     
     let htmlContent = `
       <html>
@@ -138,24 +93,15 @@ const OrderList = ({
           <tbody>
     `;
     
-    // Add all articles to the table
-    if (order.articles && order.articles.length > 0) {
-      order.articles.forEach(article => {
-        htmlContent += `
-          <tr>
-            <td>${article.name || ''}</td>
-            <td>${article.reference || ''}</td>
-            <td>${article.quantity || '0'}</td>
-          </tr>
-        `;
-      });
-    } else {
+    order.articles.forEach(article => {
       htmlContent += `
         <tr>
-          <td colspan="3">Aucun article</td>
+          <td>${article.name || ''}</td>
+          <td>${article.reference || ''}</td>
+          <td>${article.quantity || '0'}</td>
         </tr>
       `;
-    }
+    });
       
     htmlContent += `
           </tbody>
@@ -185,135 +131,19 @@ const OrderList = ({
     <div className="space-y-4">
       {orders.length > 0 ? (
         orders.map((order) => (
-          <Card key={order.commandeid} className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg flex items-center">
-                    <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
-                    Demande #{order.commandeid}
-                    {showUser && order.clientname && <span className="ml-2 text-sm font-normal">({order.clientname})</span>}
-                  </CardTitle>
-                  <p className="text-sm text-gray-500">
-                    {order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}
-                  </p>
-                  {order.projectCode && (
-                    <div className="mt-1">
-                      <Badge variant="outline" className="font-normal">
-                        Affaire: {order.projectCode} 
-                        {getProjectName(order.projectCode) && ` - ${getProjectName(order.projectCode)}`}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {order.messagefournisseur && !isAdmin && (
-                    <div className="flex items-center text-sm text-gray-600 mr-2">
-                      <MessageSquare className="h-4 w-4 mr-1" />
-                      {order.messagefournisseur}
-                    </div>
-                  )}
-                  <Badge className={`${getStatusColor(order.termine)} text-white`}>
-                    {getStatusLabel(order.termine)}
-                  </Badge>
-                  {order.archived && (
-                    <Badge variant="outline" className="bg-gray-200">
-                      Archivée
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Produit</TableHead>
-                      <TableHead>Référence</TableHead>
-                      <TableHead className="text-right">Quantité</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {order.articles && order.articles.length > 0 ? (
-                      order.articles.map((article, index) => (
-                        <TableRow key={`${order.commandeid}-${index}`}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{article.name}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono">{article.reference}</TableCell>
-                          <TableCell className="text-right">{article.quantity}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center">Aucun article</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-            <CardFooter className="bg-gray-50 py-2">
-              <div className="flex justify-between w-full text-sm items-center">
-                <span>
-                  Articles: <span className="font-semibold">
-                    {order.articles?.length || 0} 
-                  </span>
-                </span>
-                
-                <div className="flex items-center gap-2">
-                  {isAdmin && (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => exportToCSV(order)}
-                      >
-                        <FileDown className="h-4 w-4" />
-                        CSV
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => printOrder(order)}
-                      >
-                        <Printer className="h-4 w-4" />
-                        PDF
-                      </Button>
-                    </>
-                  )}
-                  
-                  {isAdmin && onManageOrder && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-1"
-                      onClick={() => onManageOrder(order)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Gérer
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardFooter>
-          </Card>
+          <OrderListItem
+            key={order.commandeid}
+            order={order}
+            showUser={showUser}
+            isAdmin={isAdmin}
+            projectName={getProjectName(order.projectCode)}
+            onManageOrder={onManageOrder}
+            onExportCSV={exportToCSV}
+            onPrintOrder={printOrder}
+          />
         ))
       ) : (
-        <div className="py-12 text-center">
-          <div className="rounded-full bg-gray-200 w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <ClipboardList className="h-8 w-8 text-gray-500" />
-          </div>
-          <h2 className="text-xl font-medium mb-2">Aucune demande</h2>
-          <p className="text-gray-500">
-            Vous n'avez aucune demande de stock pour le moment
-          </p>
-        </div>
+        <EmptyOrderState />
       )}
     </div>
   );
