@@ -1,60 +1,43 @@
 
-import { Product } from '../types';
+import { Product, CatalogueItem } from '../types';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { convertCatalogueToProducts } from '@/utils/catalogueConverter';
 
+/**
+ * Ajoute un produit à la base de données Supabase (table catalogue)
+ */
 export const addProductToSupabase = async (product: Product): Promise<boolean> => {
   try {
-    let categoryId = null;
-    
-    if (product.category) {
-      const { data: existingCategories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', product.category)
-        .maybeSingle();
-      
-      if (existingCategories) {
-        categoryId = existingCategories.id;
-      } else {
-        const { data: newCategory, error: categoryError } = await supabase
-          .from('categories')
-          .insert({ name: product.category })
-          .select()
-          .single();
-        
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
-      }
-    }
-
-    const { data: newProduct, error: productError } = await supabase
-      .from('products')
-      .insert({
-        name: product.name,
-        reference: product.reference,
-        unit: product.unit,
-        category_id: categoryId,
-        image_url: product.imageUrl
-      })
-      .select()
-      .single();
-    
-    if (productError) throw productError;
-    
+    // Si le produit a des variantes
     if (product.variants && product.variants.length > 0) {
-      const variantsToInsert = product.variants.map(variant => ({
-        product_id: newProduct.id,
-        variant_name: variant.variantName,
+      // Insérer chaque variante comme une entrée distincte dans le catalogue
+      const catalogueItems = product.variants.map(variant => ({
+        designation: product.name,
         reference: variant.reference,
-        unit: variant.unit
+        unite: variant.unit,
+        categorie: product.category,
+        image_url: product.imageUrl,
+        variante: variant.variantName
       }));
       
-      const { error: variantError } = await supabase
-        .from('product_variants')
-        .insert(variantsToInsert);
+      const { error } = await supabase
+        .from('catalogue')
+        .insert(catalogueItems);
       
-      if (variantError) throw variantError;
+      if (error) throw error;
+    } else {
+      // Insérer le produit principal sans variante
+      const { error } = await supabase
+        .from('catalogue')
+        .insert({
+          designation: product.name,
+          reference: product.reference,
+          unite: product.unit,
+          categorie: product.category,
+          image_url: product.imageUrl
+        });
+      
+      if (error) throw error;
     }
     
     return true;
@@ -64,62 +47,57 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
   }
 };
 
+/**
+ * Met à jour un produit dans la base de données Supabase (table catalogue)
+ */
 export const updateProductInSupabase = async (product: Product): Promise<boolean> => {
   try {
-    let categoryId = null;
-    
-    if (product.category) {
-      const { data: existingCategories } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', product.category)
-        .maybeSingle();
-      
-      if (existingCategories) {
-        categoryId = existingCategories.id;
-      } else {
-        const { data: newCategory, error: categoryError } = await supabase
-          .from('categories')
-          .insert({ name: product.category })
-          .select()
-          .single();
-        
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
-      }
-    }
-
-    const { error: productError } = await supabase
-      .from('products')
-      .update({
-        name: product.name,
-        reference: product.reference || null,
-        unit: product.unit || null,
-        category_id: categoryId,
-        image_url: product.imageUrl || null
-      })
+    // Supprimer toutes les entrées existantes pour ce produit
+    const { error: deleteError } = await supabase
+      .from('catalogue')
+      .delete()
       .eq('id', product.id);
     
-    if (productError) throw productError;
-
-    if (product.variants && product.variants.length > 0) {
-      await supabase
-        .from('product_variants')
+    if (deleteError) {
+      // Si l'ID spécifique n'a pas été trouvé, essayons de supprimer par désignation
+      const { error: deleteByNameError } = await supabase
+        .from('catalogue')
         .delete()
-        .eq('product_id', product.id);
+        .eq('designation', product.name);
       
-      const variantsToInsert = product.variants.map(variant => ({
-        product_id: product.id,
-        variant_name: variant.variantName,
+      if (deleteByNameError) throw deleteByNameError;
+    }
+    
+    // Réinsérer le produit avec ses nouvelles données
+    if (product.variants && product.variants.length > 0) {
+      // Insérer chaque variante
+      const catalogueItems = product.variants.map(variant => ({
+        designation: product.name,
         reference: variant.reference,
-        unit: variant.unit
+        unite: variant.unit,
+        categorie: product.category,
+        image_url: product.imageUrl,
+        variante: variant.variantName
       }));
       
-      const { error: variantError } = await supabase
-        .from('product_variants')
-        .insert(variantsToInsert);
+      const { error } = await supabase
+        .from('catalogue')
+        .insert(catalogueItems);
       
-      if (variantError) throw variantError;
+      if (error) throw error;
+    } else {
+      // Insérer le produit principal sans variante
+      const { error } = await supabase
+        .from('catalogue')
+        .insert({
+          designation: product.name,
+          reference: product.reference,
+          unite: product.unit,
+          categorie: product.category,
+          image_url: product.imageUrl
+        });
+      
+      if (error) throw error;
     }
     
     return true;
@@ -129,26 +107,62 @@ export const updateProductInSupabase = async (product: Product): Promise<boolean
   }
 };
 
+/**
+ * Supprime un produit de la base de données Supabase (table catalogue)
+ */
 export const deleteProductFromSupabase = async (productId: string): Promise<boolean> => {
   try {
-    const { error: variantError } = await supabase
-      .from('product_variants')
-      .delete()
-      .eq('product_id', productId);
+    // Récupérer le produit pour obtenir son nom
+    const { data: productData } = await supabase
+      .from('catalogue')
+      .select('designation')
+      .eq('id', productId)
+      .maybeSingle();
     
-    if (variantError) {
-      console.error("Erreur lors de la suppression des variantes:", variantError);
+    if (productData && productData.designation) {
+      // Supprimer toutes les entrées avec cette désignation (produit principal et ses variantes)
+      const { error } = await supabase
+        .from('catalogue')
+        .delete()
+        .eq('designation', productData.designation);
+      
+      if (error) throw error;
+    } else {
+      // Si on ne trouve pas le produit par ID, on tente juste de supprimer cet ID
+      const { error } = await supabase
+        .from('catalogue')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
     }
     
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId);
-    
-    if (error) throw error;
     return true;
   } catch (error) {
     console.error("Erreur lors de la suppression du produit:", error);
     return false;
+  }
+};
+
+/**
+ * Récupère tous les produits depuis la table catalogue
+ */
+export const fetchAllProducts = async (): Promise<Product[]> => {
+  try {
+    const { data: catalogueData, error } = await supabase
+      .from('catalogue')
+      .select('*');
+    
+    if (error) throw error;
+    
+    if (!catalogueData || catalogueData.length === 0) {
+      return [];
+    }
+    
+    const products = convertCatalogueToProducts(catalogueData);
+    return products;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des produits:", error);
+    return [];
   }
 };
