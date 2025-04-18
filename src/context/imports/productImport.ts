@@ -1,36 +1,7 @@
 
-import { parseCatalogueCSV } from '@/utils/csvCatalogueParser';
-import { importCatalogueItems, fetchCatalogueItems } from '@/api/catalogueImport';
-import { showImportSuccess, showImportError } from './csvUtils';
+import { fetchCatalogueItems } from '@/api/catalogueImport';
 import { Product } from '@/types';
 import { convertCatalogueToProducts } from '@/utils/catalogueConverter';
-
-/**
- * Load products from CSV content and store them in Supabase
- */
-export const loadProductsFromCSV = async (
-  csvContent: string,
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>
-) => {
-  try {
-    const catalogueItems = parseCatalogueCSV(csvContent);
-    
-    if (catalogueItems.length === 0) {
-      throw new Error("Aucun produit valide n'a pu être extrait du fichier CSV");
-    }
-    
-    const success = await importCatalogueItems(catalogueItems);
-    
-    if (success) {
-      await refreshProductList(setProducts);
-      showImportSuccess(catalogueItems.length, "produits");
-    }
-    
-  } catch (error) {
-    console.error("Erreur d'importation:", error);
-    showImportError(error);
-  }
-};
 
 /**
  * Rafraîchit la liste des produits depuis Supabase

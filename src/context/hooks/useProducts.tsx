@@ -151,15 +151,15 @@ export const useProducts = (initialProducts: Product[] = []) => {
     updateProduct,
     deleteProduct,
     isLoading,
-    loadProductsFromCSV: async (csvContent: string) => {
+    loadProductsFromCSV: async () => {
       try {
         await refreshProductList(setProducts);
       } catch (error) {
-        console.error("Erreur lors de l'importation CSV:", error);
+        console.error("Erreur lors du chargement des données:", error);
         toast({
           variant: "destructive",
-          title: "Erreur d'importation",
-          description: "Une erreur est survenue lors de l'importation des produits",
+          title: "Erreur de chargement",
+          description: "Une erreur est survenue lors du chargement des produits",
         });
       }
     }
