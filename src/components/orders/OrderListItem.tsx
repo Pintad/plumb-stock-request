@@ -24,9 +24,9 @@ interface OrderListItemProps {
   onArchiveOrder?: (orderId: string) => Promise<boolean>;
 }
 
-const getStatusColor = (termeValue: string | null | undefined) => {
-  if (!termeValue) return 'bg-gray-500';
-  switch (termeValue) {
+const getStatusColor = (termineValue: string | null | undefined) => {
+  if (!termineValue) return 'bg-gray-500';
+  switch (termineValue) {
     case 'Non':
       return 'bg-yellow-500';
     case 'Oui':
@@ -36,15 +36,15 @@ const getStatusColor = (termeValue: string | null | undefined) => {
   }
 };
 
-const getStatusLabel = (termeValue: string | null | undefined) => {
-  if (!termeValue) return 'Non défini';
-  switch (termeValue) {
+const getStatusLabel = (termineValue: string | null | undefined) => {
+  if (!termineValue) return 'Non défini';
+  switch (termineValue) {
     case 'Non':
       return 'En attente';
     case 'Oui':
       return 'Terminée';
     default:
-      return termeValue;
+      return termineValue;
   }
 };
 
@@ -89,8 +89,8 @@ const OrderListItem = ({
                 {order.messagefournisseur}
               </div>
             )}
-            <Badge className={`${getStatusColor(order.terme)} text-white`}>
-              {getStatusLabel(order.terme)}
+            <Badge className={`${getStatusColor(order.termine)} text-white`}>
+              {getStatusLabel(order.termine)}
             </Badge>
             {order.archived && (
               <Badge variant="outline" className="bg-gray-200">

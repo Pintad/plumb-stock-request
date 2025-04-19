@@ -20,7 +20,7 @@ export const createOrder = (
     clientname: user.name,
     datecommande: new Date().toISOString().split('T')[0],
     articles: [...cart],  // Store the complete cart
-    terme: 'Non',
+    termine: 'Non',
     messagefournisseur: null,
     
     // Frontend application fields
@@ -40,7 +40,7 @@ export const createOrder = (
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        terme: 'Non'
+        termine: 'Non'
       })
       .then(({ error }) => {
         if (error) {

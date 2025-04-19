@@ -43,7 +43,7 @@ const OrderActions = ({
             <Printer className="h-4 w-4" />
             PDF
           </Button>
-          {order.terme === 'Oui' && !order.archived && onArchiveOrder && (
+          {order.termine === 'Oui' && !order.archived && onArchiveOrder && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -59,12 +59,12 @@ const OrderActions = ({
       
       {isAdmin && onManageOrder && (
         <Button 
-          variant={order.terme === 'Non' ? "default" : "outline"} 
+          variant={order.termine === 'Non' ? "default" : "outline"} 
           size="sm" 
           className="flex items-center gap-1"
           onClick={() => onManageOrder(order)}
         >
-          {order.terme === 'Non' ? (
+          {order.termine === 'Non' ? (
             <>
               <CheckCircle className="h-4 w-4" />
               Valider

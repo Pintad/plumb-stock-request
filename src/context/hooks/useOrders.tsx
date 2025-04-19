@@ -9,6 +9,7 @@ export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Charger les commandes au montage et à chaque modification
   useEffect(() => {
     loadOrders();
   }, []);
@@ -28,13 +29,12 @@ export const useOrders = () => {
         clientname: order.clientname,
         datecommande: order.datecommande,
         articles: order.articles as unknown as CartItem[],
-        terme: order.termine || order.terme || 'Non',
+        termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
-        archiveclient: order.archiveclient || false,
-        status: order.termine === 'Oui' || order.terme === 'Oui' ? 'completed' : 'pending'
+        status: order.termine === 'Oui' ? 'completed' : 'pending'
       })) || [];
-
+      
       setOrders(mappedOrders);
     } catch (error) {
       console.error("Erreur lors du chargement des commandes:", error);
@@ -60,7 +60,7 @@ export const useOrders = () => {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        terme: 'Non',
+        termine: 'Non',
         archive: false
       };
 
@@ -71,7 +71,7 @@ export const useOrders = () => {
       if (error) throw error;
 
       clearCart();
-      await loadOrders(); // Reload orders after creating one
+      loadOrders(); // Recharger les commandes après création
 
       toast({
         title: "Commande créée",
@@ -90,12 +90,12 @@ export const useOrders = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, terme: string, messagefournisseur?: string) => {
+  const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
     try {
       const { error } = await supabase
         .from('commandes')
         .update({ 
-          terme, 
+          termine, 
           ...(messagefournisseur && { messagefournisseur })
         })
         .eq('commandeid', orderId);
@@ -127,6 +127,7 @@ export const useOrders = () => {
 
       if (error) throw error;
 
+      // Reload orders from the database to get the latest data
       await loadOrders();
       
       toast({
@@ -151,11 +152,12 @@ export const useOrders = () => {
       const { error } = await supabase
         .from('commandes')
         .update({ archive: true })
-        .eq('terme', 'Oui')
+        .eq('termine', 'Oui')
         .eq('archive', false);
 
       if (error) throw error;
 
+      // Reload orders from the database to get the latest data
       await loadOrders();
       
       toast({

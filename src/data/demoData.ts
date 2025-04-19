@@ -1,5 +1,5 @@
 
-import { Product, User, Order, CartItem } from '../types';
+import { Product, User, Order } from '../types';
 
 export const demoProducts: Product[] = [
   { id: '1', name: 'Tube PER nu 12x1.1', reference: 'PER-12-NU', unit: 'Rouleau 240m' },
@@ -41,7 +41,7 @@ export const demoOrders: Order[] = [
       { ...demoProducts[5], quantity: 10 },
       { ...demoProducts[7], quantity: 5 }
     ],
-    terme: 'Oui',
+    termine: 'Oui',
     messagefournisseur: null,
     status: 'completed',
     archived: false,
@@ -55,7 +55,7 @@ export const demoOrders: Order[] = [
       { ...demoProducts[3], quantity: 2 },
       { ...demoProducts[10], quantity: 3 }
     ],
-    terme: 'Non',
+    termine: 'Non',
     messagefournisseur: null,
     status: 'pending',
     archived: false,

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import OrderList from '@/components/OrderList';
@@ -6,58 +5,32 @@ import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Archive, Eye, EyeOff, Check } from 'lucide-react';
+import { Archive, Eye, EyeOff } from 'lucide-react';
 import { Order } from '@/types';
+import OrderManager from '@/components/OrderManager';
 
 const AdminOrders = () => {
-  const { orders, projects, archiveOrder, archiveCompletedOrders, updateOrderStatus } = useAppContext();
+  const { orders, projects, archiveOrder, archiveCompletedOrders } = useAppContext();
   const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
-
-  // Filter orders by archive status and project
+  
   const filteredOrders = orders.filter(order => {
-    if (showArchived !== !!order.archived) return false;
-
+    if (showArchived !== order.archived) return false;
+    
     if (order.projectCode) {
       if (selectedProject !== "all" && selectedProject !== order.projectCode) return false;
     } else {
       if (selectedProject !== "all" && selectedProject !== "none") return false;
     }
+
     return true;
   });
-
-  // Handler to validate an order (set terme to 'Oui')
-  const handleValidateOrder = (order: Order) => {
-    updateOrderStatus(order.commandeid, 'Oui');
-  };
-
-  // Component to render action button based on order status
-  const renderActionButton = (order: Order) => {
-    if (order.terme === 'Non' && !order.archived) {
-      // Show "Valider la commande"
-      return (
-        <Button size="sm" variant="default" onClick={() => handleValidateOrder(order)} className="flex items-center gap-1">
-          <Check className="h-4 w-4" />
-          Valider la commande
-        </Button>
-      );
-    }
-    if (order.terme === 'Oui' && !order.archived) {
-      // Show "Archiver" button
-      return (
-        <Button size="sm" variant="outline" onClick={() => archiveOrder(order.commandeid)} className="flex items-center gap-1">
-          <Archive className="h-4 w-4" />
-          Archiver
-        </Button>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-
+      
       <main className="flex-1 container px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">
@@ -93,13 +66,49 @@ const AdminOrders = () => {
             )}
           </div>
         </div>
-
-        <OrderList
-          orders={filteredOrders}
-          isAdmin={true}
-          onManageOrder={() => {}}
-          onArchiveOrder={archiveOrder}
-        />
+        
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="w-full md:w-80">
+                <label className="block text-sm font-medium mb-2">Filtrer par affaire</label>
+                <Select 
+                  value={selectedProject} 
+                  onValueChange={setSelectedProject}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Toutes les affaires" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les affaires</SelectItem>
+                    <SelectItem value="none">Sans affaire</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.code}>
+                        {project.code} - {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {selectedOrder ? (
+          <OrderManager 
+            order={selectedOrder} 
+            onClose={() => setSelectedOrder(null)} 
+          />
+        ) : (
+          <OrderList 
+            orders={filteredOrders} 
+            showUser={true} 
+            showFullDetails={true} 
+            onManageOrder={setSelectedOrder}
+            onArchiveOrder={archiveOrder}
+            isAdmin={true}
+          />
+        )}
       </main>
     </div>
   );

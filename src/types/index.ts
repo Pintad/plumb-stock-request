@@ -23,12 +23,27 @@ export interface CartItem extends Product {
   selectedVariantId?: string;
 }
 
+export interface Order {
+  // Supabase fields (as they are in the DB)
+  commandeid: string;
+  clientname: string;
+  datecommande: string | null;
+  articles: CartItem[];
+  termine: string;
+  messagefournisseur: string | null;
+  
+  // Frontend fields for UI rendering
+  archived?: boolean;
+  projectCode?: string;
+  status?: 'pending' | 'processed' | 'completed';
+}
+
 export interface User {
   id: string;
   username: string;
   password: string;
   name: string;
-  role: 'worker' | 'admin' | string;
+  role: 'worker' | 'admin';
 }
 
 export interface Project {
@@ -38,27 +53,11 @@ export interface Project {
 }
 
 export interface CatalogueItem {
-  id?: string;
+  id: string;
   designation: string;
-  categorie?: string;
-  variante?: string;
   reference?: string;
   unite?: string;
+  categorie?: string;
   image_url?: string;
-}
-
-export interface Order {
-  // Supabase fields (as they are in the DB)
-  commandeid: string;
-  clientname: string;
-  datecommande: string | null;
-  articles: CartItem[];
-  terme: string;
-  messagefournisseur: string | null;
-
-  // Frontend fields for UI rendering
-  archived?: boolean;
-  archiveclient?: boolean; // correct casing
-  projectCode?: string;
-  status?: 'pending' | 'processed' | 'completed';
+  variante?: string;
 }
