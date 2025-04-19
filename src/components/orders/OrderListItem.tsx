@@ -21,6 +21,7 @@ interface OrderListItemProps {
   onManageOrder?: (order: Order) => void;
   onExportCSV: (order: Order) => void;
   onPrintOrder: (order: Order) => void;
+  onArchiveOrder?: (orderId: string) => Promise<boolean>;
 }
 
 const getStatusColor = (termineValue: string | null | undefined) => {
@@ -54,7 +55,8 @@ const OrderListItem = ({
   projectName,
   onManageOrder,
   onExportCSV,
-  onPrintOrder
+  onPrintOrder,
+  onArchiveOrder
 }: OrderListItemProps) => {
   return (
     <Card className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
@@ -115,6 +117,7 @@ const OrderListItem = ({
             onManageOrder={onManageOrder}
             onExportCSV={onExportCSV}
             onPrintOrder={onPrintOrder}
+            onArchiveOrder={onArchiveOrder ? (order) => onArchiveOrder(order.commandeid) : undefined}
           />
         </div>
       </CardFooter>
