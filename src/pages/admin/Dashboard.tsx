@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +10,7 @@ const Dashboard = () => {
   
   // Nombre de demandes en attente
   const pendingOrders = orders.filter(order => order.terme === 'Non').length;
-  
-  // Nombre total d'utilisateurs (ouvriers uniquement)
+
   const workerCount = 3; // Dans une vraie application, ce serait dynamique
   
   const stats = [

@@ -71,7 +71,7 @@ export const useOrders = () => {
       if (error) throw error;
 
       clearCart();
-      loadOrders(); // Recharger les commandes après création
+      await loadOrders(); // Reload orders after creating one
 
       toast({
         title: "Commande créée",
@@ -127,7 +127,6 @@ export const useOrders = () => {
 
       if (error) throw error;
 
-      // Reload orders from database
       await loadOrders();
       
       toast({

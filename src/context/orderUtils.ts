@@ -59,7 +59,6 @@ export const createOrder = (
   return newOrder;
 };
 
-
 export const updateOrder = (
   orders: Order[],
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>,
