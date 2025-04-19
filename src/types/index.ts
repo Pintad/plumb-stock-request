@@ -1,4 +1,52 @@
 
+export interface ProductVariant {
+  id: string;
+  variantName: string;
+  reference: string;
+  unit: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  reference?: string;
+  unit?: string;
+  imageUrl?: string;
+  category?: string;
+  variants?: ProductVariant[];
+  selectedVariantId?: string;
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+  completed?: boolean;
+  selectedVariantId?: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  role: 'worker' | 'admin' | string;
+}
+
+export interface Project {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface CatalogueItem {
+  id?: string;
+  designation: string;
+  categorie?: string;
+  variante?: string;
+  reference?: string;
+  unite?: string;
+  image_url?: string;
+}
+
 export interface Order {
   // Supabase fields (as they are in the DB)
   commandeid: string;
@@ -10,7 +58,7 @@ export interface Order {
 
   // Frontend fields for UI rendering
   archived?: boolean;
-  archiveclient?: boolean; // added the property here with correct casing
+  archiveclient?: boolean; // correct casing
   projectCode?: string;
   status?: 'pending' | 'processed' | 'completed';
 }
