@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import OrderList from '@/components/OrderList';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Archive, Eye, EyeOff } from 'lucide-react';
 import { Order } from '@/types';
+import OrderManager from '@/components/OrderManager';
 
 const AdminOrders = () => {
   const { orders, projects, archiveOrder, archiveCompletedOrders } = useAppContext();
@@ -15,12 +15,9 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
-  // Filter orders by project and archived status only
   const filteredOrders = orders.filter(order => {
-    // Filter by archived status
     if (showArchived !== order.archived) return false;
     
-    // Filter by project
     if (order.projectCode) {
       if (selectedProject !== "all" && selectedProject !== order.projectCode) return false;
     } else {
