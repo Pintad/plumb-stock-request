@@ -40,7 +40,7 @@ const OrderList = ({
         order.clientname || '',
         order.datecommande || '',
         order.projectCode || '', 
-        order.termine || '',
+        order.terme || '',
         article.name || '',
         article.reference || '',
         article.quantity || '0'
@@ -83,7 +83,7 @@ const OrderList = ({
         </div>
         <p>Utilisateur: ${order.clientname || ''}</p>
         <p>Date: ${order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</p>
-        <p>Statut: ${order.termine === 'Non' ? 'En attente' : 'Terminée'}</p>
+        <p>Statut: ${order.terme === 'Non' ? 'En attente' : 'Terminée'}</p>
         <table>
           <thead>
             <tr>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Order, CartItem, User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,11 +28,11 @@ export const useOrders = () => {
         clientname: order.clientname,
         datecommande: order.datecommande,
         articles: order.articles as unknown as CartItem[],
-        termine: order.termine || 'Non',
+        terme: order.terme || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
-        archiveclient: order.archiveclient || false, // properly load archiveclient here
-        status: order.termine === 'Oui' ? 'completed' : 'pending'
+        archiveclient: order.archiveclient || false,
+        status: order.terme === 'Oui' ? 'completed' : 'pending'
       })) || [];
 
       setOrders(mappedOrders);
@@ -59,7 +60,7 @@ export const useOrders = () => {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        termine: 'Non',
+        terme: 'Non',
         archive: false
       };
 
@@ -89,12 +90,12 @@ export const useOrders = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
+  const updateOrderStatus = async (orderId: string, terme: string, messagefournisseur?: string) => {
     try {
       const { error } = await supabase
         .from('commandes')
         .update({ 
-          termine, 
+          terme, 
           ...(messagefournisseur && { messagefournisseur })
         })
         .eq('commandeid', orderId);
@@ -151,7 +152,7 @@ export const useOrders = () => {
       const { error } = await supabase
         .from('commandes')
         .update({ archive: true })
-        .eq('termine', 'Oui')
+        .eq('terme', 'Oui')
         .eq('archive', false);
 
       if (error) throw error;
