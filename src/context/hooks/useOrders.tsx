@@ -28,11 +28,11 @@ export const useOrders = () => {
         clientname: order.clientname,
         datecommande: order.datecommande,
         articles: order.articles as unknown as CartItem[],
-        terme: order.terme || 'Non',
+        terme: order.termine || order.terme || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
         archiveclient: order.archiveclient || false,
-        status: order.terme === 'Oui' ? 'completed' : 'pending'
+        status: order.termine === 'Oui' || order.terme === 'Oui' ? 'completed' : 'pending'
       })) || [];
 
       setOrders(mappedOrders);
@@ -127,7 +127,7 @@ export const useOrders = () => {
 
       if (error) throw error;
 
-      // Reload orders from the database to get the latest data
+      // Reload orders from database
       await loadOrders();
       
       toast({
@@ -157,7 +157,6 @@ export const useOrders = () => {
 
       if (error) throw error;
 
-      // Reload orders from the database to get the latest data
       await loadOrders();
       
       toast({
