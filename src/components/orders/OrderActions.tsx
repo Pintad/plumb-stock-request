@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileDown, Printer, Settings, Archive } from 'lucide-react';
+import { FileDown, Printer, Settings, Archive, CheckCircle } from 'lucide-react';
 import { Order } from '@/types';
 
 interface OrderActionsProps {
@@ -59,13 +59,22 @@ const OrderActions = ({
       
       {isAdmin && onManageOrder && (
         <Button 
-          variant="outline" 
+          variant={order.termine === 'Non' ? "default" : "outline"} 
           size="sm" 
           className="flex items-center gap-1"
           onClick={() => onManageOrder(order)}
         >
-          <Settings className="h-4 w-4" />
-          Gérer
+          {order.termine === 'Non' ? (
+            <>
+              <CheckCircle className="h-4 w-4" />
+              Valider
+            </>
+          ) : (
+            <>
+              <Settings className="h-4 w-4" />
+              Gérer
+            </>
+          )}
         </Button>
       )}
     </div>

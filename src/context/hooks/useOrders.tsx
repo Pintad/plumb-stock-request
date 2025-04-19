@@ -127,6 +127,7 @@ export const useOrders = () => {
 
       if (error) throw error;
 
+      // Reload orders from the database to get the latest data
       await loadOrders();
       
       toast({
@@ -156,6 +157,7 @@ export const useOrders = () => {
 
       if (error) throw error;
 
+      // Reload orders from the database to get the latest data
       await loadOrders();
       
       toast({

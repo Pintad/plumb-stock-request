@@ -5,12 +5,9 @@ import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import OrderManager from '@/components/OrderManager';
-import { Order } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Archive, Eye, EyeOff } from 'lucide-react';
+import { Order } from '@/types';
 
 const AdminOrders = () => {
   const { orders, projects, archiveOrder, archiveCompletedOrders } = useAppContext();
@@ -18,7 +15,7 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
-  // Filter orders by project, archived status and completion status
+  // Filter orders by project and archived status only
   const filteredOrders = orders.filter(order => {
     // Filter by archived status
     if (showArchived !== order.archived) return false;
@@ -29,9 +26,6 @@ const AdminOrders = () => {
     } else {
       if (selectedProject !== "all" && selectedProject !== "none") return false;
     }
-
-    // For non-archived view, only show non-completed orders
-    if (!showArchived && order.termine === 'Oui') return false;
 
     return true;
   });
