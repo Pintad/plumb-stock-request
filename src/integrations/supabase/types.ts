@@ -41,6 +41,7 @@ export type Database = {
       }
       commandes: {
         Row: {
+          archive: boolean | null
           articles: Json
           clientname: string
           commandeid: string
@@ -49,6 +50,7 @@ export type Database = {
           termine: string | null
         }
         Insert: {
+          archive?: boolean | null
           articles: Json
           clientname: string
           commandeid?: string
@@ -57,6 +59,7 @@ export type Database = {
           termine?: string | null
         }
         Update: {
+          archive?: boolean | null
           articles?: Json
           clientname?: string
           commandeid?: string

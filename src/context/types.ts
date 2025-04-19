@@ -1,4 +1,3 @@
-
 import { Product, CartItem, User, Order, Project } from '../types';
 
 export interface AppContextType {
@@ -23,6 +22,7 @@ export interface AppContextType {
   updateOrderStatus: (orderId: string, termine: string, messagefournisseur?: string) => Promise<void>;
   updateOrder: (order: Order) => void;
   archiveOrder: (orderId: string) => Promise<boolean>;
+  archiveCompletedOrders: () => Promise<boolean>;
   loadProductsFromCSV: () => Promise<void>;
   loadProjectsFromCSV: (csvContent: string) => void;
   isAdmin: boolean;

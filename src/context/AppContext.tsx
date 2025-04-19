@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
@@ -16,13 +15,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder } = useOrders();
+  const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders } = useOrders();
 
-  // Wrapper function to handle order creation
   const createOrderWrapper = (projectCode?: string): Order | undefined => {
     if (user && cart.length > 0) {
       createOrder(user, cart, clearCart);
-      // Return undefined since we're now handling async operations
       return undefined;
     }
     return undefined;
@@ -52,6 +49,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateOrderStatus,
         updateOrder,
         archiveOrder,
+        archiveCompletedOrders,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isAdmin,

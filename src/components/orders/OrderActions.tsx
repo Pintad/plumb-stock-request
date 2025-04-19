@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileDown, Printer, Settings } from 'lucide-react';
+import { FileDown, Printer, Settings, Archive } from 'lucide-react';
 import { Order } from '@/types';
 
 interface OrderActionsProps {
@@ -10,6 +10,7 @@ interface OrderActionsProps {
   onManageOrder?: (order: Order) => void;
   onExportCSV: (order: Order) => void;
   onPrintOrder: (order: Order) => void;
+  onArchiveOrder?: (order: Order) => void;
 }
 
 const OrderActions = ({ 
@@ -17,7 +18,8 @@ const OrderActions = ({
   isAdmin = false, 
   onManageOrder, 
   onExportCSV,
-  onPrintOrder 
+  onPrintOrder,
+  onArchiveOrder 
 }: OrderActionsProps) => {
   return (
     <div className="flex items-center gap-2">
@@ -41,6 +43,17 @@ const OrderActions = ({
             <Printer className="h-4 w-4" />
             PDF
           </Button>
+          {order.termine === 'Oui' && !order.archived && onArchiveOrder && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => onArchiveOrder(order)}
+            >
+              <Archive className="h-4 w-4" />
+              Archiver
+            </Button>
+          )}
         </>
       )}
       

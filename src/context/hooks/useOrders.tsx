@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Order, CartItem, User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -6,8 +7,15 @@ import { Json } from '@/integrations/supabase/types';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Charger les commandes au montage et à chaque modification
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
   const loadOrders = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('commandes')
@@ -20,10 +28,10 @@ export const useOrders = () => {
         commandeid: order.commandeid,
         clientname: order.clientname,
         datecommande: order.datecommande,
-        articles: (order.articles as unknown) as CartItem[],
+        articles: order.articles as unknown as CartItem[],
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
-        archived: false,
+        archived: order.archive || false,
         status: order.termine === 'Oui' ? 'completed' : 'pending'
       })) || [];
       
@@ -35,6 +43,8 @@ export const useOrders = () => {
         description: "Impossible de charger les commandes",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,7 +60,8 @@ export const useOrders = () => {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        termine: 'Non'
+        termine: 'Non',
+        archive: false
       };
 
       const { error } = await supabase
@@ -60,7 +71,7 @@ export const useOrders = () => {
       if (error) throw error;
 
       clearCart();
-      loadOrders(); // Reload orders after creation
+      loadOrders(); // Recharger les commandes après création
 
       toast({
         title: "Commande créée",
@@ -107,40 +118,75 @@ export const useOrders = () => {
     }
   };
 
-  const updateOrder = (updatedOrder: Order) => {
-    setOrders(orders.map(order => 
-      order.commandeid === updatedOrder.commandeid ? updatedOrder : order
-    ));
-  };
-
   const archiveOrder = async (orderId: string): Promise<boolean> => {
     try {
-      const orderToArchive = orders.find(order => order.commandeid === orderId);
-      if (!orderToArchive) return false;
-      
-      const updatedOrder = { ...orderToArchive, archived: true };
-      setOrders(orders.map(order => 
-        order.commandeid === orderId ? updatedOrder : order
-      ));
+      const { error } = await supabase
+        .from('commandes')
+        .update({ archive: true })
+        .eq('commandeid', orderId);
+
+      if (error) throw error;
+
+      await loadOrders();
       
       toast({
         title: "Demande archivée",
-        description: "La demande a été déplacée dans les archives",
+        description: "La demande a été archivée avec succès",
       });
       
       return true;
     } catch (error) {
       console.error("Error archiving order:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'archiver la demande",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const archiveCompletedOrders = async (): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('commandes')
+        .update({ archive: true })
+        .eq('termine', 'Oui')
+        .eq('archive', false);
+
+      if (error) throw error;
+
+      await loadOrders();
+      
+      toast({
+        title: "Demandes archivées",
+        description: "Toutes les demandes terminées ont été archivées",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error archiving completed orders:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'archiver les demandes terminées",
+        variant: "destructive",
+      });
       return false;
     }
   };
 
   return {
     orders,
+    isLoading,
     loadOrders,
     createOrder,
     updateOrderStatus,
-    updateOrder,
-    archiveOrder
+    updateOrder: (updatedOrder: Order) => {
+      setOrders(orders.map(order => 
+        order.commandeid === updatedOrder.commandeid ? updatedOrder : order
+      ));
+    },
+    archiveOrder,
+    archiveCompletedOrders
   };
 };
