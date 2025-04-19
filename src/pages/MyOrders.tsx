@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
-import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -10,30 +9,24 @@ import { Archive } from 'lucide-react';
 import { Order } from '@/types';
 
 const MyOrders = () => {
-  const { orders, user, updateOrderStatus, archiveOrder } = useAppContext();
+  const { orders, user, archiveOrder } = useAppContext();
   const [showArchived, setShowArchived] = useState<boolean>(false);
 
-  // Filter orders by clientname and archiveClient flag
+  // Filter orders by clientname and archiveclient flag
   const userOrders = orders.filter(order => {
     if (!user) return false;
+
     // Match clientname and archiveclient flag depending on showArchived state
+    // Correct use of archiveclient property with exact camelCase
     return order.clientname === user.name && (showArchived === !!order.archiveclient);
   });
 
   // Handle "Archiver" for user orders (set archiveclient = true)
   const handleArchiveClientOrder = async (order: Order) => {
     if (!archiveOrder) return;
-    // We need to update archiveclient flag in Supabase and reload orders after
+
     try {
-      // This function signature only accepts order id, so we assume it toggles archive for main archive (archive)
-      // We need to update archiveclient field specifically,
-      // So we do a direct Supabase call:
-      // But better is to update in context or add new context method - here we'll call supabase directly for simplicity
-
-      // Because the existing archiveOrder context method marks archive (not archiveclient)
-      // We add here supabase call to update archiveclient field and reload orders
-
-      // Let's do the update here:
+      // Use direct Supabase call to set archiveclient = true for this order
       import('@/integrations/supabase/client').then(({ supabase }) => {
         supabase
           .from('commandes')
@@ -43,7 +36,6 @@ const MyOrders = () => {
             if (error) {
               console.error("Erreur lors de l'archivage client:", error);
             } else {
-              // Refresh local orders in context is not exposed, so force page reload (could be improved)
               window.location.reload();
             }
           });
@@ -53,7 +45,6 @@ const MyOrders = () => {
     }
   };
 
-  // Render action button in user order list to archive
   const renderActionButton = (order: Order) => {
     if (!order.archiveclient) {
       return (
@@ -102,7 +93,6 @@ const MyOrders = () => {
                     {renderActionButton(order)}
                   </div>
                 </div>
-                {/* Articles list preview */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                   <div>
                     Articles: {order.articles.length}
@@ -118,4 +108,3 @@ const MyOrders = () => {
 };
 
 export default MyOrders;
-

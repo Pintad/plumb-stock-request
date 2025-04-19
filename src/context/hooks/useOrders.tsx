@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Order, CartItem, User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,6 @@ export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Charger les commandes au montage et à chaque modification
   useEffect(() => {
     loadOrders();
   }, []);
@@ -32,9 +30,10 @@ export const useOrders = () => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
+        archiveclient: order.archiveclient || false, // properly load archiveclient here
         status: order.termine === 'Oui' ? 'completed' : 'pending'
       })) || [];
-      
+
       setOrders(mappedOrders);
     } catch (error) {
       console.error("Erreur lors du chargement des commandes:", error);
