@@ -103,7 +103,8 @@ export const useOrders = () => {
         affaire_id: affaireId || null,
         commandeid: undefined, // Let Supabase generate UUID
         messagefournisseur: null,
-        name: orderName
+        // Remove "name" field here as it causes DB error (column does not exist)
+        // name: orderName
       };
 
       const { error } = await supabase

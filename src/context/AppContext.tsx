@@ -18,9 +18,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders } = useOrders();
 
+  // Wrapper to pass affaireId (projectCode) to createOrder in useOrders hook
   const createOrderWrapper = (projectCode?: string) => {
     if (user && cart.length > 0) {
-      createOrder(user, cart, clearCart);
+      // projectCode in context is actually code, but createOrder expects affaireId (string or undefined)
+      // So we need to find the actual project id by code to pass
+      const projectObj = projects.find(p => p.code === projectCode);
+      const affaireId = projectObj?.id;
+      createOrder(user, cart, clearCart, affaireId);
       return undefined;
     }
     return undefined;
