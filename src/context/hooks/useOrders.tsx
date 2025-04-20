@@ -19,7 +19,7 @@ export const useOrders = () => {
     try {
       const { data, error } = await supabase
         .from('commandes')
-        .select('*')
+        .select('*, affaire_id, affaires:affaires(id, code, name)')
         .order('datecommande', { ascending: false });
 
       if (error) throw error;
@@ -32,6 +32,7 @@ export const useOrders = () => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
+        projectCode: order.affaires?.code || '',
         status: order.termine === 'Oui' ? 'completed' : 'pending'
       })) || [];
       
@@ -52,16 +53,56 @@ export const useOrders = () => {
     user: User | null,
     cart: CartItem[],
     clearCart: () => void,
+    affaireId?: string
   ): Promise<boolean> => {
     try {
       if (!user || cart.length === 0) return false;
+
+      // Count existing orders for the given affaire to generate sequence number
+      let orderCount = 0;
+      if (affaireId) {
+        const { data: countData, error: countError } = await supabase
+          .from('commandes')
+          .select('commandeid', { count: 'exact', head: true })
+          .eq('affaire_id', affaireId);
+        if (countError) {
+          console.error("Erreur de comptage des commandes pour l'affaire:", countError);
+        } else {
+          orderCount = countData || 0;
+        }
+      }
+
+      // Fetch affaire details to build the order name
+      let affaireCode = "";
+      if (affaireId) {
+        const { data: affaireData, error: affaireError } = await supabase
+          .from('affaires')
+          .select('code')
+          .eq('id', affaireId)
+          .single();
+        if (affaireError) {
+          console.error("Erreur lors de la récupération de l'affaire:", affaireError);
+        } else {
+          affaireCode = affaireData.code;
+        }
+      }
+
+      // Generate order name unique per affaire: NomAffaire - 001, 002 etc
+      // Using zero padded 3 digits
+      const orderName = affaireCode
+        ? `${affaireCode} - ${String(orderCount + 1).padStart(3, '0')}`
+        : `Commande - ${String(orderCount + 1).padStart(3, '0')}`;
 
       const orderData = {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
         termine: 'Non',
-        archive: false
+        archive: false,
+        affaire_id: affaireId || null,
+        commandeid: undefined, // Let Supabase generate UUID
+        messagefournisseur: null,
+        name: orderName
       };
 
       const { error } = await supabase
@@ -71,7 +112,7 @@ export const useOrders = () => {
       if (error) throw error;
 
       clearCart();
-      loadOrders(); // Recharger les commandes après création
+      await loadOrders(); // Recharger les commandes après création
 
       toast({
         title: "Commande créée",
@@ -90,12 +131,12 @@ export const useOrders = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
+  const updateOrderStatus = async (orderId: string, terme: string, messagefournisseur?: string) => {
     try {
       const { error } = await supabase
         .from('commandes')
         .update({ 
-          termine, 
+          termine: terme, 
           ...(messagefournisseur && { messagefournisseur })
         })
         .eq('commandeid', orderId);

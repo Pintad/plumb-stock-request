@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      affaires: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       catalogue: {
         Row: {
           categorie: string | null
@@ -41,7 +62,9 @@ export type Database = {
       }
       commandes: {
         Row: {
+          affaire_id: string | null
           archive: boolean | null
+          archiveclient: boolean | null
           articles: Json
           clientname: string
           commandeid: string
@@ -50,7 +73,9 @@ export type Database = {
           termine: string | null
         }
         Insert: {
+          affaire_id?: string | null
           archive?: boolean | null
+          archiveclient?: boolean | null
           articles: Json
           clientname: string
           commandeid?: string
@@ -59,7 +84,9 @@ export type Database = {
           termine?: string | null
         }
         Update: {
+          affaire_id?: string | null
           archive?: boolean | null
+          archiveclient?: boolean | null
           articles?: Json
           clientname?: string
           commandeid?: string
@@ -67,7 +94,15 @@ export type Database = {
           messagefournisseur?: string | null
           termine?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_affaire_id"
+            columns: ["affaire_id"]
+            isOneToOne: false
+            referencedRelation: "affaires"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       utilisateurs: {
         Row: {

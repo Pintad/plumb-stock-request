@@ -31,10 +31,11 @@ export interface Order {
   articles: CartItem[];
   termine: string;
   messagefournisseur: string | null;
-  
+  affaire_id?: string; // newly added
+
   // Frontend fields for UI rendering
   archived?: boolean;
-  projectCode?: string;
+  projectCode?: string; // store affaire code here for filtering convenience
   status?: 'pending' | 'processed' | 'completed';
 }
 
