@@ -61,14 +61,15 @@ export const useOrders = () => {
       // Count existing orders for the given affaire to generate sequence number
       let orderCount = 0;
       if (affaireId) {
-        const { data: countData, error: countError } = await supabase
+        const { count, error: countError } = await supabase
           .from('commandes')
           .select('commandeid', { count: 'exact', head: true })
           .eq('affaire_id', affaireId);
+
         if (countError) {
           console.error("Erreur de comptage des commandes pour l'affaire:", countError);
-        } else {
-          orderCount = countData || 0;
+        } else if (typeof count === 'number') {
+          orderCount = count;
         }
       }
 
@@ -97,7 +98,7 @@ export const useOrders = () => {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        termine: 'Non',
+        terme: 'Non',
         archive: false,
         affaire_id: affaireId || null,
         commandeid: undefined, // Let Supabase generate UUID
@@ -233,3 +234,4 @@ export const useOrders = () => {
     archiveCompletedOrders
   };
 };
+
