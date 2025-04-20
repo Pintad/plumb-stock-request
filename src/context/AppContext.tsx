@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
@@ -11,7 +12,7 @@ import { AppContextType } from './types';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, login, logout, isAdmin } = useAuth();
+  const { user, login, logout, signup, isAdmin } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
@@ -31,6 +32,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         user,
         login,
         logout,
+        signup,
+        isAdmin,
         products,
         setProducts,
         categories,
@@ -52,11 +55,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         archiveCompletedOrders,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
-        isAdmin,
         isLoading,
         addProduct,
         updateProduct,
-        deleteProduct
+        deleteProduct,
       }}
     >
       {children}
@@ -73,3 +75,4 @@ export const useAppContext = (): AppContextType => {
   
   return context;
 };
+

@@ -1,9 +1,11 @@
+
 import { Product, CartItem, User, Order, Project } from '../types';
 
 export interface AppContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, name: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   categories: string[];
@@ -31,3 +33,4 @@ export interface AppContextType {
   updateProduct: (product: Product) => Promise<boolean>;
   deleteProduct: (productId: string) => Promise<boolean>;
 }
+
