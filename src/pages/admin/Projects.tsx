@@ -7,12 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import ProjectCSVImport from '@/components/admin/ProjectCSVImport';
 import { Project } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminProjects = () => {
-  const { projects, addProject, deleteProject } = useAppContext();
+  const { projects, deleteProject } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
@@ -22,7 +22,7 @@ const AdminProjects = () => {
     project.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddProject = () => {
+  const handleAddProject = async () => {
     if (!newProject.code || !newProject.name) {
       toast({
         variant: "destructive",
@@ -32,11 +32,48 @@ const AdminProjects = () => {
       return;
     }
 
-    addProject({
-      id: `project-${Date.now()}`,
-      code: newProject.code,
-      name: newProject.name,
-    });
+    // Insert into Supabase first
+    const { data, error } = await supabase
+      .from('affaires')
+      .upsert(
+        { code: newProject.code, name: newProject.name },
+        { onConflict: 'code', returning: 'representation' }
+      )
+      .select();
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de l'ajout",
+        description: `Impossible d'ajouter l'affaire: ${error.message}`,
+      });
+      return;
+    }
+    let insertedProject: Project | undefined = undefined;
+    if (data && data.length > 0) {
+      const returned = data[0];
+      insertedProject = {
+        id: returned.id,
+        code: returned.code,
+        name: returned.name,
+      };
+    } else {
+      // Fallback if no data returned
+      insertedProject = {
+        id: `project-temp-${Date.now()}`,
+        code: newProject.code,
+        name: newProject.name,
+      };
+    }
+
+    // Add to local context
+    // We directly manipulate local projects list by doing a context update
+    // We assume addProject adds the project in local state as well
+    // However, since we removed addProject from useAppContext to avoid duplication, handle it here:
+    // This reflection: Let's use context addProject if possible (should exist), or inform user otherwise
+    const { addProject } = useAppContext();
+    addProject(insertedProject);
+
     setNewProject({ code: '', name: '' });
     setShowAddForm(false);
     toast({
@@ -45,7 +82,23 @@ const AdminProjects = () => {
     });
   };
 
-  const handleDeleteProject = (projectId: string) => {
+  const handleDeleteProject = async (projectId: string) => {
+    // Delete from Supabase
+    const { error } = await supabase
+      .from('affaires')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la suppression",
+        description: `Impossible de supprimer l'affaire: ${error.message}`,
+      });
+      return;
+    }
+
+    // Delete from local context
     deleteProject(projectId);
     toast({
       title: "Affaire supprimée",
@@ -61,7 +114,7 @@ const AdminProjects = () => {
         <h1 className="text-2xl font-bold mb-6">Gestion des affaires</h1>
         
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -164,9 +217,7 @@ const AdminProjects = () => {
             </Card>
           </div>
           
-          <div>
-            <ProjectCSVImport />
-          </div>
+          {/* Removed ProjectCSVImport from this page as requested */}
         </div>
       </main>
     </div>
@@ -174,3 +225,4 @@ const AdminProjects = () => {
 };
 
 export default AdminProjects;
+
