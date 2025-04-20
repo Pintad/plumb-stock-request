@@ -7,9 +7,10 @@ import { useAppContext } from '@/context/AppContext';
 import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
 import { toast } from '@/components/ui/use-toast';
 import { Project } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProjectCSVImport: React.FC = () => {
-  const { loadProjectsFromCSV, projects, addProject } = useAppContext();
+  const { projects, addProject } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocallyLoaded, setIsLocallyLoaded] = useState(false);
@@ -29,29 +30,51 @@ const ProjectCSVImport: React.FC = () => {
       description: "Traitement du fichier CSV en cours...",
     });
     
-    readCSVFile(file, (content) => {
+    readCSVFile(file, async (content) => {
       try {
-        // Importer localement les projets
-        const parsedProjects = parseCSVForLocalImport(content);
-        setLocalProjects(parsedProjects);
+        const projectsFromCSV = parseCSVForLocalImport(content);
+        setLocalProjects(projectsFromCSV);
         
-        // Ajouter les projets localement
-        parsedProjects.forEach(project => {
-          // Vérifier si le projet existe déjà
-          const existingProject = projects.find(p => p.code === project.code);
-          if (!existingProject) {
+        // Insert or update projects directly in Supabase
+        const upsertResults = await Promise.all(projectsFromCSV.map(async project => {
+          const { data, error } = await supabase
+            .from('affaires')
+            .upsert(
+              { code: project.code, name: project.name },
+              { onConflict: 'code' }
+            )
+            .select();
+          if (error) {
+            console.error(`Erreur upsert affaire (${project.code}):`, error);
+            return false;
+          }
+          return true;
+        }));
+        
+        if (upsertResults.every(res => res)) {
+          showImportSuccess(projectsFromCSV.length, "affaires", false);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Certaines affaires n'ont pas pu être importées correctement",
+          });
+        }
+
+        // Reload projects in context
+        projectsFromCSV.forEach(project => {
+          const exists = projects.find(p => p.code === project.code);
+          if (!exists) {
             addProject(project);
           }
         });
         
         setIsLocallyLoaded(true);
-        showImportSuccess(parsedProjects.length, "affaires", true);
       } catch (error) {
-        console.error("Erreur lors de l'importation locale CSV:", error);
-        showImportError(error, true);
+        console.error("Erreur lors de l'importation CSV:", error);
+        showImportError(error, false);
       } finally {
         setIsLoading(false);
-        // Reset input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -59,56 +82,11 @@ const ProjectCSVImport: React.FC = () => {
     });
   };
   
-  const handleSyncToDatabase = async () => {
-    if (localProjects.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Aucune affaire à synchroniser",
-        description: "Veuillez d'abord importer un fichier CSV",
-      });
-      return;
-    }
-    
-    setIsSyncingToDb(true);
-    toast({
-      title: "Synchronisation avec la base de données",
-      description: "Sauvegarde des affaires en cours...",
-    });
-    
-    try {
-      await loadProjectsFromCSV(convertProjectsToCSV(localProjects));
-      setLocalProjects([]);
-      setIsLocallyLoaded(false);
-      toast({
-        title: "Synchronisation réussie",
-        description: "Les affaires ont été enregistrées dans la base de données",
-      });
-    } catch (error) {
-      showImportError(error);
-    } finally {
-      setIsSyncingToDb(false);
-    }
-  };
-  
-  // Fonction pour convertir un objet projet en format CSV
-  const convertProjectsToCSV = (projects: Project[]): string => {
-    // En-têtes CSV
-    const headers = "code,name";
-    
-    // Lignes de projets
-    const rows = projects.map(project => {
-      return `${project.code},${project.name}`;
-    }).join('\n');
-    
-    return `${headers}\n${rows}`;
-  };
-  
   // Fonction pour parser le CSV en objets projets
   const parseCSVForLocalImport = (csvContent: string): Project[] => {
     const { headers, lines } = parseCSV(csvContent);
     const projects: Project[] = [];
     
-    // Mapping pour les noms de colonnes du format fourni
     const codeIndex = headers.findIndex(h => h === 'code');
     const nameIndex = headers.findIndex(h => h === 'name');
     
@@ -120,7 +98,6 @@ const ProjectCSVImport: React.FC = () => {
       if (!line.trim()) continue;
       
       const values = line.split(',').map(value => value.trim());
-      
       const code = values[codeIndex];
       const name = values[nameIndex];
       
@@ -128,7 +105,7 @@ const ProjectCSVImport: React.FC = () => {
         projects.push({
           id: `temp-project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           code,
-          name
+          name,
         });
       }
     }
@@ -170,12 +147,17 @@ const ProjectCSVImport: React.FC = () => {
             
             {isLocallyLoaded && (
               <Button 
-                onClick={handleSyncToDatabase}
-                className="w-full flex items-center bg-green-600 hover:bg-green-700"
-                disabled={isSyncingToDb}
+                onClick={() => {
+                  setLocalProjects([]);
+                  setIsLocallyLoaded(false);
+                  toast({
+                    title: "Chargement réinitialisé",
+                    description: "Vous pouvez importer un nouveau fichier CSV",
+                  });
+                }}
+                className="w-full flex items-center bg-yellow-600 hover:bg-yellow-700"
               >
-                <Database className="mr-2" size={18} />
-                {isSyncingToDb ? "Synchronisation en cours..." : "Synchroniser avec la base de données"}
+                Réinitialiser l'import
               </Button>
             )}
           </div>

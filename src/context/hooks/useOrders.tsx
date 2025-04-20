@@ -98,7 +98,7 @@ export const useOrders = () => {
         clientname: user.name,
         datecommande: new Date().toISOString(),
         articles: cart as unknown as Json,
-        terme: 'Non',
+        termine: 'Non',
         archive: false,
         affaire_id: affaireId || null,
         commandeid: undefined, // Let Supabase generate UUID
@@ -132,12 +132,12 @@ export const useOrders = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, terme: string, messagefournisseur?: string) => {
+  const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
     try {
       const { error } = await supabase
         .from('commandes')
         .update({ 
-          termine: terme, 
+          termine: termine, 
           ...(messagefournisseur && { messagefournisseur })
         })
         .eq('commandeid', orderId);
