@@ -12,13 +12,13 @@ import { AppContextType } from './types';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, login, logout, signup, isAdmin } = useAuth();
-  const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, isLoading, loadProductsFromCSV } = useProducts();
+  const { user, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
+  const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders } = useOrders();
 
-  const createOrderWrapper = (projectCode?: string): Order | undefined => {
+  const createOrderWrapper = (projectCode?: string) => {
     if (user && cart.length > 0) {
       createOrder(user, cart, clearCart);
       return undefined;
@@ -75,4 +75,3 @@ export const useAppContext = (): AppContextType => {
   
   return context;
 };
-

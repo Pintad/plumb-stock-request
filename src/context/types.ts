@@ -33,4 +33,3 @@ export interface AppContextType {
   updateProduct: (product: Product) => Promise<boolean>;
   deleteProduct: (productId: string) => Promise<boolean>;
 }
-

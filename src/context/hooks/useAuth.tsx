@@ -12,9 +12,11 @@ export const useAuth = () => {
     // Setup listener for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setLoading(true);
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        // Defer fetchProfile to avoid async in callback
+        setTimeout(() => fetchProfile(session.user.id), 0);
       } else {
         setProfile(null);
         setLoading(false);
@@ -23,6 +25,7 @@ export const useAuth = () => {
 
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoading(true);
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -35,11 +38,12 @@ export const useAuth = () => {
 
   const fetchProfile = async (userId: string) => {
     setLoading(true);
+
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, name, role')
+      .from('utilisateurs')
+      .select('id, email, nom, role')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erreur lors du chargement du profil:', error);
@@ -54,15 +58,17 @@ export const useAuth = () => {
     }
 
     if (data) {
-      // Map database profile to our User type
       setProfile({
         id: data.id,
-        username: data.email, // Assume username is email for now
-        password: '', // Don't store password
-        name: data.name || '',
-        role: data.role === 'admin' ? 'admin' : 'worker',
+        username: data.email ?? '',
+        password: '', // Ne pas stocker le mot de passe côté frontend
+        name: data.nom ?? '',
+        role: data.role === 'magasinier' ? 'admin' : 'worker', // mapping roles table -> frontend
       });
+    } else {
+      setProfile(null);
     }
+
     setLoading(false);
   };
 
@@ -75,39 +81,52 @@ export const useAuth = () => {
 
     if (error || !data.session) {
       setLoading(false);
+      toast({
+        variant: 'destructive',
+        title: "Erreur d'authentification",
+        description: error?.message ?? 'Échec de la connexion.',
+      });
       return false;
     }
 
-    // fetchProfile will be triggered by onAuthStateChange
+    // fetchProfile sera déclenché par l'écouteur onAuthStateChange
     setLoading(false);
     return true;
   };
 
-  const signup = async (email: string, password: string, name: string): Promise<boolean> => {
+  const signup = async (
+    email: string,
+    password: string,
+    name: string
+  ): Promise<boolean> => {
     setLoading(true);
+    // Inscription via supabase auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
+
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Erreur d\'inscription',
+        title: "Erreur d'inscription",
         description: error.message,
       });
       setLoading(false);
       return false;
     }
+
     if (data?.user) {
-      // Insert profile row with default role worker
+      // Création de la fiche utilisateur dans la table utilisateurs
       const { error: profileError } = await supabase
-        .from('profiles')
+        .from('utilisateurs')
         .insert({
           id: data.user.id,
           email,
-          name,
-          role: 'worker',
+          nom: name,
+          role: 'ouvrier', // rôle par défaut à la création
         });
+
       if (profileError) {
         toast({
           variant: 'destructive',
@@ -117,9 +136,9 @@ export const useAuth = () => {
         setLoading(false);
         return false;
       }
-      // Optionally fetch profile
+
       await fetchProfile(data.user.id);
-      
+
       toast({
         title: 'Inscription réussie',
         description: 'Vous pouvez désormais vous connecter.',
@@ -127,6 +146,7 @@ export const useAuth = () => {
       setLoading(false);
       return true;
     }
+
     setLoading(false);
     return false;
   };
@@ -138,7 +158,7 @@ export const useAuth = () => {
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Impossible de se déconnecter pour le moment.',
+        description: "Impossible de se déconnecter pour le moment.",
       });
     }
     setProfile(null);
