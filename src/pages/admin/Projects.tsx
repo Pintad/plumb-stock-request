@@ -12,7 +12,7 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminProjects = () => {
-  const { projects, deleteProject } = useAppContext();
+  const { projects, deleteProject, addProject } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
@@ -32,12 +32,12 @@ const AdminProjects = () => {
       return;
     }
 
-    // Insert into Supabase first
+    // Insert into Supabase first without invalid 'returning' option
     const { data, error } = await supabase
       .from('affaires')
       .upsert(
         { code: newProject.code, name: newProject.name },
-        { onConflict: 'code', returning: 'representation' }
+        { onConflict: 'code' }
       )
       .select();
 
@@ -58,7 +58,6 @@ const AdminProjects = () => {
         name: returned.name,
       };
     } else {
-      // Fallback if no data returned
       insertedProject = {
         id: `project-temp-${Date.now()}`,
         code: newProject.code,
@@ -67,11 +66,6 @@ const AdminProjects = () => {
     }
 
     // Add to local context
-    // We directly manipulate local projects list by doing a context update
-    // We assume addProject adds the project in local state as well
-    // However, since we removed addProject from useAppContext to avoid duplication, handle it here:
-    // This reflection: Let's use context addProject if possible (should exist), or inform user otherwise
-    const { addProject } = useAppContext();
     addProject(insertedProject);
 
     setNewProject({ code: '', name: '' });
@@ -225,4 +219,3 @@ const AdminProjects = () => {
 };
 
 export default AdminProjects;
-
