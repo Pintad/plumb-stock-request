@@ -1,9 +1,14 @@
 
+// Note: This file is being kept for historical purposes,
+// but all functionality has been moved to src/context/hooks/orders/orderOperations.ts
+// If you need to update order-related functionality, please work with that file instead.
+
 import { Order, User, CartItem } from '../types';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
+// Legacy function, kept for reference but not actively used
 export const createOrder = (
   user: User | null, 
   cart: CartItem[], 
@@ -59,6 +64,7 @@ export const createOrder = (
   return newOrder;
 };
 
+// Legacy functions, kept for reference but not actively used
 export const updateOrder = (
   orders: Order[],
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>,
@@ -103,3 +109,4 @@ export const archiveOrder = async (
     return false;
   }
 };
+

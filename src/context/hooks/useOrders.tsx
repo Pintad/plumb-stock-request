@@ -1,67 +1,26 @@
 
-import { useState, useEffect } from 'react';
-import { Order, CartItem, User } from '../../types';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
+import { Order, CartItem, User } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { Json } from '@/integrations/supabase/types';
+import { 
+  fetchOrders, 
+  createOrderInDb, 
+  updateOrderStatusInDb, 
+  archiveOrderInDb, 
+  archiveCompletedOrdersInDb 
+} from './orders/orderOperations';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Charger les commandes au montage et à chaque modification
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
+  // Load orders from the database
   const loadOrders = async () => {
     setIsLoading(true);
     try {
-      // Récupérer les commandes détaillées depuis la vue
-      const { data: detailedOrders, error: viewError } = await supabase
-        .from('v_commandes_detaillees')
-        .select('*');
-
-      if (viewError) {
-        console.error("Erreur lors du chargement des commandes détaillées:", viewError);
-        throw viewError;
-      }
-
-      // Récupérer les données complètes des commandes pour les articles, etc.
-      const { data: fullOrders, error } = await supabase
-        .from('commandes')
-        .select('*')
-        .order('datecommande', { ascending: false });
-
-      if (error) throw error;
-
-      // Fusionner les données
-      const mappedOrders: Order[] = fullOrders?.map(order => {
-        // Trouver les données détaillées correspondantes
-        const detailedOrder = detailedOrders?.find(
-          (detailed) => detailed.commande_id === order.commandeid
-        );
-
-        return {
-          commandeid: order.commandeid,
-          clientname: order.clientname,
-          datecommande: order.datecommande,
-          articles: order.articles as unknown as CartItem[],
-          termine: order.termine || 'Non',
-          messagefournisseur: order.messagefournisseur,
-          archived: order.archive || false,
-          projectCode: detailedOrder?.code_affaire || '',
-          status: order.termine === 'Oui' ? 'completed' : 'pending',
-          // Nouveaux champs depuis la vue
-          displayTitle: detailedOrder?.titre_affichage || '',
-          projectName: detailedOrder?.nom_affaire || '',
-          orderNumber: detailedOrder?.numero_demande || 0
-        };
-      }) || [];
-      
-      setOrders(mappedOrders);
+      const loadedOrders = await fetchOrders();
+      setOrders(loadedOrders);
     } catch (error) {
-      console.error("Erreur lors du chargement des commandes:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les commandes",
@@ -72,6 +31,7 @@ export const useOrders = () => {
     }
   };
 
+  // Create a new order
   const createOrder = async (
     user: User | null,
     cart: CartItem[],
@@ -79,74 +39,20 @@ export const useOrders = () => {
     affaireId?: string
   ): Promise<boolean> => {
     try {
-      if (!user || cart.length === 0) return false;
-
-      // Count existing orders for the given affaire to generate sequence number
-      let orderCount = 0;
-      if (affaireId) {
-        const { count, error: countError } = await supabase
-          .from('commandes')
-          .select('commandeid', { count: 'exact', head: true })
-          .eq('affaire_id', affaireId);
-
-        if (countError) {
-          console.error("Erreur de comptage des commandes pour l'affaire:", countError);
-        } else if (typeof count === 'number') {
-          orderCount = count;
-        }
-      }
-
-      // Fetch affaire details to build the order name
-      let affaireCode = "";
-      if (affaireId) {
-        const { data: affaireData, error: affaireError } = await supabase
-          .from('affaires')
-          .select('code')
-          .eq('id', affaireId)
-          .maybeSingle();
-
-        if (affaireError) {
-          console.error("Erreur lors de la récupération de l'affaire:", affaireError);
-        } else if (affaireData) {
-          affaireCode = affaireData.code;
-        }
-      }
-
-      // Generate order name unique per affaire: NomAffaire - 001, 002 etc
-      const orderName = affaireCode
-        ? `${affaireCode} - ${String(orderCount + 1).padStart(3, '0')}`
-        : `Commande - ${String(orderCount + 1).padStart(3, '0')}`;
-
-      const orderData = {
-        clientname: user.name,
-        datecommande: new Date().toISOString(),
-        articles: cart as unknown as Json,
-        termine: 'Non',
-        archive: false,
-        affaire_id: affaireId || null,
-        commandeid: undefined, // Let Supabase generate UUID
-        messagefournisseur: null,
-        // Optionally you can store orderName somewhere if needed,
-        // but do not include if the DB does not have the column
-      };
-
-      const { error } = await supabase
-        .from('commandes')
-        .insert(orderData);
-
-      if (error) throw error;
-
-      clearCart();
-      await loadOrders(); // Recharger les commandes après création
-
-      toast({
-        title: "Commande créée",
-        description: "Votre commande a été enregistrée avec succès",
-      });
+      const success = await createOrderInDb(user, cart, affaireId);
       
-      return true;
+      if (success) {
+        clearCart();
+        await loadOrders();
+        
+        toast({
+          title: "Commande créée",
+          description: "Votre commande a été enregistrée avec succès",
+        });
+      }
+      
+      return success;
     } catch (error) {
-      console.error("Erreur lors de la création de la commande:", error);
       toast({
         title: "Erreur",
         description: "Impossible de créer la commande",
@@ -156,18 +62,10 @@ export const useOrders = () => {
     }
   };
 
+  // Update order status
   const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
     try {
-      const { error } = await supabase
-        .from('commandes')
-        .update({ 
-          termine: termine, 
-          ...(messagefournisseur && { messagefournisseur })
-        })
-        .eq('commandeid', orderId);
-
-      if (error) throw error;
-
+      await updateOrderStatusInDb(orderId, termine, messagefournisseur);
       await loadOrders();
       
       toast({
@@ -175,7 +73,6 @@ export const useOrders = () => {
         description: "Le statut de la commande a été mis à jour",
       });
     } catch (error) {
-      console.error("Erreur lors de la mise à jour de la commande:", error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour la commande",
@@ -184,16 +81,10 @@ export const useOrders = () => {
     }
   };
 
+  // Archive a single order
   const archiveOrder = async (orderId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('commandes')
-        .update({ archive: true })
-        .eq('commandeid', orderId);
-
-      if (error) throw error;
-
-      // Reload orders from the database to get the latest data
+      await archiveOrderInDb(orderId);
       await loadOrders();
       
       toast({
@@ -203,7 +94,6 @@ export const useOrders = () => {
       
       return true;
     } catch (error) {
-      console.error("Error archiving order:", error);
       toast({
         title: "Erreur",
         description: "Impossible d'archiver la demande",
@@ -213,17 +103,10 @@ export const useOrders = () => {
     }
   };
 
+  // Archive all completed orders
   const archiveCompletedOrders = async (): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('commandes')
-        .update({ archive: true })
-        .eq('termine', 'Oui')
-        .eq('archive', false);
-
-      if (error) throw error;
-
-      // Reload orders from the database to get the latest data
+      await archiveCompletedOrdersInDb();
       await loadOrders();
       
       toast({
@@ -233,7 +116,6 @@ export const useOrders = () => {
       
       return true;
     } catch (error) {
-      console.error("Error archiving completed orders:", error);
       toast({
         title: "Erreur",
         description: "Impossible d'archiver les demandes terminées",
