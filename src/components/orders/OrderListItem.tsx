@@ -65,7 +65,11 @@ const OrderListItem = ({
           <div>
             <CardTitle className="text-lg flex items-center">
               <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
-              Demande #{order.commandeid}
+              {order.displayTitle ? (
+                <span>{order.displayTitle}</span>
+              ) : (
+                <span>Demande #{order.commandeid}</span>
+              )}
               {showUser && order.clientname && (
                 <span className="ml-2 text-sm font-normal">({order.clientname})</span>
               )}
@@ -73,11 +77,11 @@ const OrderListItem = ({
             <p className="text-sm text-gray-500">
               {order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}
             </p>
-            {order.projectCode && (
+            {(order.projectCode || order.projectName) && (
               <div className="mt-1">
                 <Badge variant="outline" className="font-normal">
                   Affaire: {order.projectCode} 
-                  {projectName && ` - ${projectName}`}
+                  {order.projectName ? ` - ${order.projectName}` : projectName ? ` - ${projectName}` : ''}
                 </Badge>
               </div>
             )}

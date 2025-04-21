@@ -17,24 +17,47 @@ export const useOrders = () => {
   const loadOrders = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Récupérer les commandes détaillées depuis la vue
+      const { data: detailedOrders, error: viewError } = await supabase
+        .from('v_commandes_detaillees')
+        .select('*');
+
+      if (viewError) {
+        console.error("Erreur lors du chargement des commandes détaillées:", viewError);
+        throw viewError;
+      }
+
+      // Récupérer les données complètes des commandes pour les articles, etc.
+      const { data: fullOrders, error } = await supabase
         .from('commandes')
-        .select('*, affaire_id, affaires:affaires(id, code, name)')
+        .select('*')
         .order('datecommande', { ascending: false });
 
       if (error) throw error;
 
-      const mappedOrders: Order[] = data?.map(order => ({
-        commandeid: order.commandeid,
-        clientname: order.clientname,
-        datecommande: order.datecommande,
-        articles: order.articles as unknown as CartItem[],
-        termine: order.termine || 'Non',
-        messagefournisseur: order.messagefournisseur,
-        archived: order.archive || false,
-        projectCode: order.affaires?.code || '',
-        status: order.termine === 'Oui' ? 'completed' : 'pending'
-      })) || [];
+      // Fusionner les données
+      const mappedOrders: Order[] = fullOrders?.map(order => {
+        // Trouver les données détaillées correspondantes
+        const detailedOrder = detailedOrders?.find(
+          (detailed) => detailed.commande_id === order.commandeid
+        );
+
+        return {
+          commandeid: order.commandeid,
+          clientname: order.clientname,
+          datecommande: order.datecommande,
+          articles: order.articles as unknown as CartItem[],
+          termine: order.termine || 'Non',
+          messagefournisseur: order.messagefournisseur,
+          archived: order.archive || false,
+          projectCode: detailedOrder?.code_affaire || '',
+          status: order.termine === 'Oui' ? 'completed' : 'pending',
+          // Nouveaux champs depuis la vue
+          displayTitle: detailedOrder?.titre_affichage || '',
+          projectName: detailedOrder?.nom_affaire || '',
+          orderNumber: detailedOrder?.numero_demande || 0
+        };
+      }) || [];
       
       setOrders(mappedOrders);
     } catch (error) {
@@ -235,4 +258,3 @@ export const useOrders = () => {
     archiveCompletedOrders
   };
 };
-

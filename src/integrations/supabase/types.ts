@@ -151,7 +151,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_commandes_detaillees: {
+        Row: {
+          code_affaire: string | null
+          commande_id: string | null
+          nom_affaire: string | null
+          nom_utilisateur: string | null
+          numero_demande: number | null
+          titre_affichage: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

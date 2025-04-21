@@ -37,6 +37,11 @@ export interface Order {
   archived?: boolean;
   projectCode?: string; // store affaire code here for filtering convenience
   status?: 'pending' | 'processed' | 'completed';
+  
+  // Nouveaux champs depuis la vue v_commandes_detaillees
+  displayTitle?: string;   // titre_affichage de la vue
+  projectName?: string;    // nom_affaire de la vue
+  orderNumber?: number;    // numero_demande de la vue
 }
 
 export interface User {

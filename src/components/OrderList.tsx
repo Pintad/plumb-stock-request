@@ -65,7 +65,7 @@ const OrderList = ({
     let htmlContent = `
       <html>
       <head>
-        <title>Demande de Stock #${order.commandeid}</title>
+        <title>${order.displayTitle || `Demande de Stock #${order.commandeid}`}</title>
         <style>
           body { font-family: Arial, sans-serif; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -78,7 +78,7 @@ const OrderList = ({
       </head>
       <body>
         <div class="header">
-          <h1>Demande de stock #${order.commandeid}</h1>
+          <h1>${order.displayTitle || `Demande de stock #${order.commandeid}`}</h1>
           <p class="date">Date: ${new Date().toLocaleDateString('fr-FR')}</p>
         </div>
         <p>Utilisateur: ${order.clientname || ''}</p>
@@ -138,7 +138,7 @@ const OrderList = ({
             order={order}
             showUser={showUser}
             isAdmin={isAdmin}
-            projectName={getProjectName(order.projectCode)}
+            projectName={order.projectName || getProjectName(order.projectCode)}
             onManageOrder={onManageOrder}
             onExportCSV={exportToCSV}
             onPrintOrder={printOrder}
