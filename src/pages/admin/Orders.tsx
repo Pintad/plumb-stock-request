@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import OrderList from '@/components/OrderList';
 import { useAppContext } from '@/context/AppContext';
@@ -11,10 +11,16 @@ import { Order } from '@/types';
 import OrderManager from '@/components/OrderManager';
 
 const AdminOrders = () => {
-  const { orders, projects, archiveOrder, archiveCompletedOrders } = useAppContext();
+  const { orders, projects, archiveOrder, archiveCompletedOrders, loadOrders, isLoading } = useAppContext();
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
+  
+  // Charger les commandes lorsque la page se monte
+  useEffect(() => {
+    loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const filteredOrders = orders.filter(order => {
     if (showArchived !== order.archived) return false;
@@ -95,7 +101,11 @@ const AdminOrders = () => {
           </CardContent>
         </Card>
         
-        {selectedOrder ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          </div>
+        ) : selectedOrder ? (
           <OrderManager 
             order={selectedOrder} 
             onClose={() => setSelectedOrder(null)} 

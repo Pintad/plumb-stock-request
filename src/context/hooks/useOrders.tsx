@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Order, CartItem, User } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { 
@@ -13,6 +13,11 @@ import {
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Charge automatiquement les commandes au montage du hook
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
   // Load orders from the database
   const loadOrders = async () => {

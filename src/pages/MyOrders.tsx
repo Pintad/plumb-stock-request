@@ -7,15 +7,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 const MyOrders = () => {
-  const { orders, user, updateOrderStatus } = useAppContext();
+  const { orders, user, loadOrders, isLoading } = useAppContext();
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
   useEffect(() => {
-    // Load orders when component mounts
-    const loadOrders = async () => {
-      // This would be where we'd load orders, but it's now handled by the context
-    };
+    // Charger les commandes lorsque la page se monte
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Filter orders to show only those of the current user and control archived visibility
@@ -42,7 +40,13 @@ const MyOrders = () => {
           </div>
         </div>
         
-        <OrderList orders={userOrders} />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <OrderList orders={userOrders} />
+        )}
       </main>
     </div>
   );

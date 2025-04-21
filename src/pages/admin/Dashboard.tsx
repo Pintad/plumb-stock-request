@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/context/AppContext';
@@ -7,7 +7,13 @@ import { Package, FileText, ClipboardCheck, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { orders, products, user } = useAppContext();
+  const { orders, products, user, loadOrders, isLoading } = useAppContext();
+  
+  // Charger les commandes lorsque le tableau de bord se monte
+  useEffect(() => {
+    loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Nombre de demandes en attente
   const pendingOrders = orders.filter(order => order.termine === 'Non').length;
@@ -66,7 +72,11 @@ const Dashboard = () => {
         
         <div className="mt-8">
           <h2 className="text-lg font-semibold mb-4">Dernières demandes</h2>
-          {orders.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          ) : orders.length > 0 ? (
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y">
@@ -80,7 +90,9 @@ const Dashboard = () => {
                         <div className="flex items-center">
                           <ClipboardCheck className="h-5 w-5 text-gray-400 mr-4" />
                           <div>
-                            <p className="font-medium">Demande #{order.commandeid}</p>
+                            <p className="font-medium">
+                              {order.displayTitle || `Demande #${order.commandeid}`}
+                            </p>
                             <p className="text-sm text-gray-500">
                               Par {order.clientname} · {order.datecommande}
                             </p>
