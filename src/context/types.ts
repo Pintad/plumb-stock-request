@@ -20,6 +20,7 @@ export interface AppContextType {
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   orders: Order[];
+  loadOrders: () => Promise<void>; // Added the loadOrders function
   createOrder: (projectCode?: string) => Order | undefined;
   updateOrderStatus: (orderId: string, termine: string, messagefournisseur?: string) => Promise<void>;
   updateOrder: (order: Order) => void;

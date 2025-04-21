@@ -16,7 +16,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
-  const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders } = useOrders();
+  const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders, loadOrders } = useOrders();
 
   // Wrapper to pass affaireId (projectCode) to createOrder in useOrders hook
   const createOrderWrapper = (projectCode?: string) => {
@@ -53,6 +53,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCartItemQuantity,
         clearCart,
         orders,
+        loadOrders, // Expose loadOrders function to components
         createOrder: createOrderWrapper,
         updateOrderStatus,
         updateOrder,
