@@ -80,16 +80,16 @@ export const useOrders = () => {
           .from('affaires')
           .select('code')
           .eq('id', affaireId)
-          .single();
+          .maybeSingle();
+
         if (affaireError) {
           console.error("Erreur lors de la récupération de l'affaire:", affaireError);
-        } else {
+        } else if (affaireData) {
           affaireCode = affaireData.code;
         }
       }
 
       // Generate order name unique per affaire: NomAffaire - 001, 002 etc
-      // Using zero padded 3 digits
       const orderName = affaireCode
         ? `${affaireCode} - ${String(orderCount + 1).padStart(3, '0')}`
         : `Commande - ${String(orderCount + 1).padStart(3, '0')}`;
@@ -103,8 +103,8 @@ export const useOrders = () => {
         affaire_id: affaireId || null,
         commandeid: undefined, // Let Supabase generate UUID
         messagefournisseur: null,
-        // Remove "name" field here as it causes DB error (column does not exist)
-        // name: orderName
+        // Optionally you can store orderName somewhere if needed,
+        // but do not include if the DB does not have the column
       };
 
       const { error } = await supabase
