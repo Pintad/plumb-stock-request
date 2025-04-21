@@ -6,37 +6,43 @@ import { toast } from '@/components/ui/use-toast';
 
 export const useProjects = (initialProjects: Project[] = []) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('affaires')
-          .select('*')
-          .order('name', { ascending: true });
+  // Function to load projects from Supabase
+  const loadProjects = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('affaires')
+        .select('*')
+        .order('name', { ascending: true });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data) {
-          const projectsFromDB: Project[] = data.map((item) => ({
-            id: item.id,
-            code: item.code,
-            name: item.name,
-          }));
-          setProjects(projectsFromDB);
-        } else {
-          setProjects([]);
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des projets depuis Supabase:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les affaires depuis la base de données.",
-          variant: "destructive",
-        });
+      if (data) {
+        const projectsFromDB: Project[] = data.map((item) => ({
+          id: item.id,
+          code: item.code,
+          name: item.name,
+        }));
+        setProjects(projectsFromDB);
+      } else {
+        setProjects([]);
       }
-    };
+    } catch (error) {
+      console.error("Erreur lors du chargement des projets depuis Supabase:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les affaires depuis la base de données.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Load projects on component mount
+  useEffect(() => {
     loadProjects();
   }, []);
 
@@ -102,5 +108,7 @@ export const useProjects = (initialProjects: Project[] = []) => {
     projects,
     addProject,
     deleteProject,
+    loadProjects,
+    isLoading,
   };
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Input } from '@/components/ui/input';
@@ -12,10 +12,16 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminProjects = () => {
-  const { projects, deleteProject, addProject } = useAppContext();
+  const { projects, deleteProject, addProject, loadProjects, isLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
+  
+  // Load projects when component mounts
+  useEffect(() => {
+    loadProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const filteredProjects = projects.filter(project => 
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -165,44 +171,50 @@ const AdminProjects = () => {
                 )}
                 
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProjects.length > 0 ? (
-                        filteredProjects.map((project) => (
-                          <TableRow key={project.id}>
-                            <TableCell className="font-mono">{project.code}</TableCell>
-                            <TableCell>{project.name}</TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteProject(project.id)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </div>
+                  {isLoading ? (
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredProjects.length > 0 ? (
+                          filteredProjects.map((project) => (
+                            <TableRow key={project.id}>
+                              <TableCell className="font-mono">{project.code}</TableCell>
+                              <TableCell>{project.name}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteProject(project.id)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-6">
+                              {searchTerm 
+                                ? "Aucune affaire ne correspond à votre recherche" 
+                                : "Aucune affaire dans la liste"}
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center py-6">
-                            {searchTerm 
-                              ? "Aucune affaire ne correspond à votre recherche" 
-                              : "Aucune affaire dans la liste"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </div>
                 <div className="mt-4 text-sm text-gray-500">
                   {filteredProjects.length} affaires
@@ -210,8 +222,6 @@ const AdminProjects = () => {
               </CardContent>
             </Card>
           </div>
-          
-          {/* Removed ProjectCSVImport from this page as requested */}
         </div>
       </main>
     </div>

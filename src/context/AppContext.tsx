@@ -14,7 +14,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
-  const { projects, addProject, deleteProject } = useProjects();
+  const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, archiveOrder, archiveCompletedOrders, loadOrders } = useOrders();
 
@@ -47,13 +47,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         projects,
         addProject,
         deleteProject,
+        loadProjects, // Expose loadProjects function to components
         cart,
         addToCart,
         removeFromCart,
         updateCartItemQuantity,
         clearCart,
         orders,
-        loadOrders, // Expose loadOrders function to components
+        loadOrders,
         createOrder: createOrderWrapper,
         updateOrderStatus,
         updateOrder,
@@ -61,7 +62,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         archiveCompletedOrders,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
-        isLoading,
+        isLoading: isLoading || projectsLoading, // Combine loading states
         addProduct,
         updateProduct,
         deleteProduct,

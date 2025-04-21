@@ -14,13 +14,14 @@ export interface AppContextType {
   projects: Project[];
   addProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
+  loadProjects: () => Promise<void>; // Added loadProjects function
   cart: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   orders: Order[];
-  loadOrders: () => Promise<void>; // Added the loadOrders function
+  loadOrders: () => Promise<void>;
   createOrder: (projectCode?: string) => Order | undefined;
   updateOrderStatus: (orderId: string, termine: string, messagefournisseur?: string) => Promise<void>;
   updateOrder: (order: Order) => void;
