@@ -3,31 +3,36 @@ import { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Session } from '@supabase/supabase-js';
 
 export const useAuth = () => {
   const [profile, setProfile] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Setup listener for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setLoading(true);
-      if (session?.user) {
-        // Defer fetchProfile to avoid async in callback
-        setTimeout(() => fetchProfile(session.user.id), 0);
+    // D'abord, mettre en place l'écouteur d'événements d'authentification
+    // AVANT de vérifier la session existante
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      // Mettre à jour l'état de la session de manière synchrone
+      setSession(currentSession);
+      
+      if (currentSession?.user) {
+        // Utiliser setTimeout pour éviter des appels imbriqués à l'API Supabase
+        // qui peuvent causer des blocages
+        setTimeout(() => fetchProfile(currentSession.user.id), 0);
       } else {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    // Initial check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setLoading(true);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    // ENSUITE vérifier s'il existe une session active
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
       } else {
         setLoading(false);
       }
@@ -90,7 +95,6 @@ export const useAuth = () => {
     }
 
     // fetchProfile sera déclenché par l'écouteur onAuthStateChange
-    setLoading(false);
     return true;
   };
 
@@ -137,13 +141,12 @@ export const useAuth = () => {
         return false;
       }
 
-      await fetchProfile(data.user.id);
-
       toast({
         title: 'Inscription réussie',
         description: 'Vous pouvez désormais vous connecter.',
       });
-      setLoading(false);
+      
+      // fetchProfile sera déclenché par l'écouteur onAuthStateChange
       return true;
     }
 
@@ -162,6 +165,7 @@ export const useAuth = () => {
       });
     }
     setProfile(null);
+    setSession(null);
     setLoading(false);
   };
 
@@ -169,6 +173,7 @@ export const useAuth = () => {
 
   return {
     user: profile,
+    session,
     login,
     logout,
     signup,

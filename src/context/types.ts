@@ -1,8 +1,10 @@
 
 import { Product, CartItem, User, Order, Project } from '../types';
+import { Session } from '@supabase/supabase-js';
 
 export interface AppContextType {
   user: User | null;
+  session: Session | null; // Ajout de la session Supabase
   login: (username: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;

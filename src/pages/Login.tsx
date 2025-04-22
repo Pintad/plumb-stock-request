@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,28 +9,60 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
-  const { login, isAdmin } = useAppContext();
+  const { login, isAdmin, user, session, isLoading } = useAppContext();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    if (login(username, password)) {
-      // Redirection basée sur le rôle
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (!isLoading && user && session) {
       navigate(isAdmin ? '/admin' : '/');
-    } else {
+    }
+  }, [user, session, isAdmin, navigate, isLoading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const success = await login(username, password);
+      
+      if (success) {
+        // Redirection sera gérée par l'effet ci-dessus
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: "Identifiants incorrects",
+        });
+      }
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Erreur de connexion",
-        description: "Identifiants incorrects",
+        description: "Une erreur est survenue lors de la tentative de connexion",
       });
-      setIsLoading(false);
+      console.error("Erreur de connexion:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Si la page est en cours de chargement (vérification de session)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-plumbing-blue"></div>
+      </div>
+    );
+  }
+
+  // Si l'utilisateur est déjà connecté, ne pas afficher le formulaire de connexion
+  if (user && session) {
+    return null; // L'effet s'occupera de la redirection
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -68,9 +100,9 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full bg-plumbing-blue hover:bg-blue-600"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? "Connexion..." : "Se connecter"}
+              {isSubmitting ? "Connexion..." : "Se connecter"}
             </Button>
             
             <div className="mt-4 text-sm text-center text-gray-500">

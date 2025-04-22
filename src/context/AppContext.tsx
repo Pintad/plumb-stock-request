@@ -12,7 +12,7 @@ import { AppContextType } from './types';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
+  const { user, session, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
@@ -35,6 +35,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         user,
+        session, // Exposer la session Supabase
         login,
         logout,
         signup,
@@ -47,7 +48,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         projects,
         addProject,
         deleteProject,
-        loadProjects, // Expose loadProjects function to components
+        loadProjects,
         cart,
         addToCart,
         removeFromCart,
@@ -62,7 +63,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         archiveCompletedOrders,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
-        isLoading: isLoading || projectsLoading, // Combine loading states
+        isLoading: isLoading || projectsLoading,
         addProduct,
         updateProduct,
         deleteProduct,
