@@ -6,9 +6,7 @@ import {
   fetchOrders, 
   createOrderInDb, 
   updateOrderStatusInDb, 
-  updateOrderInDb,
-  archiveOrderInDb, 
-  archiveCompletedOrdersInDb 
+  updateOrderInDb 
 } from './orders/orderOperations';
 
 export const useOrders = () => {
@@ -105,58 +103,12 @@ export const useOrders = () => {
     }
   };
 
-  // Archive a single order
-  const archiveOrder = async (orderId: string): Promise<boolean> => {
-    try {
-      await archiveOrderInDb(orderId);
-      await loadOrders();
-      
-      toast({
-        title: "Demande archivée",
-        description: "La demande a été archivée avec succès",
-      });
-      
-      return true;
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible d'archiver la demande",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
-  // Archive all completed orders
-  const archiveCompletedOrders = async (): Promise<boolean> => {
-    try {
-      await archiveCompletedOrdersInDb();
-      await loadOrders();
-      
-      toast({
-        title: "Demandes archivées",
-        description: "Toutes les demandes terminées ont été archivées",
-      });
-      
-      return true;
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible d'archiver les demandes terminées",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
   return {
     orders,
     isLoading,
     loadOrders,
     createOrder,
     updateOrderStatus,
-    updateOrder,
-    archiveOrder,
-    archiveCompletedOrders
+    updateOrder
   };
 };

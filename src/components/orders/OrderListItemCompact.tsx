@@ -2,7 +2,6 @@
 import React from 'react';
 import { Order } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
@@ -34,9 +33,9 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
         </div>
         <div className="flex items-center space-x-2">
           <Badge 
-            className={`${order.termine === 'Non' ? 'bg-yellow-500' : 'bg-green-500'} text-white`}
+            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : 'bg-green-500'} text-white`}
           >
-            {order.termine === 'Non' ? 'En attente' : 'Terminée'}
+            {order.termine === 'Non' ? 'En attente' : order.termine === 'En cours' ? 'En cours' : 'Terminée'}
           </Badge>
           <ChevronRight className="h-4 w-4 text-gray-400" />
         </div>

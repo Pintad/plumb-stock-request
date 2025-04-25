@@ -47,7 +47,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
         articles: articles,
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
-        archived: order.archive || false,
+        archived: false, // Removed archive functionality
         projectCode: detailedOrder?.code_affaire || '',
         status: order.termine === 'Oui' ? 'completed' : 'pending',
         // Nouveaux champs depuis la vue
@@ -122,7 +122,7 @@ export const createOrderInDb = async (
       datecommande: new Date().toISOString(),
       articles: cartWithCompletionStatus as unknown as Json,
       termine: 'Non',
-      archive: false,
+      archive: false, // Setting this to false by default, but no longer using it
       affaire_id: affaireId || null,
       commandeid: undefined, // Let Supabase generate UUID
       messagefournisseur: null,
@@ -192,41 +192,6 @@ export const updateOrderInDb = async (order: Order): Promise<void> => {
     if (error) throw error;
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la commande:", error);
-    throw error;
-  }
-};
-
-/**
- * Archive an order in Supabase
- */
-export const archiveOrderInDb = async (orderId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('commandes')
-      .update({ archive: true })
-      .eq('commandeid', orderId);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error archiving order:", error);
-    throw error;
-  }
-};
-
-/**
- * Archive all completed orders in Supabase
- */
-export const archiveCompletedOrdersInDb = async (): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('commandes')
-      .update({ archive: true })
-      .eq('termine', 'Oui')
-      .eq('archive', false);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error archiving completed orders:", error);
     throw error;
   }
 };

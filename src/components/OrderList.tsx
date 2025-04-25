@@ -10,7 +10,6 @@ interface OrderListProps {
   showUser?: boolean;
   showFullDetails?: boolean;
   onManageOrder?: (order: Order) => void;
-  onArchiveOrder?: (orderId: string) => Promise<boolean>;
   isAdmin?: boolean;
 }
 
@@ -19,7 +18,6 @@ const OrderList = ({
   showUser = false, 
   showFullDetails = false,
   onManageOrder,
-  onArchiveOrder,
   isAdmin = false
 }: OrderListProps) => {
   const { projects } = useAppContext();
@@ -142,7 +140,6 @@ const OrderList = ({
             onManageOrder={onManageOrder}
             onExportCSV={exportToCSV}
             onPrintOrder={printOrder}
-            onArchiveOrder={onArchiveOrder}
           />
         ))
       ) : (
