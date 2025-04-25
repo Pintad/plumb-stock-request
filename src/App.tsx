@@ -19,6 +19,7 @@ import AdminProducts from "./pages/admin/Products";
 import AdminProjects from "./pages/admin/Projects";
 import AdminCategories from "./pages/admin/Categories";
 import NotFound from "./pages/NotFound";
+import UserOrderDetails from "./pages/OrderDetails";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<AuthGuard><Catalog /></AuthGuard>} />
             <Route path="/cart" element={<AuthGuard><Cart /></AuthGuard>} />
             <Route path="/my-orders" element={<AuthGuard><MyOrders /></AuthGuard>} />
+            <Route path="/orders/:orderId" element={<AuthGuard><UserOrderDetails /></AuthGuard>} />
             
             {/* Routes pour les administrateurs */}
             <Route path="/admin" element={<AuthGuard requireAdmin><Dashboard /></AuthGuard>} />
