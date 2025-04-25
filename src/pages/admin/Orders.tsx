@@ -1,20 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
-import OrderList from '@/components/OrderList';
-import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Archive, Eye, EyeOff } from 'lucide-react';
-import { Order } from '@/types';
-import OrderManager from '@/components/OrderManager';
+import OrderListItemCompact from '@/components/orders/OrderListItemCompact';
+import { useAppContext } from '@/context/AppContext';
 
 const AdminOrders = () => {
-  const { orders, projects, archiveOrder, archiveCompletedOrders, loadOrders, isLoading } = useAppContext();
+  const { orders, projects, archiveCompletedOrders, loadOrders, isLoading } = useAppContext();
   const [selectedProject, setSelectedProject] = useState<string>("all");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
+  const navigate = useNavigate();
   
   // Charger les commandes lorsque la page se monte
   useEffect(() => {
@@ -105,20 +104,21 @@ const AdminOrders = () => {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
-        ) : selectedOrder ? (
-          <OrderManager 
-            order={selectedOrder} 
-            onClose={() => setSelectedOrder(null)} 
-          />
         ) : (
-          <OrderList 
-            orders={filteredOrders} 
-            showUser={true} 
-            showFullDetails={true} 
-            onManageOrder={setSelectedOrder}
-            onArchiveOrder={archiveOrder}
-            isAdmin={true}
-          />
+          <div className="space-y-4">
+            {filteredOrders.map(order => (
+              <OrderListItemCompact
+                key={order.commandeid}
+                order={order}
+                onClick={() => navigate(`/admin/orders/${order.commandeid}`)}
+              />
+            ))}
+            {filteredOrders.length === 0 && (
+              <p className="text-center text-gray-500 py-8">
+                Aucune commande trouvée
+              </p>
+            )}
+          </div>
         )}
       </main>
     </div>

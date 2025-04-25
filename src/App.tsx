@@ -14,6 +14,7 @@ import Cart from "./pages/Cart";
 import MyOrders from "./pages/MyOrders";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminOrders from "./pages/admin/Orders";
+import OrderDetails from "./pages/admin/OrderDetails";
 import AdminProducts from "./pages/admin/Products";
 import AdminProjects from "./pages/admin/Projects";
 import AdminCategories from "./pages/admin/Categories";
@@ -40,6 +41,7 @@ const App = () => (
             {/* Routes pour les administrateurs */}
             <Route path="/admin" element={<AuthGuard requireAdmin><Dashboard /></AuthGuard>} />
             <Route path="/admin/orders" element={<AuthGuard requireAdmin><AdminOrders /></AuthGuard>} />
+            <Route path="/admin/orders/:orderId" element={<AuthGuard requireAdmin><OrderDetails /></AuthGuard>} />
             <Route path="/admin/products" element={<AuthGuard requireAdmin><AdminProducts /></AuthGuard>} />
             <Route path="/admin/projects" element={<AuthGuard requireAdmin><AdminProjects /></AuthGuard>} />
             <Route path="/admin/categories" element={<AuthGuard requireAdmin><AdminCategories /></AuthGuard>} />
