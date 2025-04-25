@@ -4,7 +4,7 @@ import { Session } from '@supabase/supabase-js';
 
 export interface AppContextType {
   user: User | null;
-  session: Session | null; // Ajout de la session Supabase
+  session: Session | null; 
   login: (username: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -16,7 +16,7 @@ export interface AppContextType {
   projects: Project[];
   addProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
-  loadProjects: () => Promise<void>; // Added loadProjects function
+  loadProjects: () => Promise<void>;
   cart: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
@@ -27,8 +27,6 @@ export interface AppContextType {
   createOrder: (projectCode?: string) => Order | undefined;
   updateOrderStatus: (orderId: string, termine: string, messagefournisseur?: string) => Promise<void>;
   updateOrder: (order: Order) => void;
-  archiveOrder: (orderId: string) => Promise<boolean>;
-  archiveCompletedOrders: () => Promise<boolean>;
   loadProductsFromCSV: () => Promise<void>;
   loadProjectsFromCSV: (csvContent: string) => void;
   isAdmin: boolean;
