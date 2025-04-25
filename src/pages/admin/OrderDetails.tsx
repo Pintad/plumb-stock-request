@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Archive, FileDown, Printer } from 'lucide-react';
+import { ChevronLeft, FileDown, Printer } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CartItem, Order } from '@/types';
@@ -14,7 +14,7 @@ import MessageSection from '@/components/orders/MessageSection';
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { orders, archiveOrder, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
+  const { orders, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
 
   const [order, setOrder] = useState<Order | undefined>(
     orders.find(o => o.commandeid === orderId)
@@ -61,12 +61,6 @@ const OrderDetails = () => {
       </div>
     );
   }
-
-  const handleArchive = async () => {
-    if (await archiveOrder(order.commandeid)) {
-      navigate('/admin/orders');
-    }
-  };
 
   const handleItemCompletionToggle = (index: number) => {
     const updatedArticles = [...articles];
@@ -297,17 +291,6 @@ const OrderDetails = () => {
                   <Printer className="h-4 w-4" />
                   Imprimer
                 </Button>
-
-                {order.termine === 'Oui' && !order.archived && isAdmin && (
-                  <Button 
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={handleArchive}
-                  >
-                    <Archive className="h-4 w-4" />
-                    Archiver
-                  </Button>
-                )}
               </div>
             </div>
           </CardContent>
