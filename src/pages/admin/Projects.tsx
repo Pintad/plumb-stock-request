@@ -10,12 +10,14 @@ import { Search, Plus, Trash2 } from 'lucide-react';
 import { Project } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ProjectCSVImport from '@/components/admin/ProjectCSVImport';
 
 const AdminProjects = () => {
   const { projects, deleteProject, addProject, loadProjects, isLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   
   // Load projects when component mounts
   useEffect(() => {
@@ -23,10 +25,14 @@ const AdminProjects = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  const filteredProjects = projects.filter(project => 
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    project.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter projects when searchTerm or projects change
+  useEffect(() => {
+    const filtered = projects.filter(project => 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      project.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProjects(filtered);
+  }, [searchTerm, projects]);
 
   const handleAddProject = async () => {
     if (!newProject.code || !newProject.name) {
@@ -38,7 +44,7 @@ const AdminProjects = () => {
       return;
     }
 
-    // Insert into Supabase first without invalid 'returning' option
+    // Insert into Supabase
     const { data, error } = await supabase
       .from('affaires')
       .upsert(
@@ -114,7 +120,7 @@ const AdminProjects = () => {
         <h1 className="text-2xl font-bold mb-6">Gestion des affaires</h1>
         
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-3">
+          <div className="col-span-2">
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -221,6 +227,10 @@ const AdminProjects = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+          
+          <div className="col-span-1">
+            <ProjectCSVImport />
           </div>
         </div>
       </main>
