@@ -1,21 +1,70 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Archive, FileDown, Printer } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Archive, 
+  FileDown, 
+  Printer,
+  CheckCircle,
+  Circle,
+  Clock
+} from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import OrderManager from '@/components/OrderManager';
-import OrderArticlesList from '@/components/orders/OrderArticlesList';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardFooter 
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { Order, CartItem } from '@/types';
+import { Switch } from "@/components/ui/switch";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { orders, archiveOrder } = useAppContext();
+  const { orders, archiveOrder, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
 
-  const order = orders.find(o => o.commandeid === orderId);
+  const [order, setOrder] = useState<Order | undefined>(
+    orders.find(o => o.commandeid === orderId)
+  );
+  
+  const [messageText, setMessageText] = useState<string>("");
+  const [articles, setArticles] = useState<CartItem[]>([]);
+  
+  // Initialize articles state from order
+  useEffect(() => {
+    if (order) {
+      // Initialize articles, ensuring each has a completed property
+      const updatedArticles = order.articles.map(article => ({
+        ...article,
+        completed: article.completed || false
+      }));
+      setArticles(updatedArticles);
+      setMessageText(order.messagefournisseur || "");
+    }
+  }, [order, orders]);
+
+  // Update local order when orders change in context
+  useEffect(() => {
+    const currentOrder = orders.find(o => o.commandeid === orderId);
+    if (currentOrder) {
+      setOrder(currentOrder);
+    }
+  }, [orderId, orders]);
 
   if (!order) {
     return (
@@ -44,8 +93,74 @@ const OrderDetails = () => {
     }
   };
 
+  const handleItemCompletionToggle = (index: number) => {
+    const updatedArticles = [...articles];
+    updatedArticles[index].completed = !updatedArticles[index].completed;
+    setArticles(updatedArticles);
+    
+    // Update order status based on article completion
+    updateOrderBasedOnArticles(updatedArticles);
+  };
+
+  const updateOrderBasedOnArticles = (updatedArticles: CartItem[]) => {
+    if (!order) return;
+    
+    // Determine order status based on article completion
+    let newStatus = 'Non';
+    
+    const allCompleted = updatedArticles.every(article => article.completed);
+    const anyCompleted = updatedArticles.some(article => article.completed);
+    
+    if (allCompleted) {
+      newStatus = 'Oui';
+    } else if (anyCompleted) {
+      newStatus = 'En cours';
+    }
+    
+    // Create updated order
+    const updatedOrder: Order = {
+      ...order,
+      articles: updatedArticles,
+      termine: newStatus
+    };
+    
+    // Update in context
+    updateOrder(updatedOrder);
+    
+    // Update in database
+    updateOrderStatus(order.commandeid, newStatus, messageText);
+  };
+
+  const handleManualStatusChange = async (status: string) => {
+    if (!order) return;
+    
+    const updatedOrder: Order = {
+      ...order,
+      termine: status
+    };
+    
+    updateOrder(updatedOrder);
+    await updateOrderStatus(order.commandeid, status, messageText);
+  };
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageText(e.target.value);
+  };
+
+  const handleSaveMessage = async () => {
+    if (!order) return;
+    
+    const updatedOrder: Order = {
+      ...order,
+      messagefournisseur: messageText
+    };
+    
+    updateOrder(updatedOrder);
+    await updateOrderStatus(order.commandeid, order.termine, messageText);
+  };
+
   const exportToCSV = () => {
-    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité'];
+    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité', 'Complété'];
     let csvContent = header.join(',') + '\n';
     
     order.articles.forEach(article => {
@@ -57,7 +172,8 @@ const OrderDetails = () => {
         order.termine || '',
         article.name || '',
         article.reference || '',
-        article.quantity || '0'
+        article.quantity || '0',
+        article.completed ? 'Oui' : 'Non'
       ].map(value => `"${value}"`).join(',');
       csvContent += row + '\n';
     });
@@ -88,6 +204,8 @@ const OrderDetails = () => {
           h2 { margin-top: 20px; }
           .header { display: flex; justify-content: space-between; }
           .date { text-align: right; }
+          .completed { color: green; }
+          .pending { color: orange; }
         </style>
       </head>
       <body>
@@ -97,24 +215,28 @@ const OrderDetails = () => {
         </div>
         <p>Utilisateur: ${order.clientname || ''}</p>
         <p>Date: ${order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</p>
-        <p>Statut: ${order.termine === 'Non' ? 'En attente' : 'Terminée'}</p>
+        <p>Statut: ${order.termine === 'Non' ? 'En attente' : order.termine === 'Oui' ? 'Terminée' : 'En cours'}</p>
         <table>
           <thead>
             <tr>
               <th>Produit</th>
               <th>Référence</th>
               <th>Quantité</th>
+              <th>Statut</th>
             </tr>
           </thead>
           <tbody>
     `;
     
-    order.articles.forEach(article => {
+    articles.forEach(article => {
       htmlContent += `
         <tr>
           <td>${article.name || ''}</td>
           <td>${article.reference || ''}</td>
           <td>${article.quantity || '0'}</td>
+          <td class="${article.completed ? 'completed' : 'pending'}">
+            ${article.completed ? 'Validé' : 'En attente'}
+          </td>
         </tr>
       `;
     });
@@ -124,9 +246,9 @@ const OrderDetails = () => {
         </table>
     `;
     
-    if (order.messagefournisseur) {
+    if (messageText) {
       htmlContent += `
-        <p><strong>Message:</strong> ${order.messagefournisseur}</p>
+        <p><strong>Message du magasinier:</strong> ${messageText}</p>
       `;
     }
     
@@ -141,6 +263,24 @@ const OrderDetails = () => {
     printWindow.setTimeout(() => {
       printWindow.print();
     }, 250);
+  };
+
+  const getStatusIcon = (status: string) => {
+    if (status === 'Oui') return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (status === 'En cours') return <Clock className="h-4 w-4 text-yellow-500" />;
+    return <Circle className="h-4 w-4 text-gray-400" />;
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    if (status === 'Oui') return 'bg-green-500';
+    if (status === 'En cours') return 'bg-yellow-500';
+    return 'bg-gray-500';
+  };
+
+  const formatStatus = (status: string) => {
+    if (status === 'Oui') return 'Terminée';
+    if (status === 'En cours') return 'En cours';
+    return 'En attente';
   };
 
   return (
@@ -164,9 +304,10 @@ const OrderDetails = () => {
               {order.displayTitle || `Commande #${order.commandeid}`}
             </CardTitle>
             <Badge 
-              className={`${order.termine === 'Non' ? 'bg-yellow-500' : 'bg-green-500'} text-white`}
+              className={`${getStatusBadgeClass(order.termine)} text-white flex items-center gap-1`}
             >
-              {order.termine === 'Non' ? 'En attente' : 'Terminée'}
+              {getStatusIcon(order.termine)}
+              {formatStatus(order.termine)}
             </Badge>
           </CardHeader>
           <CardContent>
@@ -190,12 +331,112 @@ const OrderDetails = () => {
                 </p>
               </div>
 
+              {isAdmin && (
+                <div>
+                  <div className="flex justify-between items-center border-t pt-4 mb-2">
+                    <p className="font-medium">Statut de la commande</p>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          {formatStatus(order.termine)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleManualStatusChange('Non')}>
+                          En attente
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleManualStatusChange('En cours')}>
+                          En cours
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleManualStatusChange('Oui')}>
+                          Terminée
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t pt-4">
                 <p className="font-medium mb-2">Articles</p>
-                <OrderArticlesList articles={order.articles} />
+                {isAdmin ? (
+                  <div className="space-y-2">
+                    {articles.map((article, index) => (
+                      <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            checked={article.completed} 
+                            onCheckedChange={() => handleItemCompletionToggle(index)}
+                            id={`article-${index}`}
+                          />
+                          <label 
+                            htmlFor={`article-${index}`}
+                            className={`flex-grow cursor-pointer ${article.completed ? 'line-through text-gray-500' : ''}`}
+                          >
+                            <div className="font-medium">{article.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Réf: {article.reference} - Qté: {article.quantity}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Produit</th>
+                          <th className="px-4 py-2 text-left">Référence</th>
+                          <th className="px-4 py-2 text-right">Quantité</th>
+                          <th className="px-4 py-2 text-center">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {articles.map((article, index) => (
+                          <tr key={index} className="border-t">
+                            <td className="px-4 py-2">{article.name}</td>
+                            <td className="px-4 py-2 font-mono text-sm">{article.reference}</td>
+                            <td className="px-4 py-2 text-right">{article.quantity}</td>
+                            <td className="px-4 py-2 text-center">
+                              {article.completed ? (
+                                <Badge className="bg-green-500">Validé</Badge>
+                              ) : (
+                                <Badge className="bg-gray-300 text-gray-700">En attente</Badge>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
+              {isAdmin && (
+                <div className="border-t pt-4">
+                  <div className="mb-2">
+                    <p className="font-medium mb-1">Message du magasinier</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Ajoutez un commentaire ou une précision pour cette commande
+                    </p>
+                    <Textarea 
+                      value={messageText}
+                      onChange={handleMessageChange}
+                      placeholder="Ex: Produit manquant, laissé un mot au client..."
+                      className="min-h-24"
+                    />
+                  </div>
+                  <div className="flex justify-end mt-2">
+                    <Button onClick={handleSaveMessage}>
+                      Enregistrer le message
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button 
                   variant="outline" 
                   className="flex items-center gap-2"
@@ -214,7 +455,7 @@ const OrderDetails = () => {
                   Imprimer
                 </Button>
 
-                {order.termine === 'Oui' && !order.archived && (
+                {order.termine === 'Oui' && !order.archived && isAdmin && (
                   <Button 
                     variant="outline"
                     className="flex items-center gap-2"

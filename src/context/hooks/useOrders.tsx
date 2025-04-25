@@ -6,6 +6,7 @@ import {
   fetchOrders, 
   createOrderInDb, 
   updateOrderStatusInDb, 
+  updateOrderInDb,
   archiveOrderInDb, 
   archiveCompletedOrdersInDb 
 } from './orders/orderOperations';
@@ -86,6 +87,24 @@ export const useOrders = () => {
     }
   };
 
+  // Update an entire order (including articles with completed status)
+  const updateOrder = async (updatedOrder: Order) => {
+    try {
+      // Update the order locally
+      setOrders(orders.map(order => 
+        order.commandeid === updatedOrder.commandeid ? updatedOrder : order
+      ));
+      
+      // Update the order in the database
+      await updateOrderInDb(updatedOrder);
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating order:", error);
+      return false;
+    }
+  };
+
   // Archive a single order
   const archiveOrder = async (orderId: string): Promise<boolean> => {
     try {
@@ -136,11 +155,7 @@ export const useOrders = () => {
     loadOrders,
     createOrder,
     updateOrderStatus,
-    updateOrder: (updatedOrder: Order) => {
-      setOrders(orders.map(order => 
-        order.commandeid === updatedOrder.commandeid ? updatedOrder : order
-      ));
-    },
+    updateOrder,
     archiveOrder,
     archiveCompletedOrders
   };

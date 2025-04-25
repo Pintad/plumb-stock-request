@@ -34,11 +34,17 @@ export const fetchOrders = async (): Promise<Order[]> => {
         (detailed) => detailed.commande_id === order.commandeid
       );
 
+      // Ensure articles have completed status
+      const articles = (order.articles as unknown as CartItem[]).map(article => ({
+        ...article,
+        completed: article.completed !== undefined ? article.completed : false
+      }));
+
       return {
         commandeid: order.commandeid,
         clientname: order.clientname,
         datecommande: order.datecommande,
-        articles: order.articles as unknown as CartItem[],
+        articles: articles,
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: order.archive || false,
@@ -100,6 +106,12 @@ export const createOrderInDb = async (
       }
     }
 
+    // Add completed: false to each cart item
+    const cartWithCompletionStatus = cart.map(item => ({
+      ...item,
+      completed: false
+    }));
+
     // Generate order name unique per affaire: NomAffaire - 001, 002 etc
     const orderName = affaireCode
       ? `${affaireCode} - ${String(orderCount + 1).padStart(3, '0')}`
@@ -108,7 +120,7 @@ export const createOrderInDb = async (
     const orderData = {
       clientname: user.name,
       datecommande: new Date().toISOString(),
-      articles: cart as unknown as Json,
+      articles: cartWithCompletionStatus as unknown as Json,
       termine: 'Non',
       archive: false,
       affaire_id: affaireId || null,
@@ -138,13 +150,44 @@ export const updateOrderStatusInDb = async (
   messagefournisseur?: string
 ): Promise<void> => {
   try {
+    // First get the current order to get the articles array
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from('commandes')
+      .select('articles')
+      .eq('commandeid', orderId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Then update the order with the new status and message
     const { error } = await supabase
       .from('commandes')
       .update({ 
         termine: termine, 
-        ...(messagefournisseur && { messagefournisseur })
+        ...(messagefournisseur !== undefined && { messagefournisseur })
       })
       .eq('commandeid', orderId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la commande:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update an order's articles and status in Supabase
+ */
+export const updateOrderInDb = async (order: Order): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('commandes')
+      .update({ 
+        articles: order.articles as unknown as Json,
+        termine: order.termine,
+        messagefournisseur: order.messagefournisseur
+      })
+      .eq('commandeid', order.commandeid);
 
     if (error) throw error;
   } catch (error) {
