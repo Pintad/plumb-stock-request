@@ -1,15 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, FileDown, Printer } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CartItem, Order } from '@/types';
+import { Order } from '@/types';
 import OrderStatusSection from '@/components/orders/OrderStatusSection';
 import OrderInfoSection from '@/components/orders/OrderInfoSection';
 import OrderArticlesSection from '@/components/orders/OrderArticlesSection';
 import MessageSection from '@/components/orders/MessageSection';
+import OrderDetailsPrintExport from '@/components/orders/OrderDetailsPrintExport';
+import { useOrderDetails } from '@/hooks/useOrderDetails';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const OrderDetails = () => {
@@ -21,20 +24,6 @@ const OrderDetails = () => {
   const [order, setOrder] = useState<Order | undefined>(
     orders.find(o => o.commandeid === orderId)
   );
-  
-  const [messageText, setMessageText] = useState<string>("");
-  const [articles, setArticles] = useState<CartItem[]>([]);
-  
-  useEffect(() => {
-    if (order) {
-      const updatedArticles = order.articles.map(article => ({
-        ...article,
-        completed: article.completed || false
-      }));
-      setArticles(updatedArticles);
-      setMessageText(order.messagefournisseur || "");
-    }
-  }, [order, orders]);
 
   useEffect(() => {
     const currentOrder = orders.find(o => o.commandeid === orderId);
@@ -42,6 +31,15 @@ const OrderDetails = () => {
       setOrder(currentOrder);
     }
   }, [orderId, orders]);
+
+  const {
+    messageText,
+    articles,
+    handleItemCompletionToggle,
+    handleManualStatusChange,
+    handleMessageChange,
+    handleSaveMessage
+  } = useOrderDetails(order, updateOrder, updateOrderStatus);
 
   if (!order) {
     return (
@@ -63,173 +61,6 @@ const OrderDetails = () => {
       </div>
     );
   }
-
-  const handleItemCompletionToggle = (index: number) => {
-    const updatedArticles = [...articles];
-    updatedArticles[index].completed = !updatedArticles[index].completed;
-    setArticles(updatedArticles);
-    
-    updateOrderBasedOnArticles(updatedArticles);
-  };
-
-  const updateOrderBasedOnArticles = (updatedArticles: CartItem[]) => {
-    if (!order) return;
-    
-    let newStatus = 'Non';
-    
-    const allCompleted = updatedArticles.every(article => article.completed);
-    const anyCompleted = updatedArticles.some(article => article.completed);
-    
-    if (allCompleted) {
-      newStatus = 'Oui';
-    } else if (anyCompleted) {
-      newStatus = 'En cours';
-    }
-    
-    const updatedOrder: Order = {
-      ...order,
-      articles: updatedArticles,
-      termine: newStatus
-    };
-    
-    updateOrder(updatedOrder);
-    
-    updateOrderStatus(order.commandeid, newStatus, messageText);
-  };
-
-  const handleManualStatusChange = async (status: string) => {
-    if (!order) return;
-    
-    const updatedOrder: Order = {
-      ...order,
-      termine: status
-    };
-    
-    updateOrder(updatedOrder);
-    await updateOrderStatus(order.commandeid, status, messageText);
-  };
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageText(e.target.value);
-  };
-
-  const handleSaveMessage = async () => {
-    if (!order) return;
-    
-    const updatedOrder: Order = {
-      ...order,
-      messagefournisseur: messageText
-    };
-    
-    updateOrder(updatedOrder);
-    await updateOrderStatus(order.commandeid, order.termine, messageText);
-  };
-
-  const exportToCSV = () => {
-    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité', 'Complété'];
-    let csvContent = header.join(',') + '\n';
-    
-    order.articles.forEach(article => {
-      const row = [
-        order.commandeid,
-        order.clientname || '',
-        order.datecommande || '',
-        order.projectCode || '', 
-        order.termine || '',
-        article.name || '',
-        article.reference || '',
-        article.quantity || '0',
-        article.completed ? 'Oui' : 'Non'
-      ].map(value => `"${value}"`).join(',');
-      csvContent += row + '\n';
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `commande_${order.commandeid}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const printOrder = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    let htmlContent = `
-      <html>
-      <head>
-        <title>${order.displayTitle || `Demande de Stock #${order.commandeid}`}</title>
-        <style>
-          body { font-family: Arial, sans-serif; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          h2 { margin-top: 20px; }
-          .header { display: flex; justify-content: space-between; }
-          .date { text-align: right; }
-          .completed { color: green; }
-          .pending { color: orange; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>${order.displayTitle || `Demande de stock #${order.commandeid}`}</h1>
-          <p class="date">Date: ${new Date().toLocaleDateString('fr-FR')}</p>
-        </div>
-        <p>Utilisateur: ${order.clientname || ''}</p>
-        <p>Date: ${order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</p>
-        <p>Statut: ${order.termine === 'Non' ? 'En attente' : order.termine === 'Oui' ? 'Terminée' : 'En cours'}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Référence</th>
-              <th>Quantité</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    
-    articles.forEach(article => {
-      htmlContent += `
-        <tr>
-          <td>${article.name || ''}</td>
-          <td>${article.reference || ''}</td>
-          <td>${article.quantity || '0'}</td>
-          <td class="${article.completed ? 'completed' : 'pending'}">
-            ${article.completed ? 'Validé' : 'En attente'}
-          </td>
-        </tr>
-      `;
-    });
-    
-    htmlContent += `
-          </tbody>
-        </table>
-    `;
-    
-    if (messageText) {
-      htmlContent += `
-        <p><strong>Message du magasinier:</strong> ${messageText}</p>
-      `;
-    }
-    
-    htmlContent += `
-      </body>
-      </html>
-    `;
-    
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.setTimeout(() => {
-      printWindow.print();
-    }, 250);
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -275,25 +106,7 @@ const OrderDetails = () => {
                 />
               )}
 
-              <div className={`flex ${isMobile ? 'flex-col' : 'justify-end'} space-y-2 md:space-y-0 md:space-x-2 pt-4 border-t`}>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center justify-center gap-2 w-full md:w-auto"
-                  onClick={exportToCSV}
-                >
-                  <FileDown className="h-4 w-4" />
-                  {isMobile ? 'CSV' : 'Exporter CSV'}
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 w-full md:w-auto"
-                  onClick={printOrder}
-                >
-                  <Printer className="h-4 w-4" />
-                  {isMobile ? 'Imprimer' : 'Imprimer la commande'}
-                </Button>
-              </div>
+              <OrderDetailsPrintExport order={order} isMobile={isMobile} />
             </div>
           </CardContent>
         </Card>
@@ -303,3 +116,4 @@ const OrderDetails = () => {
 };
 
 export default OrderDetails;
+
