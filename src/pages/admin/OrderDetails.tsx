@@ -10,11 +10,13 @@ import OrderStatusSection from '@/components/orders/OrderStatusSection';
 import OrderInfoSection from '@/components/orders/OrderInfoSection';
 import OrderArticlesSection from '@/components/orders/OrderArticlesSection';
 import MessageSection from '@/components/orders/MessageSection';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { orders, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
+  const isMobile = useIsMobile();
 
   const [order, setOrder] = useState<Order | undefined>(
     orders.find(o => o.commandeid === orderId)
@@ -232,7 +234,7 @@ const OrderDetails = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <main className="flex-1 container px-4 py-6">
+      <main className={`flex-1 container ${isMobile ? 'px-2' : 'px-4'} py-6`}>
         <div className="flex items-center space-x-4 mb-6">
           <Button 
             variant="outline" 
@@ -245,8 +247,8 @@ const OrderDetails = () => {
         </div>
 
         <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-2xl font-bold">
+          <CardHeader className={`flex flex-col ${isMobile ? 'space-y-4' : 'flex-row items-center justify-between space-y-0'} pb-2`}>
+            <CardTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold break-words`}>
               {order.displayTitle || `Commande #${order.commandeid}`}
             </CardTitle>
             <OrderStatusSection 
@@ -273,23 +275,23 @@ const OrderDetails = () => {
                 />
               )}
 
-              <div className="flex justify-end space-x-2 pt-4 border-t">
+              <div className={`flex ${isMobile ? 'flex-col' : 'justify-end'} space-y-2 md:space-y-0 md:space-x-2 pt-4 border-t`}>
                 <Button 
                   variant="outline" 
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 w-full md:w-auto"
                   onClick={exportToCSV}
                 >
                   <FileDown className="h-4 w-4" />
-                  Exporter CSV
+                  {isMobile ? 'CSV' : 'Exporter CSV'}
                 </Button>
                 
                 <Button 
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 w-full md:w-auto"
                   onClick={printOrder}
                 >
                   <Printer className="h-4 w-4" />
-                  Imprimer
+                  {isMobile ? 'Imprimer' : 'Imprimer la commande'}
                 </Button>
               </div>
             </div>
