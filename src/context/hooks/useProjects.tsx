@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Project } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -7,10 +7,13 @@ import { toast } from '@/components/ui/use-toast';
 export const useProjects = (initialProjects: Project[] = []) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Function to load projects from Supabase
-  const loadProjects = async () => {
+  // Function to load projects from Supabase - wrapped in useCallback to avoid recreation
+  const loadProjects = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase
         .from('affaires')
@@ -29,8 +32,9 @@ export const useProjects = (initialProjects: Project[] = []) => {
       } else {
         setProjects([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors du chargement des projets depuis Supabase:", error);
+      setError("Impossible de charger les affaires depuis la base de données.");
       toast({
         title: "Erreur",
         description: "Impossible de charger les affaires depuis la base de données.",
@@ -39,14 +43,14 @@ export const useProjects = (initialProjects: Project[] = []) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Load projects on component mount
-  useEffect(() => {
-    loadProjects();
   }, []);
 
-  const addProject = async (project: Project) => {
+  // Load projects only once on component mount
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  const addProject = useCallback(async (project: Project) => {
     try {
       // Insert project into Supabase if it does not exist
       const { data, error } = await supabase
@@ -82,9 +86,9 @@ export const useProjects = (initialProjects: Project[] = []) => {
         variant: "destructive",
       });
     }
-  };
+  }, []);
 
-  const deleteProject = async (projectId: string) => {
+  const deleteProject = useCallback(async (projectId: string) => {
     try {
       const { error } = await supabase
         .from('affaires')
@@ -102,7 +106,7 @@ export const useProjects = (initialProjects: Project[] = []) => {
         variant: "destructive",
       });
     }
-  };
+  }, []);
 
   return {
     projects,
@@ -110,5 +114,6 @@ export const useProjects = (initialProjects: Project[] = []) => {
     deleteProject,
     loadProjects,
     isLoading,
+    error,
   };
 };

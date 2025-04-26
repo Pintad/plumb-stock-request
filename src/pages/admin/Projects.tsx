@@ -1,37 +1,41 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Project } from '@/types';
 import ProjectCSVImport from '@/components/admin/ProjectCSVImport';
 import ProjectList from '@/components/admin/projects/ProjectList';
 import ProjectSearch from '@/components/admin/projects/ProjectSearch';
 import AddProjectForm from '@/components/admin/projects/AddProjectForm';
 
 const AdminProjects = () => {
+  // Context and state
   const { projects, deleteProject, addProject, loadProjects, isLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
-  const [filteredProjects, setFilteredProjects] = useState(projects);
-
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    const filtered = projects.filter(project => 
-      project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      project.code.toLowerCase().includes(searchTerm.toLowerCase())
+  
+  // Memoize filtered projects to prevent unnecessary re-renders
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm.trim()) return projects;
+    
+    const lowerCaseSearch = searchTerm.toLowerCase().trim();
+    return projects.filter(project => 
+      project.name.toLowerCase().includes(lowerCaseSearch) || 
+      project.code.toLowerCase().includes(lowerCaseSearch)
     );
-    setFilteredProjects(filtered);
   }, [searchTerm, projects]);
 
-  const handleAddProject = async () => {
+  // Handlers - wrapped in useCallback to prevent unnecessary re-renders
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleAddProject = useCallback(async () => {
     if (!newProject.code || !newProject.name) {
       toast({
         variant: "destructive",
@@ -41,65 +45,39 @@ const AdminProjects = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('affaires')
-      .upsert(
-        { code: newProject.code, name: newProject.name },
-        { onConflict: 'code' }
-      )
-      .select();
+    const projectToAdd: Project = {
+      id: `temp-${Date.now()}`,
+      code: newProject.code,
+      name: newProject.name,
+    };
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de l'ajout",
-        description: `Impossible d'ajouter l'affaire: ${error.message}`,
-      });
-      return;
-    }
-
-    let insertedProject = data?.[0] 
-      ? {
-          id: data[0].id,
-          code: data[0].code,
-          name: data[0].name,
-        }
-      : {
-          id: `project-temp-${Date.now()}`,
-          code: newProject.code,
-          name: newProject.name,
-        };
-
-    addProject(insertedProject);
+    await addProject(projectToAdd);
     setNewProject({ code: '', name: '' });
     setShowAddForm(false);
     toast({
       title: "Affaire ajoutée",
       description: "L'affaire a été ajoutée avec succès",
     });
-  };
+  }, [newProject, addProject]);
 
-  const handleDeleteProject = async (projectId: string) => {
-    const { error } = await supabase
-      .from('affaires')
-      .delete()
-      .eq('id', projectId);
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de la suppression",
-        description: `Impossible de supprimer l'affaire: ${error.message}`,
-      });
-      return;
-    }
-
-    deleteProject(projectId);
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    await deleteProject(projectId);
     toast({
       title: "Affaire supprimée",
       description: "L'affaire a été supprimée avec succès",
     });
-  };
+  }, [deleteProject]);
+
+  const handleProjectChange = useCallback((project: { code: string; name: string }) => {
+    setNewProject(project);
+  }, []);
+
+  const handleToggleAddForm = useCallback(() => {
+    setShowAddForm(prev => !prev);
+    if (showAddForm) {
+      setNewProject({ code: '', name: '' });
+    }
+  }, [showAddForm]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -113,25 +91,25 @@ const AdminProjects = () => {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-xl">Liste des affaires</CardTitle>
                   <Button 
-                    onClick={() => setShowAddForm(!showAddForm)}
+                    onClick={handleToggleAddForm}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <Plus className="mr-2" size={18} />
-                    Ajouter une affaire
+                    {showAddForm ? 'Annuler' : 'Ajouter une affaire'}
                   </Button>
                 </div>
                 <ProjectSearch 
                   searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
+                  onSearchChange={handleSearchChange}
                 />
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 {showAddForm && (
                   <AddProjectForm
                     newProject={newProject}
-                    onProjectChange={setNewProject}
+                    onProjectChange={handleProjectChange}
                     onSubmit={handleAddProject}
-                    onCancel={() => setShowAddForm(false)}
+                    onCancel={handleToggleAddForm}
                   />
                 )}
                 <ProjectList 

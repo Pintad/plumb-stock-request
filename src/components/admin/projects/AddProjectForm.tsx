@@ -10,9 +10,14 @@ interface AddProjectFormProps {
   onCancel: () => void;
 }
 
-const AddProjectForm = ({ newProject, onProjectChange, onSubmit, onCancel }: AddProjectFormProps) => {
+const AddProjectForm = React.memo(({ newProject, onProjectChange, onSubmit, onCancel }: AddProjectFormProps) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+
   return (
-    <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+    <form onSubmit={handleSubmit} className="mb-6 p-4 border rounded-lg bg-gray-50">
       <h3 className="text-lg font-medium mb-4">Ajouter une nouvelle affaire</h3>
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         <div>
@@ -21,6 +26,7 @@ const AddProjectForm = ({ newProject, onProjectChange, onSubmit, onCancel }: Add
             value={newProject.code} 
             onChange={(e) => onProjectChange({...newProject, code: e.target.value})}
             placeholder="Code de l'affaire"
+            required
           />
         </div>
         <div>
@@ -29,19 +35,23 @@ const AddProjectForm = ({ newProject, onProjectChange, onSubmit, onCancel }: Add
             value={newProject.name} 
             onChange={(e) => onProjectChange({...newProject, name: e.target.value})}
             placeholder="Nom de l'affaire"
+            required
           />
         </div>
       </div>
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
-        <Button onClick={onSubmit}>
+        <Button type="submit">
           Ajouter
         </Button>
       </div>
-    </div>
+    </form>
   );
-};
+});
+
+// Add display name for debugging
+AddProjectForm.displayName = 'AddProjectForm';
 
 export default AddProjectForm;
