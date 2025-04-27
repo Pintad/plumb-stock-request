@@ -20,6 +20,13 @@ export const refreshProductList = async (
     
     const products = convertCatalogueToProducts(catalogueItems);
     console.log(`${products.length} produits chargés depuis le catalogue`);
+    
+    // Vérifier spécifiquement la catégorie "cuivre à souder"
+    const cuivreProducts = products.filter(p => 
+      p.category && p.category.toLowerCase().includes('cuivre')
+    );
+    console.log(`Nombre de produits dans la catégorie cuivre après conversion: ${cuivreProducts.length}`);
+    
     setProducts(products);
     
     return products;

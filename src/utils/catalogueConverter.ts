@@ -5,13 +5,19 @@ import { CatalogueItem, Product, ProductVariant } from '../types';
  * Convertit les éléments du catalogue en produits structurés avec leurs variantes
  */
 export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Product[] => {
-  const productMap = new Map<string, Product>();
-  const variantMap = new Map<string, Map<string, ProductVariant>>();
+  // Pour déboguer
+  console.log(`Traitement de ${catalogueItems.length} éléments du catalogue`);
   
-  // Traiter d'abord les éléments sans variante
-  catalogueItems.filter(item => !item.variante).forEach(item => {
-    if (item.designation) {
-      productMap.set(item.designation, {
+  const productMap = new Map<string, Product>();
+  
+  // Premier passage : créer tous les produits (avec ou sans variantes)
+  for (const item of catalogueItems) {
+    if (!item.designation) continue;
+    
+    const productKey = item.designation.toLowerCase();
+    
+    if (!productMap.has(productKey)) {
+      productMap.set(productKey, {
         id: item.id,
         name: item.designation,
         reference: item.reference || undefined,
@@ -21,45 +27,39 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
         variants: []
       });
     }
-  });
-  
-  // Traiter ensuite les variantes
-  catalogueItems.filter(item => item.variante).forEach(item => {
-    if (!item.designation) return;
     
-    if (!variantMap.has(item.designation)) {
-      variantMap.set(item.designation, new Map());
-    }
-    
-    const productVariants = variantMap.get(item.designation)!;
-    
+    // Si c'est une variante, l'ajouter au produit
     if (item.variante) {
-      productVariants.set(item.variante, {
+      const product = productMap.get(productKey)!;
+      
+      const variant: ProductVariant = {
         id: `${item.id}-${item.variante}`,
         variantName: item.variante,
         reference: item.reference || '',
         unit: item.unite || ''
-      });
+      };
+      
+      product.variants = [...(product.variants || []), variant];
     }
-    
-    // Créer ou mettre à jour le produit
-    if (!productMap.has(item.designation)) {
-      productMap.set(item.designation, {
-        id: item.id,
-        name: item.designation,
-        category: item.categorie || undefined,
-        imageUrl: item.image_url || undefined,
-        variants: []
-      });
-    }
-  });
+  }
   
-  // Ajouter les variantes aux produits
-  for (const [designation, variants] of variantMap.entries()) {
-    if (productMap.has(designation)) {
-      const product = productMap.get(designation)!;
-      product.variants = Array.from(variants.values());
-    }
+  // Pour le débogage
+  const productsByCategory = Array.from(productMap.values()).reduce((acc, product) => {
+    const category = product.category || 'Sans catégorie';
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  console.log('Répartition des produits par catégorie:', productsByCategory);
+  
+  // Vérifier spécifiquement la catégorie "cuivre à souder"
+  const cuivreProducts = Array.from(productMap.values()).filter(p => 
+    p.category && p.category.toLowerCase().includes('cuivre')
+  );
+  console.log(`Nombre de produits dans la catégorie cuivre: ${cuivreProducts.length}`);
+  
+  if (cuivreProducts.length > 0) {
+    console.log('Échantillon de produits cuivre:', cuivreProducts.slice(0, 3));
   }
   
   return Array.from(productMap.values());

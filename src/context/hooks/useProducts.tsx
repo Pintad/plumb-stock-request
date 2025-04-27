@@ -20,7 +20,11 @@ export const useProducts = (initialProducts: Product[] = []) => {
       .map(product => product.category)
       .filter(Boolean) as string[]
     )].sort();
+    
     setCategories(uniqueCategories);
+    
+    console.log(`${uniqueCategories.length} catégories extraites des produits`);
+    console.log('Catégories disponibles:', uniqueCategories);
   }, [products]);
 
   // Charger les données depuis Supabase
@@ -28,7 +32,17 @@ export const useProducts = (initialProducts: Product[] = []) => {
     const loadSupabaseData = async () => {
       setIsLoading(true);
       try {
-        await refreshProductList(setProducts);
+        const loadedProducts = await refreshProductList(setProducts);
+        console.log(`${loadedProducts.length} produits chargés avec succès`);
+        
+        // Vérifier les produits par catégorie
+        const productsByCategory = loadedProducts.reduce((acc, product) => {
+          const category = product.category || 'Sans catégorie';
+          acc[category] = (acc[category] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log('Répartition des produits par catégorie après chargement:', productsByCategory);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
         toast({
