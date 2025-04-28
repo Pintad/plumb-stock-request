@@ -18,6 +18,12 @@ serve(async (req) => {
   try {
     const { clientEmail, orderNumber } = await req.json()
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(clientEmail)) {
+      throw new Error(`Invalid email format: ${clientEmail}`)
+    }
+
     const { data, error } = await resend.emails.send({
       from: 'Lovable <onboarding@resend.dev>',
       to: [clientEmail],

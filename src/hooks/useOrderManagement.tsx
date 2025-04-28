@@ -83,18 +83,34 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     if (!order) return;
 
     try {
-      const clientEmail = order.clientname;
+      // Get the client email from order.clientname or from database
+      let clientEmail = order.clientname;
       
-      if (!clientEmail) {
-        console.error('No email found for user:', order.clientname);
-        toast({
-          title: "Erreur",
-          description: "Aucune adresse email trouvée pour cet utilisateur.",
-          variant: "destructive",
-        });
-        return;
+      // Check if the client name is a valid email address
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(clientEmail)) {
+        console.error('Invalid email format:', clientEmail);
+        
+        // Try to find a valid email for this user in the database
+        const { data: userData, error: userError } = await supabase
+          .from('utilisateurs')
+          .select('email')
+          .eq('nom', clientEmail)
+          .single();
+        
+        if (userError || !userData) {
+          console.error('No email found for user:', clientEmail);
+          toast({
+            title: "Erreur",
+            description: "L'email de l'utilisateur n'est pas valide et aucun email n'a été trouvé dans la base de données.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        clientEmail = userData.email;
       }
-
+      
       console.log('Sending email to:', clientEmail);
 
       const response = await supabase.functions.invoke('send-order-ready', {
