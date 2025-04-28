@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Package, Tag } from 'lucide-react';
+import { Package, Tag, Plus, Minus } from 'lucide-react';
 import { Product, ProductVariant } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
@@ -21,12 +21,16 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
+  const [inputValue, setInputValue] = useState('1');
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
   );
   const { addToCart } = useAppContext();
   
   const handleAddToCart = () => {
+    // Ensure quantity is at least 1 before adding to cart
+    const finalQuantity = quantity < 1 ? 1 : quantity;
+    
     if (selectedVariant) {
       // Produit avec variante sélectionnée
       const productWithVariant = {
@@ -35,18 +39,52 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         unit: selectedVariant.unit,
         selectedVariantId: selectedVariant.id
       };
-      addToCart(productWithVariant, quantity);
+      addToCart(productWithVariant, finalQuantity);
     } else {
       // Produit simple sans variante
-      addToCart(product, quantity);
+      addToCart(product, finalQuantity);
     }
     setQuantity(1);
+    setInputValue('1');
   };
   
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value > 0) {
-      setQuantity(value);
+    const value = e.target.value;
+    
+    // Allow empty field for user input flexibility
+    if (value === '') {
+      setInputValue('');
+      setQuantity(0); // Temporarily set to 0
+      return;
+    }
+    
+    // Convert to number and validate
+    const numValue = parseInt(value);
+    if (!isNaN(numValue)) {
+      setQuantity(numValue);
+      setInputValue(value);
+    }
+  };
+
+  // Handle blur event to prevent empty value when user leaves the field
+  const handleBlur = () => {
+    if (inputValue === '' || quantity < 1) {
+      setQuantity(1);
+      setInputValue('1');
+    }
+  };
+
+  const incrementQuantity = () => {
+    const newQuantity = quantity + 1;
+    setQuantity(newQuantity);
+    setInputValue(newQuantity.toString());
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      const newQuantity = quantity - 1;
+      setQuantity(newQuantity);
+      setInputValue(newQuantity.toString());
     }
   };
 
@@ -116,14 +154,33 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <div className="w-24">
+        <div className="flex items-center w-24">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            className="h-8 w-8 rounded-r-none"
+            onClick={decrementQuantity}
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
           <Input
-            type="number"
-            min="1"
-            value={quantity}
+            type="text"
+            value={inputValue}
             onChange={handleQuantityChange}
-            className="text-center"
+            onBlur={handleBlur}
+            className="h-8 text-center rounded-none border-x-0"
+            min="1"
           />
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            className="h-8 w-8 rounded-l-none"
+            onClick={incrementQuantity}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
         <Button 
           onClick={handleAddToCart}
