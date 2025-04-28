@@ -27,6 +27,7 @@ const OrderDetails = () => {
     messageText,
     articles,
     showEmailConfirm,
+    sendingEmail,
     setShowEmailConfirm,
     handleItemCompletionToggle,
     handleManualStatusChange,
@@ -80,9 +81,10 @@ const OrderDetails = () => {
                     variant="outline"
                     className="flex items-center gap-2"
                     onClick={() => setShowEmailConfirm(true)}
+                    disabled={sendingEmail}
                   >
                     <Mail className="h-4 w-4" />
-                    Envoyer un mail
+                    {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
                   </Button>
                 </div>
               )}

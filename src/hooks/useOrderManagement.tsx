@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Order } from '@/types';
 import { useAppContext } from '@/context/AppContext';
@@ -16,6 +15,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     })) || []
   );
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleItemCompletionToggle = (index: number) => {
     if (!order) return;
@@ -81,6 +81,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
 
   const handleSendEmail = async () => {
     if (!order) return;
+    setSendingEmail(true);
 
     try {
       // Get the client email from order.clientname or from database
@@ -89,7 +90,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
       // Check if the client name is a valid email address
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(clientEmail)) {
-        console.error('Invalid email format:', clientEmail);
+        console.log('Invalid email format, checking database:', clientEmail);
         
         // Try to find a valid email for this user in the database
         const { data: userData, error: userError } = await supabase
@@ -105,6 +106,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
             description: "L'email de l'utilisateur n'est pas valide et aucun email n'a été trouvé dans la base de données.",
             variant: "destructive",
           });
+          setSendingEmail(false);
           return;
         }
         
@@ -124,9 +126,10 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
         console.error('Error calling function:', response.error);
         toast({
           title: "Erreur",
-          description: "Impossible d'envoyer l'email de notification.",
+          description: `Impossible d'envoyer l'email de notification: ${response.error.message || response.error}`,
           variant: "destructive",
         });
+        setSendingEmail(false);
         return;
       }
 
@@ -136,8 +139,9 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
         toast({
           title: "Email simulé",
           description: "L'email n'a pas été envoyé car votre compte Resend est en version d'essai. Veuillez vérifier un domaine dans les paramètres Resend pour envoyer des emails réels.",
-          variant: "warning",
+          variant: "destructive",
         });
+        setSendingEmail(false);
         return;
       }
 
@@ -149,9 +153,11 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
       console.error('Error sending email:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer l'email de notification.",
+        description: `Impossible d'envoyer l'email de notification: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -160,6 +166,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     messageText,
     articles,
     showEmailConfirm,
+    sendingEmail,
     setShowEmailConfirm,
     handleItemCompletionToggle,
     handleManualStatusChange,

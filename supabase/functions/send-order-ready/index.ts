@@ -27,8 +27,12 @@ serve(async (req) => {
     // Log information for debugging
     console.log(`Attempting to send email to: ${clientEmail} for order #${orderNumber}`)
 
+    // Get the official sender email (this should be on your verified domain)
+    const fromEmail = Deno.env.get("SENDER_EMAIL") || 'Lovable <onboarding@resend.dev>'
+    console.log(`Using sender email: ${fromEmail}`)
+
     const { data, error } = await resend.emails.send({
-      from: 'Lovable <onboarding@resend.dev>',
+      from: fromEmail,
       to: [clientEmail],
       subject: `🎉 Votre commande #${orderNumber} est prête !`,
       html: `
@@ -65,7 +69,7 @@ serve(async (req) => {
 
     console.log('Email sent successfully:', data)
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
