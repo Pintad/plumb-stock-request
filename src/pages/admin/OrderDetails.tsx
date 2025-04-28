@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -116,24 +115,10 @@ const OrderDetails = () => {
     if (!order) return;
 
     try {
-      // Fetch user email from profiles table using maybeSingle instead of single
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('username', order.clientname)
-        .maybeSingle();
-
-      if (userError) {
-        console.error('Error fetching user data:', userError);
-        toast({
-          title: "Erreur",
-          description: "Impossible de trouver l'email de l'utilisateur.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!userData || !userData.email) {
+      // Utiliser directement le nom du client comme email
+      const clientEmail = order.clientname;
+      
+      if (!clientEmail) {
         console.error('No email found for user:', order.clientname);
         toast({
           title: "Erreur",
@@ -143,10 +128,12 @@ const OrderDetails = () => {
         return;
       }
 
+      console.log('Sending email to:', clientEmail);
+
       // Call the Supabase Edge Function to send the email
       const response = await supabase.functions.invoke('send-order-ready', {
         body: {
-          clientEmail: userData.email,
+          clientEmail: clientEmail,
           orderNumber: order.orderNumber || order.commandeid
         }
       });
