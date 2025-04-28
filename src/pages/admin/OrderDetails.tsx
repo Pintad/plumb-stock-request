@@ -25,16 +25,21 @@ const OrderDetails = () => {
   const { orders, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
   const isMobile = useIsMobile();
 
+  // Initialize state variables
   const [order, setOrder] = useState<Order | undefined>(undefined);
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
-
+  
+  // Extract order from orders array when component loads or orders change
   useEffect(() => {
-    const currentOrder = orders.find(o => o.commandeid === orderId);
-    if (currentOrder) {
-      setOrder(currentOrder);
+    if (orderId) {
+      const currentOrder = orders.find(o => o.commandeid === orderId);
+      if (currentOrder) {
+        setOrder(currentOrder);
+      }
     }
   }, [orderId, orders]);
 
+  // Initialize hook with current order data
   const {
     messageText,
     articles,
