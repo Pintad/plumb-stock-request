@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Order } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,6 +10,7 @@ import { ChevronRight } from 'lucide-react';
 import UserOrderActions from './UserOrderActions';
 import { toast } from '@/components/ui/use-toast';
 import { useAppContext } from '@/context/AppContext';
+import OrderEditModal from './OrderEditModal';
 
 interface OrderListItemCompactProps {
   order: Order;
@@ -19,15 +19,11 @@ interface OrderListItemCompactProps {
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
   const { updateOrder } = useAppContext();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleModify = (orderToModify: Order) => {
-    // Empêcher la propagation pour éviter d'ouvrir les détails
     event?.stopPropagation();
-    // Rediriger vers la page de modification (à implémenter plus tard si nécessaire)
-    toast({
-      title: "Fonctionnalité en développement",
-      description: "La modification de commande sera bientôt disponible",
-    });
+    setIsEditModalOpen(true);
   };
 
   const handleCancel = async (orderToCancel: Order) => {
@@ -54,40 +50,48 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
   };
 
   return (
-    <Card 
-      className="cursor-pointer hover:bg-gray-50 transition-colors"
-      onClick={onClick}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
-        <div className="space-y-1.5">
-          <CardTitle className="text-base">
-            {order.displayTitle || `Commande #${order.commandeid}`}
-          </CardTitle>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>
-            <span>•</span>
-            <span>{order.clientname}</span>
+    <>
+      <Card 
+        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={onClick}
+      >
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
+          <div className="space-y-1.5">
+            <CardTitle className="text-base">
+              {order.displayTitle || `Commande #${order.commandeid}`}
+            </CardTitle>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>
+              <span>•</span>
+              <span>{order.clientname}</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Badge 
-            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : order.termine === 'Annulée' ? 'bg-red-500' : 'bg-green-500'} text-white`}
-          >
-            {order.termine === 'Non' ? 'En attente' : 
-             order.termine === 'En cours' ? 'En cours' : 
-             order.termine === 'Annulée' ? 'Annulée' : 'Terminée'}
-          </Badge>
-          <div className="flex items-center gap-2">
-            <UserOrderActions
-              order={order}
-              onModify={handleModify}
-              onCancel={handleCancel}
-            />
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+          <div className="flex items-center space-x-4">
+            <Badge 
+              className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : order.termine === 'Annulée' ? 'bg-red-500' : 'bg-green-500'} text-white`}
+            >
+              {order.termine === 'Non' ? 'En attente' : 
+               order.termine === 'En cours' ? 'En cours' : 
+               order.termine === 'Annulée' ? 'Annulée' : 'Terminée'}
+            </Badge>
+            <div className="flex items-center gap-2">
+              <UserOrderActions
+                order={order}
+                onModify={handleModify}
+                onCancel={handleCancel}
+              />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
+            </div>
           </div>
-        </div>
-      </CardHeader>
-    </Card>
+        </CardHeader>
+      </Card>
+
+      <OrderEditModal
+        order={order}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
+    </>
   );
 };
 
