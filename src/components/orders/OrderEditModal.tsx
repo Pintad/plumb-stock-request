@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Order, CartItem } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { useAppContext } from '@/context/AppContext';
-import OrderArticlesList from './OrderArticlesList';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ProductSearch from '@/components/ProductSearch';
 import { Plus, Trash2 } from 'lucide-react';
