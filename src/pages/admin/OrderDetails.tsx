@@ -23,11 +23,11 @@ const OrderDetails = () => {
   const { orders, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
   const isMobile = useIsMobile();
 
-  // Initialize state variables
+  // Initialize state variables with explicit types
   const [order, setOrder] = useState<Order | undefined>(undefined);
-  const [showEmailConfirm, setShowEmailConfirm] = useState(false);
+  const [showEmailConfirm, setShowEmailConfirm] = useState<boolean>(false);
   const [messageText, setMessageText] = useState<string>("");
-  const [articles, setArticles] = useState<Array<any>>([]); // Using Array<any> to avoid TypeScript depth issue
+  const [articles, setArticles] = useState<any[]>([]); // Using any[] to avoid TypeScript depth issue
   
   // Extract order from orders array when component loads or orders change
   useEffect(() => {
@@ -56,7 +56,7 @@ const OrderDetails = () => {
   };
 
   // Update order based on article completion status
-  const updateOrderBasedOnArticles = (updatedArticles: Array<any>) => {
+  const updateOrderBasedOnArticles = (updatedArticles: any[]) => {
     if (!order) return;
     
     let newStatus = 'Non';
@@ -116,16 +116,31 @@ const OrderDetails = () => {
     if (!order) return;
 
     try {
-      // Fetch user email from profiles table
+      // Fetch user email from profiles table using maybeSingle instead of single
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('email')
         .eq('username', order.clientname)
-        .single();
+        .maybeSingle();
 
       if (userError) {
         console.error('Error fetching user data:', userError);
-        throw userError;
+        toast({
+          title: "Erreur",
+          description: "Impossible de trouver l'email de l'utilisateur.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!userData || !userData.email) {
+        console.error('No email found for user:', order.clientname);
+        toast({
+          title: "Erreur",
+          description: "Aucune adresse email trouvée pour cet utilisateur.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // Call the Supabase Edge Function to send the email
@@ -138,7 +153,12 @@ const OrderDetails = () => {
 
       if (response.error) {
         console.error('Error calling function:', response.error);
-        throw response.error;
+        toast({
+          title: "Erreur",
+          description: "Impossible d'envoyer l'email de notification.",
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
