@@ -14,7 +14,8 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
   for (const item of catalogueItems) {
     if (!item.designation) continue;
     
-    const productKey = item.designation.toLowerCase();
+    // Clé combinant désignation et catégorie pour mieux distinguer les produits
+    const productKey = `${item.designation.toLowerCase()}_${(item.categorie || '').toLowerCase()}`;
     
     if (!productMap.has(productKey)) {
       productMap.set(productKey, {
@@ -28,10 +29,10 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
       });
     }
     
+    const product = productMap.get(productKey)!;
+    
     // Si c'est une variante, l'ajouter au produit
     if (item.variante) {
-      const product = productMap.get(productKey)!;
-      
       const variant: ProductVariant = {
         id: `${item.id}-${item.variante}`,
         variantName: item.variante,
@@ -39,7 +40,18 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
         unit: item.unite || ''
       };
       
-      product.variants = [...(product.variants || []), variant];
+      // Vérifier que cette variante n'existe pas déjà
+      const existingVariant = product.variants?.find(v => v.variantName === variant.variantName);
+      if (!existingVariant) {
+        product.variants = [...(product.variants || []), variant];
+      }
+    } 
+    // Si ce n'est pas une variante mais un produit simple, mettre à jour les informations
+    else if (!item.variante) {
+      // Mettre à jour les informations du produit principal si nécessaire
+      if (!product.reference && item.reference) product.reference = item.reference;
+      if (!product.unit && item.unite) product.unit = item.unite;
+      if (!product.imageUrl && item.image_url) product.imageUrl = item.image_url;
     }
   }
   

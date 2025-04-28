@@ -25,6 +25,23 @@ export const useProducts = (initialProducts: Product[] = []) => {
     
     console.log(`${uniqueCategories.length} catégories extraites des produits`);
     console.log('Catégories disponibles:', uniqueCategories);
+    
+    // Ajout de logs détaillés sur les produits par catégorie
+    uniqueCategories.forEach(category => {
+      const productsInCategory = products.filter(p => p.category === category);
+      console.log(`Catégorie "${category}": ${productsInCategory.length} produits`);
+      
+      // Vérifier en particulier pour la catégorie 'cuivre'
+      if (category.toLowerCase().includes('cuivre')) {
+        console.log(`Détail des produits dans la catégorie ${category}:`, 
+          productsInCategory.map(p => ({ 
+            id: p.id, 
+            name: p.name, 
+            variantsCount: p.variants?.length || 0 
+          }))
+        );
+      }
+    });
   }, [products]);
 
   // Charger les données depuis Supabase
@@ -32,6 +49,7 @@ export const useProducts = (initialProducts: Product[] = []) => {
     const loadSupabaseData = async () => {
       setIsLoading(true);
       try {
+        console.log("Chargement des données depuis Supabase...");
         const loadedProducts = await refreshProductList(setProducts);
         console.log(`${loadedProducts.length} produits chargés avec succès`);
         
