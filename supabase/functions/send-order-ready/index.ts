@@ -24,6 +24,9 @@ serve(async (req) => {
       throw new Error(`Invalid email format: ${clientEmail}`)
     }
 
+    // Log information for debugging
+    console.log(`Attempting to send email to: ${clientEmail} for order #${orderNumber}`)
+
     const { data, error } = await resend.emails.send({
       from: 'Lovable <onboarding@resend.dev>',
       to: [clientEmail],
@@ -38,8 +41,29 @@ serve(async (req) => {
     })
 
     if (error) {
+      // Log detailed error information
+      console.error('Error sending email:', error)
+      
+      // Special handling for Resend free tier limitation
+      if (error.statusCode === 403 && error.message?.includes('You can only send testing emails to your own email address')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Limitation de compte Resend: Vous ne pouvez envoyer des emails qu'à votre propre adresse jusqu'à ce qu'un domaine soit vérifié.",
+            details: error.message,
+            success: false,
+            simulated: true
+          }),
+          { 
+            status: 200, // Return 200 but with an error message to avoid breaking the UI flow
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+      
       throw error
     }
+
+    console.log('Email sent successfully:', data)
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

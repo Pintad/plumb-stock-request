@@ -130,6 +130,17 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
         return;
       }
 
+      // Vérifier si l'email a été envoyé mais a rencontré une limitation de compte gratuit
+      if (response.data?.simulated) {
+        console.warn('Email simulation (free tier limitation):', response.data);
+        toast({
+          title: "Email simulé",
+          description: "L'email n'a pas été envoyé car votre compte Resend est en version d'essai. Veuillez vérifier un domaine dans les paramètres Resend pour envoyer des emails réels.",
+          variant: "warning",
+        });
+        return;
+      }
+
       toast({
         title: "Email envoyé",
         description: "Le client a été notifié que sa commande est prête.",
