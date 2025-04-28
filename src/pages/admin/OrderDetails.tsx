@@ -28,6 +28,8 @@ const OrderDetails = () => {
   // Initialize state variables
   const [order, setOrder] = useState<Order | undefined>(undefined);
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
+  const [messageText, setMessageText] = useState<string>("");
+  const [articles, setArticles] = useState<Order['articles']>([]);
   
   // Extract order from orders array when component loads or orders change
   useEffect(() => {
@@ -35,19 +37,86 @@ const OrderDetails = () => {
       const currentOrder = orders.find(o => o.commandeid === orderId);
       if (currentOrder) {
         setOrder(currentOrder);
+        setMessageText(currentOrder.messagefournisseur || "");
+        setArticles(currentOrder.articles.map(article => ({
+          ...article,
+          completed: article.completed || false
+        })));
       }
     }
   }, [orderId, orders]);
 
-  // Initialize hook with current order data
-  const {
-    messageText,
-    articles,
-    handleItemCompletionToggle,
-    handleManualStatusChange,
-    handleMessageChange,
-    handleSaveMessage
-  } = useOrderDetails(order, updateOrder, updateOrderStatus);
+  // Handle item completion toggle
+  const handleItemCompletionToggle = (index: number) => {
+    if (!order) return;
+    
+    const updatedArticles = [...articles];
+    updatedArticles[index].completed = !updatedArticles[index].completed;
+    setArticles(updatedArticles);
+    
+    const updatedOrder = {
+      ...order,
+      articles: updatedArticles
+    };
+    
+    updateOrderBasedOnArticles(updatedArticles);
+  };
+
+  // Update order based on article completion status
+  const updateOrderBasedOnArticles = (updatedArticles: Order['articles']) => {
+    if (!order) return;
+    
+    let newStatus = 'Non';
+    
+    const allCompleted = updatedArticles.every(article => article.completed);
+    const anyCompleted = updatedArticles.some(article => article.completed);
+    
+    if (allCompleted) {
+      newStatus = 'Oui';
+    } else if (anyCompleted) {
+      newStatus = 'En cours';
+    }
+    
+    const updatedOrder: Order = {
+      ...order,
+      articles: updatedArticles,
+      termine: newStatus
+    };
+    
+    updateOrder(updatedOrder);
+    updateOrderStatus(order.commandeid, newStatus, messageText);
+  };
+
+  // Handle manual status change
+  const handleManualStatusChange = async (status: string) => {
+    if (!order) return;
+    
+    const updatedOrder: Order = {
+      ...order,
+      termine: status
+    };
+    
+    updateOrder(updatedOrder);
+    await updateOrderStatus(order.commandeid, status, messageText);
+  };
+
+  // Handle message change
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageText(e.target.value);
+  };
+
+  // Handle save message
+  const handleSaveMessage = async () => {
+    if (!order) return;
+    
+    const updatedOrder: Order = {
+      ...order,
+      messagefournisseur: messageText
+    };
+    
+    updateOrder(updatedOrder);
+    await updateOrderStatus(order.commandeid, order.termine, messageText);
+  };
 
   const handleSendEmail = async () => {
     if (!order) return;
