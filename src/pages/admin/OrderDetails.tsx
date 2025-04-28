@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -25,6 +26,7 @@ const OrderDetails = () => {
   const isMobile = useIsMobile();
 
   const [order, setOrder] = useState<Order | undefined>(undefined);
+  const [showEmailConfirm, setShowEmailConfirm] = useState(false);
 
   useEffect(() => {
     const currentOrder = orders.find(o => o.commandeid === orderId);
