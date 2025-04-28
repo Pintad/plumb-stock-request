@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -14,6 +13,10 @@ import MessageSection from '@/components/orders/MessageSection';
 import OrderDetailsPrintExport from '@/components/orders/OrderDetailsPrintExport';
 import { useOrderDetails } from '@/hooks/useOrderDetails';
 import { useIsMobile } from '@/hooks/use-mobile';
+import OrderEmailConfirmDialog from '@/components/orders/OrderEmailConfirmDialog';
+import { Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -24,6 +27,7 @@ const OrderDetails = () => {
   const [order, setOrder] = useState<Order | undefined>(
     orders.find(o => o.commandeid === orderId)
   );
+  const [showEmailConfirm, setShowEmailConfirm] = useState(false);
 
   useEffect(() => {
     const currentOrder = orders.find(o => o.commandeid === orderId);
@@ -40,6 +44,41 @@ const OrderDetails = () => {
     handleMessageChange,
     handleSaveMessage
   } = useOrderDetails(order, updateOrder, updateOrderStatus);
+
+  const handleSendEmail = async () => {
+    if (!order) return;
+
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('username', order.clientname)
+        .single();
+
+      if (userError) throw userError;
+
+      const response = await supabase.functions.invoke('send-order-ready', {
+        body: {
+          clientEmail: userData.email,
+          orderNumber: order.orderNumber || order.commandeid
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Email envoyé",
+        description: "Le client a été notifié que sa commande est prête.",
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email de notification.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!order) {
     return (
@@ -92,6 +131,19 @@ const OrderDetails = () => {
             <div className="space-y-4">
               <OrderInfoSection order={order} />
               
+              {isAdmin && order.termine === 'Oui' && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => setShowEmailConfirm(true)}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Envoyer un mail
+                  </Button>
+                </div>
+              )}
+
               <OrderArticlesSection 
                 articles={articles}
                 isAdmin={isAdmin}
@@ -107,6 +159,15 @@ const OrderDetails = () => {
               )}
 
               <OrderDetailsPrintExport order={order} isMobile={isMobile} />
+              
+              <OrderEmailConfirmDialog
+                isOpen={showEmailConfirm}
+                onOpenChange={setShowEmailConfirm}
+                onConfirm={() => {
+                  handleSendEmail();
+                  setShowEmailConfirm(false);
+                }}
+              />
             </div>
           </CardContent>
         </Card>
@@ -116,4 +177,3 @@ const OrderDetails = () => {
 };
 
 export default OrderDetails;
-
