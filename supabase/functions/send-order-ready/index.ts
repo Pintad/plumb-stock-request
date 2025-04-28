@@ -27,12 +27,17 @@ serve(async (req) => {
     // Log information for debugging
     console.log(`Attempting to send email to: ${clientEmail} for order #${orderNumber}`)
 
-    // Get the official sender email (this should be on your verified domain)
-    const fromEmail = Deno.env.get("SENDER_EMAIL") || 'Lovable <onboarding@resend.dev>'
-    console.log(`Using sender email: ${fromEmail}`)
+    // Get the official sender email from environment variables
+    const fromEmail = Deno.env.get("SENDER_EMAIL")
+    if (!fromEmail) {
+      console.warn("SENDER_EMAIL environment variable not set, using default")
+    }
+    
+    const senderAddress = fromEmail || 'Lovable <onboarding@resend.dev>'
+    console.log(`Using sender email: ${senderAddress}`)
 
     const { data, error } = await resend.emails.send({
-      from: fromEmail,
+      from: senderAddress,
       to: [clientEmail],
       subject: `🎉 Votre commande #${orderNumber} est prête !`,
       html: `
@@ -46,7 +51,7 @@ serve(async (req) => {
 
     if (error) {
       // Log detailed error information
-      console.error('Error sending email:', error)
+      console.error('Error sending email:', JSON.stringify(error))
       
       // Special handling for Resend free tier limitation
       if (error.statusCode === 403 && error.message?.includes('You can only send testing emails to your own email address')) {
@@ -67,7 +72,7 @@ serve(async (req) => {
       throw error
     }
 
-    console.log('Email sent successfully:', data)
+    console.log('Email sent successfully:', JSON.stringify(data))
 
     return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
