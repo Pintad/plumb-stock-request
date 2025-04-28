@@ -24,10 +24,7 @@ const OrderDetails = () => {
   const { orders, updateOrder, updateOrderStatus, isAdmin } = useAppContext();
   const isMobile = useIsMobile();
 
-  const [order, setOrder] = useState<Order | undefined>(
-    orders.find(o => o.commandeid === orderId)
-  );
-  const [showEmailConfirm, setShowEmailConfirm] = useState(false);
+  const [order, setOrder] = useState<Order | undefined>(undefined);
 
   useEffect(() => {
     const currentOrder = orders.find(o => o.commandeid === orderId);
