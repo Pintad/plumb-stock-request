@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Mail } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Order } from '@/types';
@@ -12,10 +12,8 @@ import OrderInfoSection from '@/components/orders/OrderInfoSection';
 import OrderArticlesSection from '@/components/orders/OrderArticlesSection';
 import MessageSection from '@/components/orders/MessageSection';
 import OrderDetailsPrintExport from '@/components/orders/OrderDetailsPrintExport';
-import { useOrderDetails } from '@/hooks/useOrderDetails';
 import { useIsMobile } from '@/hooks/use-mobile';
 import OrderEmailConfirmDialog from '@/components/orders/OrderEmailConfirmDialog';
-import { Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -29,7 +27,7 @@ const OrderDetails = () => {
   const [order, setOrder] = useState<Order | undefined>(undefined);
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [messageText, setMessageText] = useState<string>("");
-  const [articles, setArticles] = useState<Order['articles']>([]);
+  const [articles, setArticles] = useState<Array<any>>([]); // Using Array<any> to avoid TypeScript depth issue
   
   // Extract order from orders array when component loads or orders change
   useEffect(() => {
@@ -54,16 +52,11 @@ const OrderDetails = () => {
     updatedArticles[index].completed = !updatedArticles[index].completed;
     setArticles(updatedArticles);
     
-    const updatedOrder = {
-      ...order,
-      articles: updatedArticles
-    };
-    
     updateOrderBasedOnArticles(updatedArticles);
   };
 
   // Update order based on article completion status
-  const updateOrderBasedOnArticles = (updatedArticles: Order['articles']) => {
+  const updateOrderBasedOnArticles = (updatedArticles: Array<any>) => {
     if (!order) return;
     
     let newStatus = 'Non';
@@ -77,7 +70,7 @@ const OrderDetails = () => {
       newStatus = 'En cours';
     }
     
-    const updatedOrder: Order = {
+    const updatedOrder = {
       ...order,
       articles: updatedArticles,
       termine: newStatus
@@ -91,7 +84,7 @@ const OrderDetails = () => {
   const handleManualStatusChange = async (status: string) => {
     if (!order) return;
     
-    const updatedOrder: Order = {
+    const updatedOrder = {
       ...order,
       termine: status
     };
@@ -109,7 +102,7 @@ const OrderDetails = () => {
   const handleSaveMessage = async () => {
     if (!order) return;
     
-    const updatedOrder: Order = {
+    const updatedOrder = {
       ...order,
       messagefournisseur: messageText
     };
@@ -118,18 +111,24 @@ const OrderDetails = () => {
     await updateOrderStatus(order.commandeid, order.termine, messageText);
   };
 
+  // Handle sending email notification
   const handleSendEmail = async () => {
     if (!order) return;
 
     try {
+      // Fetch user email from profiles table
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('email')
         .eq('username', order.clientname)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        throw userError;
+      }
 
+      // Call the Supabase Edge Function to send the email
       const response = await supabase.functions.invoke('send-order-ready', {
         body: {
           clientEmail: userData.email,
@@ -137,7 +136,10 @@ const OrderDetails = () => {
         }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error calling function:', response.error);
+        throw response.error;
+      }
 
       toast({
         title: "Email envoyé",
