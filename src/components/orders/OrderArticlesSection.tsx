@@ -15,6 +15,15 @@ const OrderArticlesSection = ({ articles, isAdmin, onItemCompletionToggle }: Ord
     return <p className="text-muted-foreground">Aucun article dans cette commande</p>;
   }
 
+  const formatArticleDisplay = (article: CartItem) => {
+    const parts = [
+      article.category,
+      article.name,
+      article.variants?.find(v => v.id === article.selectedVariantId)?.variantName
+    ].filter(Boolean);
+    return parts.join(' - ');
+  };
+
   return (
     <div className="border-t pt-4">
       <p className="font-medium mb-2">Articles</p>
@@ -32,9 +41,9 @@ const OrderArticlesSection = ({ articles, isAdmin, onItemCompletionToggle }: Ord
                   htmlFor={`article-${index}`}
                   className={`flex-grow cursor-pointer ${article.completed ? 'line-through text-gray-500' : ''}`}
                 >
-                  <div className="font-medium">{article.name}</div>
+                  <div className="font-medium">{formatArticleDisplay(article)}</div>
                   <div className="text-sm text-muted-foreground">
-                    Réf: {article.reference} - Qté: {article.quantity}
+                    Réf: {article.variants?.find(v => v.id === article.selectedVariantId)?.reference || article.reference} - Qté: {article.quantity}
                   </div>
                 </label>
               </div>
