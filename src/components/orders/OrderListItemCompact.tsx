@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Order } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -18,16 +19,35 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  const { updateOrder } = useAppContext();
+  const { updateOrder, user } = useAppContext();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const isUserOrder = user?.name === order.clientname;
 
   const handleModify = (orderToModify: Order) => {
     event?.stopPropagation();
+    if (!isUserOrder) {
+      toast({
+        variant: "destructive",
+        title: "Non autorisé",
+        description: "Vous ne pouvez pas modifier cette commande",
+      });
+      return;
+    }
     setIsEditModalOpen(true);
   };
 
   const handleCancel = async (orderToCancel: Order) => {
     event?.stopPropagation();
+    if (!isUserOrder) {
+      toast({
+        variant: "destructive",
+        title: "Non autorisé",
+        description: "Vous ne pouvez pas annuler cette commande",
+      });
+      return;
+    }
+
     if (window.confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
       try {
         const updatedOrder = {
@@ -75,11 +95,13 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
                order.termine === 'Annulée' ? 'Annulée' : 'Terminée'}
             </Badge>
             <div className="flex items-center gap-2">
-              <UserOrderActions
-                order={order}
-                onModify={handleModify}
-                onCancel={handleCancel}
-              />
+              {isUserOrder && (
+                <UserOrderActions
+                  order={order}
+                  onModify={handleModify}
+                  onCancel={handleCancel}
+                />
+              )}
               <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
           </div>
