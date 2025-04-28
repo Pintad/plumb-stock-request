@@ -8,6 +8,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ChevronRight } from 'lucide-react';
+import UserOrderActions from './UserOrderActions';
+import { toast } from '@/components/ui/use-toast';
+import { useAppContext } from '@/context/AppContext';
 
 interface OrderListItemCompactProps {
   order: Order;
@@ -15,6 +18,41 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
+  const { updateOrder } = useAppContext();
+
+  const handleModify = (orderToModify: Order) => {
+    // Empêcher la propagation pour éviter d'ouvrir les détails
+    event?.stopPropagation();
+    // Rediriger vers la page de modification (à implémenter plus tard si nécessaire)
+    toast({
+      title: "Fonctionnalité en développement",
+      description: "La modification de commande sera bientôt disponible",
+    });
+  };
+
+  const handleCancel = async (orderToCancel: Order) => {
+    event?.stopPropagation();
+    if (window.confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
+      try {
+        const updatedOrder = {
+          ...orderToCancel,
+          termine: 'Annulée',
+        };
+        await updateOrder(updatedOrder);
+        toast({
+          title: "Commande annulée",
+          description: "Votre commande a été annulée avec succès",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible d'annuler la commande",
+        });
+      }
+    }
+  };
+
   return (
     <Card 
       className="cursor-pointer hover:bg-gray-50 transition-colors"
@@ -31,13 +69,22 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
             <span>{order.clientname}</span>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           <Badge 
-            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : 'bg-green-500'} text-white`}
+            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : order.termine === 'Annulée' ? 'bg-red-500' : 'bg-green-500'} text-white`}
           >
-            {order.termine === 'Non' ? 'En attente' : order.termine === 'En cours' ? 'En cours' : 'Terminée'}
+            {order.termine === 'Non' ? 'En attente' : 
+             order.termine === 'En cours' ? 'En cours' : 
+             order.termine === 'Annulée' ? 'Annulée' : 'Terminée'}
           </Badge>
-          <ChevronRight className="h-4 w-4 text-gray-400" />
+          <div className="flex items-center gap-2">
+            <UserOrderActions
+              order={order}
+              onModify={handleModify}
+              onCancel={handleCancel}
+            />
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+          </div>
         </div>
       </CardHeader>
     </Card>
