@@ -1,4 +1,3 @@
-
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -75,22 +74,30 @@ export const createOrderInDb = async (
   try {
     if (!user || cart.length === 0) return false;
 
-    // Count existing orders for the given affaire to generate sequence number
-    let orderCount = 0;
-    if (affaireId) {
-      const { count, error: countError } = await supabase
-        .from('commandes')
-        .select('commandeid', { count: 'exact', head: true })
-        .eq('affaire_id', affaireId);
+    // Compter TOUTES les commandes existantes pour déterminer le prochain numéro de séquence
+    const { count, error: countError } = await supabase
+      .from('commandes')
+      .select('commandeid', { count: 'exact', head: true });
 
-      if (countError) {
-        console.error("Erreur de comptage des commandes pour l'affaire:", countError);
-      } else if (typeof count === 'number') {
-        orderCount = count;
-      }
+    if (countError) {
+      console.error("Erreur de comptage des commandes:", countError);
+      return false;
     }
 
-    // Fetch affaire details to build the order name
+    // Déterminer le numéro de séquence
+    const orderCount = typeof count === 'number' ? count : 0;
+    const nextOrderNumber = orderCount + 1;
+    
+    // Générer le titre de la commande au format D0001, D0002, etc.
+    const orderName = `D${String(nextOrderNumber).padStart(4, '0')}`;
+
+    // Ajouter completed: false à chaque article
+    const cartWithCompletionStatus = cart.map(item => ({
+      ...item,
+      completed: false
+    }));
+
+    // Récupérer les détails de l'affaire si un ID est fourni
     let affaireCode = "";
     if (affaireId) {
       const { data: affaireData, error: affaireError } = await supabase
@@ -99,32 +106,19 @@ export const createOrderInDb = async (
         .eq('id', affaireId)
         .maybeSingle();
 
-      if (affaireError) {
-        console.error("Erreur lors de la récupération de l'affaire:", affaireError);
-      } else if (affaireData) {
+      if (!affaireError && affaireData) {
         affaireCode = affaireData.code;
       }
     }
-
-    // Add completed: false to each cart item
-    const cartWithCompletionStatus = cart.map(item => ({
-      ...item,
-      completed: false
-    }));
-
-    // Generate order name unique per affaire: NomAffaire - 001, 002 etc
-    const orderName = affaireCode
-      ? `${affaireCode} - ${String(orderCount + 1).padStart(3, '0')}`
-      : `Commande - ${String(orderCount + 1).padStart(3, '0')}`;
 
     const orderData = {
       clientname: user.name,
       datecommande: new Date().toISOString(),
       articles: cartWithCompletionStatus as unknown as Json,
       termine: 'Non',
-      archive: false, // Setting this to false by default, but no longer using it
+      archive: false,
       affaire_id: affaireId || null,
-      commandeid: undefined, // Let Supabase generate UUID
+      commandeid: undefined, // Laisser Supabase générer l'UUID
       messagefournisseur: null,
     };
 

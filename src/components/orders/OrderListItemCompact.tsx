@@ -23,7 +23,7 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
         <div className="space-y-1.5">
           <CardTitle className="text-base">
-            {order.displayTitle || `Commande #${order.commandeid}`}
+            {order.displayTitle || `Commande #${order.commandeid.substring(0, 8)}`}
           </CardTitle>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>
