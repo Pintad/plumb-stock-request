@@ -30,12 +30,10 @@ const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
   };
 
   // Format du titre personnalisé
-  // On formate orderNumber en 5 chiffres avec zeros devant
-  const orderNumberFormatted = order.orderNumber !== undefined
-    ? String(order.orderNumber).padStart(5, '0')
-    : order.commandeid;
-
-  const dialogTitle = `Gérer la commande ${orderNumberFormatted} - ${order.projectCode || ''} - ${order.clientname} - Demande n°${order.orderNumber || ''}`;
+  const displayTitle = order.displayTitle || 
+    (order.projectCode && order.projectName 
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      : `Demande #${order.commandeid.substring(0, 8)}`);
 
   const handleStatusChange = async () => {
     await updateOrderStatus(
@@ -50,7 +48,7 @@ const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-[600px]" aria-describedby="order-dialog-description">
         <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogTitle>{displayTitle}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4" id="order-dialog-description">
           <div>

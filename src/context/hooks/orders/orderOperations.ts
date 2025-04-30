@@ -1,3 +1,4 @@
+
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -99,16 +100,26 @@ export const createOrderInDb = async (
 
     // Récupérer les détails de l'affaire si un ID est fourni
     let affaireCode = "";
+    let affaireName = "";
     if (affaireId) {
       const { data: affaireData, error: affaireError } = await supabase
         .from('affaires')
-        .select('code')
+        .select('code, name')
         .eq('id', affaireId)
         .maybeSingle();
 
       if (!affaireError && affaireData) {
         affaireCode = affaireData.code;
+        affaireName = affaireData.name;
       }
+    }
+
+    // Construire le titre d'affichage personnalisé
+    let displayTitle = "";
+    if (affaireCode && affaireName) {
+      displayTitle = `${affaireCode} - ${affaireName} - ${orderName}`;
+    } else {
+      displayTitle = orderName;
     }
 
     const orderData = {
@@ -122,6 +133,7 @@ export const createOrderInDb = async (
       messagefournisseur: null,
     };
 
+    // Insérer la commande dans la table commandes
     const { error } = await supabase
       .from('commandes')
       .insert(orderData);
