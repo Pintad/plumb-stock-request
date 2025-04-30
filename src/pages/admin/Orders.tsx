@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -62,18 +61,15 @@ const AdminOrders = () => {
     return true;
   });
   
-  // Sort orders by date (newest first)
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
-    // Convert strings to Date objects first to ensure proper comparison
-    const dateA = a.datecommande ? new Date(a.datecommande).getTime() : 0;
-    const dateB = b.datecommande ? new Date(b.datecommande).getTime() : 0;
-    return dateB - dateA;
-  });
+  // Orders are now already sorted by numero_commande_global in the fetchOrders function
+  // Just use the filteredOrders directly since they preserve the database order
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE, 
+    (currentPage - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE
+  );
   
   // Pagination
-  const totalPages = Math.ceil(sortedOrders.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedOrders = sortedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

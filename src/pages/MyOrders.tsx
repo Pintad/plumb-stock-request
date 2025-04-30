@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import OrderListItemCompact from '@/components/orders/OrderListItemCompact';
@@ -43,17 +41,11 @@ const MyOrders = () => {
     return true;
   });
   
-  // Sort orders by date (newest first)
-  const sortedOrders = [...userOrders].sort((a, b) => {
-    const dateA = a.datecommande ? new Date(a.datecommande).getTime() : 0;
-    const dateB = b.datecommande ? new Date(b.datecommande).getTime() : 0;
-    return dateB - dateA;
-  });
-  
-  // Pagination
-  const totalPages = Math.ceil(sortedOrders.length / ITEMS_PER_PAGE);
+  // Orders are already sorted by numero_commande_global in the fetchOrders function
+  // Apply pagination to the filtered orders
+  const totalPages = Math.ceil(userOrders.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedOrders = sortedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedOrders = userOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

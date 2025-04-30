@@ -1,3 +1,4 @@
+
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -8,11 +9,11 @@ import { Json } from '@/integrations/supabase/types';
  */
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    // Récupérer les données complètes des commandes, triées par datecommande décroissant (les plus récentes en premier)
+    // Récupérer les données complètes des commandes, triées par numero_commande_global décroissant (les plus récents en premier)
     const { data: fullOrders, error } = await supabase
       .from('commandes')
       .select('*')
-      .order('datecommande', { ascending: false });
+      .order('numero_commande_global', { ascending: false });
 
     if (error) throw error;
 
