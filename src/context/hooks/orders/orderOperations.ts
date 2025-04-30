@@ -24,6 +24,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
         ...article,
         completed: article.completed !== undefined ? article.completed : false
       }));
+      
+      // Use type assertion to safely access titre_affichage
+      const orderWithTitre = order as any; // Type assertion to access properties not in the type
 
       return {
         commandeid: order.commandeid,
@@ -33,12 +36,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        titre_affichage: order.titre_affichage, // Use directly from DB field
+        titre_affichage: orderWithTitre.titre_affichage, // Safely access titre_affichage
         // Utiliser directement le code et nom d'affaire stockés en base
         projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: order.titre_affichage || '', // Use directly from DB
+        displayTitle: orderWithTitre.titre_affichage || '', // Safely access titre_affichage
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];
@@ -146,10 +149,15 @@ export const createOrderInDb = async (
       displayTitle = `${user.name} - ${orderName}`;
     }
     
+    // Use type assertion for the update operation
+    const updateData = {
+      titre_affichage: displayTitle
+    } as any; // Type assertion to avoid TypeScript error
+    
     // Mettre à jour la commande avec le titre d'affichage
     const { error: updateError } = await supabase
       .from('commandes')
-      .update({ titre_affichage: displayTitle })
+      .update(updateData)
       .eq('commandeid', data.commandeid);
     
     if (updateError) throw updateError;
