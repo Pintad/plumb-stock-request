@@ -1,4 +1,3 @@
-
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -30,6 +29,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
         `${order.clientname} - D${String(order.numero_commande_global).padStart(5, '0')}` :
         `${order.clientname} - ${order.commandeid.substring(0, 8)}`;
 
+      // Use type assertion to access titre_affichage as it exists in the database but not in TypeScript types
+      const titreAffichage = (order as any).titre_affichage;
+
       return {
         commandeid: order.commandeid,
         clientname: order.clientname,
@@ -38,12 +40,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        titre_affichage: order.titre_affichage || orderTitleDisplay, // Use stored value or fallback
+        titre_affichage: titreAffichage || orderTitleDisplay, // Use stored value or fallback
         // Utiliser directement le code et nom d'affaire stockés en base
         projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: order.titre_affichage || orderTitleDisplay, // Use stored value or fallback
+        displayTitle: titreAffichage || orderTitleDisplay, // Use stored value or fallback
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];
