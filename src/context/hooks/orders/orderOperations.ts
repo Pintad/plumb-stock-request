@@ -25,8 +25,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
         completed: article.completed !== undefined ? article.completed : false
       }));
       
-      // Use type assertion to safely access titre_affichage
-      const orderWithTitre = order as any; // Type assertion to access properties not in the type
+      // Construct the display title using the titre_affichage field (with fallback)
+      const orderTitleDisplay = order.titre_affichage || 
+        `${order.clientname} - D${String(order.numero_commande_global).padStart(5, '0')}`;
 
       return {
         commandeid: order.commandeid,
@@ -36,12 +37,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        titre_affichage: orderWithTitre.titre_affichage, // Safely access titre_affichage
+        titre_affichage: orderTitleDisplay,
         // Utiliser directement le code et nom d'affaire stockés en base
         projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: orderWithTitre.titre_affichage || '', // Safely access titre_affichage
+        displayTitle: orderTitleDisplay,
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];
@@ -149,15 +150,10 @@ export const createOrderInDb = async (
       displayTitle = `${user.name} - ${orderName}`;
     }
     
-    // Use type assertion for the update operation
-    const updateData = {
-      titre_affichage: displayTitle
-    } as any; // Type assertion to avoid TypeScript error
-    
     // Mettre à jour la commande avec le titre d'affichage
     const { error: updateError } = await supabase
       .from('commandes')
-      .update(updateData)
+      .update({ titre_affichage: displayTitle })
       .eq('commandeid', data.commandeid);
     
     if (updateError) throw updateError;
