@@ -124,9 +124,9 @@ export const createOrderInDb = async (
     }
 
     // Les données de la commande à insérer
+    // CORRECTION: Utiliser maintenant datecommande: null pour laisser Supabase générer automatiquement la date et l'heure
     const orderData = {
       clientname: user.name,
-      datecommande: new Date().toISOString(),
       articles: cartWithCompletionStatus as unknown as Json,
       termine: 'Non',
       archive: false,
@@ -138,7 +138,7 @@ export const createOrderInDb = async (
     const { data, error } = await supabase
       .from('commandes')
       .insert(orderData)
-      .select('numero_commande_global, commandeid')
+      .select('numero_commande_global, commandeid, datecommande')
       .single();
 
     if (error) throw error;
