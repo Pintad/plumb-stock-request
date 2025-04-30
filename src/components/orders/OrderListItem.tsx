@@ -56,6 +56,12 @@ const OrderListItem = ({
   onExportCSV,
   onPrintOrder
 }: OrderListItemProps) => {
+  // Construct display title with project information and order number
+  const displayTitle = order.displayTitle || 
+    (order.projectCode && order.projectName 
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      : `Demande #${order.commandeid.substring(0, 8)}`);
+
   return (
     <Card className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
       <CardHeader className="pb-2">
@@ -63,11 +69,7 @@ const OrderListItem = ({
           <div>
             <CardTitle className="text-lg flex items-center">
               <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
-              {order.displayTitle ? (
-                <span>{order.displayTitle}</span>
-              ) : (
-                <span>Demande #{order.commandeid}</span>
-              )}
+              <span>{displayTitle}</span>
               {showUser && order.clientname && (
                 <span className="ml-2 text-sm font-normal">({order.clientname})</span>
               )}

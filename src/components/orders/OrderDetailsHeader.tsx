@@ -21,6 +21,12 @@ const OrderDetailsHeader = ({
   onNavigateBack,
   onStatusChange
 }: OrderDetailsHeaderProps) => {
+  // Construct display title with project information and order number
+  const displayTitle = order.displayTitle || 
+    (order.projectCode && order.projectName 
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      : `Commande #${order.commandeid.substring(0, 8)}`);
+
   return (
     <>
       <div className="flex items-center space-x-4 mb-6">
@@ -35,7 +41,7 @@ const OrderDetailsHeader = ({
       </div>
       <div className={`flex flex-col ${isMobile ? 'space-y-4' : 'flex-row items-center justify-between space-y-0'} pb-2`}>
         <CardTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold break-words`}>
-          {order.displayTitle || `Commande #${order.commandeid}`}
+          {displayTitle}
         </CardTitle>
         <OrderStatusSection 
           status={order.termine}

@@ -15,6 +15,12 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
+  // Construct display title with project information and order number
+  const displayTitle = order.displayTitle || 
+    (order.projectCode && order.projectName 
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      : `Demande #${order.commandeid.substring(0, 8)}`);
+
   return (
     <Card 
       className="cursor-pointer hover:bg-gray-50 transition-colors"
@@ -23,7 +29,7 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
         <div className="space-y-1.5">
           <CardTitle className="text-base">
-            {order.displayTitle || `Commande #${order.commandeid.substring(0, 8)}`}
+            {displayTitle}
           </CardTitle>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>

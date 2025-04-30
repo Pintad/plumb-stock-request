@@ -15,6 +15,12 @@ interface OrderDetailsReadOnlyProps {
 
 const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => {
   const navigate = useNavigate();
+  
+  // Construct display title with project information and order number
+  const displayTitle = order.displayTitle || 
+    (order.projectCode && order.projectName 
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      : `Commande #${order.commandeid.substring(0, 8)}`);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -33,7 +39,7 @@ const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => 
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold">
-              {order.displayTitle || `Commande #${order.commandeid}`}
+              {displayTitle}
             </CardTitle>
             <div className="mt-2">
               <span className={`inline-flex px-2 py-1 rounded-full text-sm ${
