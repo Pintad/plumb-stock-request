@@ -63,8 +63,8 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
     setCheckedState(newChecked);
   };
 
-  // Utiliser directement le titre d'affichage stocké
-  const displayTitle = order.displayTitle || `Demande #${order.commandeid.substring(0, 8)}`;
+  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
+  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
 
   const handleStatusChange = async () => {
     await updateOrderStatus(

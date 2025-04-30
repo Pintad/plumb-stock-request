@@ -56,11 +56,19 @@ const OrderListItem = ({
   onExportCSV,
   onPrintOrder
 }: OrderListItemProps) => {
-  // Utiliser directement le titre d'affichage stocké
-  const displayTitle = order.displayTitle || 
-    (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
-      : `${order.clientname} - D${order.commandeid.substring(0, 5)}`);
+  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
+  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+
+  // Format de la date avec heure incluse pour plus de précision
+  const formattedDate = order.datecommande 
+    ? new Date(order.datecommande).toLocaleString('fr-FR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) 
+    : '';
 
   return (
     <Card className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
@@ -75,7 +83,7 @@ const OrderListItem = ({
               )}
             </CardTitle>
             <p className="text-sm text-gray-500">
-              {order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}
+              {formattedDate}
             </p>
             {(order.projectCode || order.projectName) && (
               <div className="mt-1">

@@ -15,11 +15,19 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  // Utiliser directement le titre d'affichage stocké dans la commande
-  const displayTitle = order.displayTitle || 
-    (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
-      : `${order.clientname} - D${order.commandeid.substring(0, 5)}`);
+  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
+  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+
+  // Format de la date avec heure incluse pour plus de précision
+  const formattedDate = order.datecommande 
+    ? new Date(order.datecommande).toLocaleString('fr-FR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) 
+    : '';
 
   return (
     <Card 
@@ -32,7 +40,7 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
             {displayTitle}
           </CardTitle>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>
+            <span>{formattedDate}</span>
             <span>•</span>
             <span>{order.clientname}</span>
             {order.projectCode && order.projectName && (

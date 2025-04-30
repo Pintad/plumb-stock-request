@@ -21,11 +21,8 @@ const OrderDetailsHeader = ({
   onNavigateBack,
   onStatusChange
 }: OrderDetailsHeaderProps) => {
-  // Utiliser directement le titre d'affichage stocké avec la commande
-  const displayTitle = order.displayTitle || 
-    (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
-      : `Demande #${order.commandeid.substring(0, 8)}`);
+  // Utiliser uniquement le titre d'affichage stocké, sans fallback
+  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
 
   return (
     <>

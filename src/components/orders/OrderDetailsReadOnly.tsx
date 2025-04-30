@@ -16,11 +16,19 @@ interface OrderDetailsReadOnlyProps {
 const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => {
   const navigate = useNavigate();
   
-  // Utiliser directement le titre d'affichage stocké
-  const displayTitle = order.displayTitle || 
-    (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
-      : `${order.clientname} - D${order.commandeid.substring(0, 5)}`);
+  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
+  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+
+  // Format de la date avec heure incluse pour plus de précision
+  const formattedDate = order.datecommande 
+    ? new Date(order.datecommande).toLocaleString('fr-FR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) 
+    : '';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -50,6 +58,7 @@ const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => 
                 {order.termine === 'Non' ? 'En attente' : 
                  order.termine === 'En cours' ? 'En cours' : 'Terminée'}
               </span>
+              <span className="ml-2 text-sm text-gray-500">{formattedDate}</span>
             </div>
           </CardHeader>
           <CardContent>

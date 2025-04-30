@@ -1,4 +1,3 @@
-
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -9,7 +8,7 @@ import { Json } from '@/integrations/supabase/types';
  */
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    // Récupérer les données complètes des commandes
+    // Récupérer les données complètes des commandes, triées par datecommande décroissant (les plus récentes en premier)
     const { data: fullOrders, error } = await supabase
       .from('commandes')
       .select('*')
@@ -25,13 +24,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
         completed: article.completed !== undefined ? article.completed : false
       }));
       
-      // Construct the display title using the ordre number or fallback
-      const orderTitleDisplay = order.numero_commande_global ? 
-        `${order.clientname} - D${String(order.numero_commande_global).padStart(5, '0')}` :
-        `${order.clientname} - ${order.commandeid.substring(0, 8)}`;
-
-      // Use type assertion to access titre_affichage as it exists in the database but not in TypeScript types
-      const titreAffichage = (order as any).titre_affichage;
+      // Récupérer directement le titre d'affichage depuis la base de données
+      // Si titre_affichage est null ou undefined, utiliser un message d'erreur clair
+      const orderDisplayTitle = (order as any).titre_affichage || "[ERREUR: Titre manquant]";
 
       return {
         commandeid: order.commandeid,
@@ -41,12 +36,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        titre_affichage: titreAffichage || orderTitleDisplay, // Use stored value or fallback
-        // Utiliser directement le code et nom d'affaire stockés en base
-        projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
-        projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
+        titre_affichage: orderDisplayTitle, 
+        // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
+        projectCode: '', 
+        projectName: '', 
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: titreAffichage || orderTitleDisplay, // Use stored value or fallback
+        displayTitle: orderDisplayTitle, // Utiliser directement le titre stocké en base
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];
