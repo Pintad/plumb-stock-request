@@ -33,11 +33,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
+        titre_affichage: order.titre_affichage, // Use directly from DB field
         // Utiliser directement le code et nom d'affaire stockés en base
         projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: order.titre_affichage || '', // Utiliser directement le champ titre_affichage de la table commandes
+        displayTitle: order.titre_affichage || '', // Use directly from DB
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];

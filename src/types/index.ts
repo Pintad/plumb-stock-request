@@ -32,6 +32,7 @@ export interface Order {
   termine: string;
   messagefournisseur: string | null;
   affaire_id?: string; // newly added
+  titre_affichage?: string;   // Added to match the DB field
 
   // Frontend fields for UI rendering
   archived?: boolean;
