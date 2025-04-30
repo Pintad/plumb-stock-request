@@ -25,9 +25,10 @@ export const fetchOrders = async (): Promise<Order[]> => {
         completed: article.completed !== undefined ? article.completed : false
       }));
       
-      // Construct the display title using the titre_affichage field (with fallback)
-      const orderTitleDisplay = order.titre_affichage || 
-        `${order.clientname} - D${String(order.numero_commande_global).padStart(5, '0')}`;
+      // Construct the display title using the ordre number or fallback
+      const orderTitleDisplay = order.numero_commande_global ? 
+        `${order.clientname} - D${String(order.numero_commande_global).padStart(5, '0')}` :
+        `${order.clientname} - ${order.commandeid.substring(0, 8)}`;
 
       return {
         commandeid: order.commandeid,
@@ -37,12 +38,12 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        titre_affichage: orderTitleDisplay,
+        titre_affichage: order.titre_affichage || orderTitleDisplay, // Use stored value or fallback
         // Utiliser directement le code et nom d'affaire stockés en base
         projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: orderTitleDisplay,
+        displayTitle: order.titre_affichage || orderTitleDisplay, // Use stored value or fallback
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];
@@ -153,7 +154,7 @@ export const createOrderInDb = async (
     // Mettre à jour la commande avec le titre d'affichage
     const { error: updateError } = await supabase
       .from('commandes')
-      .update({ titre_affichage: displayTitle })
+      .update({ titre_affichage: displayTitle } as any)
       .eq('commandeid', data.commandeid);
     
     if (updateError) throw updateError;

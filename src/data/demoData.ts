@@ -45,7 +45,10 @@ export const demoOrders: Order[] = [
     messagefournisseur: null,
     status: 'completed',
     archived: false,
-    projectCode: 'PROJ-001'
+    projectCode: 'PROJ-001',
+    titre_affichage: 'PROJ-001 - Jean Dupont - D00001',
+    displayTitle: 'PROJ-001 - Jean Dupont - D00001',
+    orderNumber: 1
   },
   {
     commandeid: '2',
@@ -59,6 +62,9 @@ export const demoOrders: Order[] = [
     messagefournisseur: null,
     status: 'pending',
     archived: false,
-    projectCode: 'PROJ-002'
+    projectCode: 'PROJ-002',
+    titre_affichage: 'PROJ-002 - Sophie Martin - D00002',
+    displayTitle: 'PROJ-002 - Sophie Martin - D00002',
+    orderNumber: 2
   }
 ];

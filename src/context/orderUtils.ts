@@ -31,7 +31,11 @@ export const createOrder = (
     // Frontend application fields
     projectCode,
     archived: false,
-    status: 'pending'
+    status: 'pending',
+    
+    // New required fields
+    titre_affichage: `${user.name} - D${String(orders.length + 1).padStart(5, '0')}`,
+    displayTitle: `${user.name} - D${String(orders.length + 1).padStart(5, '0')}`
   };
   
   setOrders([...orders, newOrder]);
