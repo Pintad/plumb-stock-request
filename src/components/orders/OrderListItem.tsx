@@ -56,8 +56,7 @@ const OrderListItem = ({
   onExportCSV,
   onPrintOrder
 }: OrderListItemProps) => {
-  // Format d'affichage pour les commandes:
-  // [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
+  // Utiliser directement le titre d'affichage stocké
   const displayTitle = order.displayTitle || 
     (order.projectCode && order.projectName 
       ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`

@@ -21,9 +21,7 @@ const OrderDetailsHeader = ({
   onNavigateBack,
   onStatusChange
 }: OrderDetailsHeaderProps) => {
-  // Construct display title with project information and user name
-  // Pour les anciens ordres: orderNumber est sans le D et zero-padding à 4
-  // Pour les nouveaux ordres: orderNumber est global et zero-padding à 5
+  // Utiliser directement le titre d'affichage stocké avec la commande
   const displayTitle = order.displayTitle || 
     (order.projectCode && order.projectName 
       ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`

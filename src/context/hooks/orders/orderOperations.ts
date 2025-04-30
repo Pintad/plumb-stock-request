@@ -9,17 +9,7 @@ import { Json } from '@/integrations/supabase/types';
  */
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    // Récupérer les commandes détaillées depuis la vue
-    const { data: detailedOrders, error: viewError } = await supabase
-      .from('v_commandes_detaillees')
-      .select('*');
-
-    if (viewError) {
-      console.error("Erreur lors du chargement des commandes détaillées:", viewError);
-      throw viewError;
-    }
-
-    // Récupérer les données complètes des commandes pour les articles, etc.
+    // Récupérer les données complètes des commandes
     const { data: fullOrders, error } = await supabase
       .from('commandes')
       .select('*')
@@ -27,13 +17,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     if (error) throw error;
 
-    // Fusionner les données
+    // Mapper les données pour correspondre au type Order
     const mappedOrders: Order[] = fullOrders?.map(order => {
-      // Trouver les données détaillées correspondantes
-      const detailedOrder = detailedOrders?.find(
-        (detailed) => detailed.commande_id === order.commandeid
-      );
-
       // Ensure articles have completed status
       const articles = (order.articles as unknown as CartItem[]).map(article => ({
         ...article,
@@ -48,14 +33,43 @@ export const fetchOrders = async (): Promise<Order[]> => {
         termine: order.termine || 'Non',
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
-        projectCode: detailedOrder?.code_affaire || '',
+        // Utiliser directement le code et nom d'affaire stockés en base
+        projectCode: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
+        projectName: '', // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        // Nouveaux champs depuis la vue
-        displayTitle: detailedOrder?.titre_affichage || '',
-        projectName: detailedOrder?.nom_affaire || '',
-        orderNumber: detailedOrder?.numero_demande || 0
+        displayTitle: order.titre_affichage || '', // Utiliser directement le champ titre_affichage de la table commandes
+        orderNumber: order.numero_commande_global || 0
       };
     }) || [];
+    
+    // Pour les commandes qui ont un affaire_id, récupérer le code et nom d'affaire
+    if (mappedOrders.length > 0) {
+      const ordersWithAffaireId = mappedOrders.filter(order => order.displayTitle && !order.projectCode);
+      
+      if (ordersWithAffaireId.length > 0) {
+        // Pour chaque commande avec un affaire_id mais sans projectCode
+        for (const order of ordersWithAffaireId) {
+          const { data: commande, error: cmdError } = await supabase
+            .from('commandes')
+            .select('affaire_id')
+            .eq('commandeid', order.commandeid)
+            .maybeSingle();
+            
+          if (!cmdError && commande && commande.affaire_id) {
+            const { data: affaire, error: affaireError } = await supabase
+              .from('affaires')
+              .select('code, name')
+              .eq('id', commande.affaire_id)
+              .maybeSingle();
+              
+            if (!affaireError && affaire) {
+              order.projectCode = affaire.code;
+              order.projectName = affaire.name;
+            }
+          }
+        }
+      }
+    }
     
     return mappedOrders;
   } catch (error) {
@@ -74,25 +88,7 @@ export const createOrderInDb = async (
 ): Promise<boolean> => {
   try {
     if (!user || cart.length === 0) return false;
-
-    // Compter TOUTES les commandes existantes pour déterminer le prochain numéro de séquence global
-    const { count, error: countError } = await supabase
-      .from('commandes')
-      .select('commandeid', { count: 'exact', head: true });
-
-    if (countError) {
-      console.error("Erreur de comptage des commandes:", countError);
-      return false;
-    }
-
-    // Déterminer le numéro de séquence global
-    const orderCount = typeof count === 'number' ? count : 0;
-    const nextOrderNumber = orderCount + 1;
     
-    // Générer le titre de la commande au format D00001, D00002, etc.
-    // Avec zéro-padding sur 5 chiffres
-    const orderName = `D${String(nextOrderNumber).padStart(5, '0')}`;
-
     // Ajouter completed: false à chaque article
     const cartWithCompletionStatus = cart.map(item => ({
       ...item,
@@ -115,15 +111,7 @@ export const createOrderInDb = async (
       }
     }
 
-    // Construire le titre d'affichage personnalisé
-    let displayTitle = "";
-    if (affaireCode && affaireName) {
-      // Format: [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
-      displayTitle = `${affaireCode} - ${affaireName} - ${user.name} - ${orderName}`;
-    } else {
-      displayTitle = `${user.name} - ${orderName}`;
-    }
-
+    // Les données de la commande à insérer
     const orderData = {
       clientname: user.name,
       datecommande: new Date().toISOString(),
@@ -131,16 +119,39 @@ export const createOrderInDb = async (
       termine: 'Non',
       archive: false,
       affaire_id: affaireId || null,
-      commandeid: undefined, // Laisser Supabase générer l'UUID
       messagefournisseur: null,
     };
 
-    // Insérer la commande dans la table commandes
-    const { error } = await supabase
+    // Insérer la commande pour obtenir le numero_commande_global généré automatiquement
+    const { data, error } = await supabase
       .from('commandes')
-      .insert(orderData);
+      .insert(orderData)
+      .select('numero_commande_global, commandeid')
+      .single();
 
     if (error) throw error;
+    
+    // Maintenant que nous avons le numero_commande_global, nous pouvons générer le titre d'affichage
+    // et mettre à jour la commande
+    const orderNumber = data.numero_commande_global;
+    const orderName = `D${String(orderNumber).padStart(5, '0')}`;
+    
+    // Construire le titre d'affichage
+    let displayTitle = "";
+    if (affaireCode && affaireName) {
+      // Format: [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
+      displayTitle = `${affaireCode} - ${affaireName} - ${user.name} - ${orderName}`;
+    } else {
+      displayTitle = `${user.name} - ${orderName}`;
+    }
+    
+    // Mettre à jour la commande avec le titre d'affichage
+    const { error: updateError } = await supabase
+      .from('commandes')
+      .update({ titre_affichage: displayTitle })
+      .eq('commandeid', data.commandeid);
+    
+    if (updateError) throw updateError;
     
     return true;
   } catch (error) {

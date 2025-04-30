@@ -15,8 +15,7 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  // Format d'affichage pour les commandes:
-  // [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
+  // Utiliser directement le titre d'affichage stocké dans la commande
   const displayTitle = order.displayTitle || 
     (order.projectCode && order.projectName 
       ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`

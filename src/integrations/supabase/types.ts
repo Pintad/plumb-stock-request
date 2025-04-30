@@ -70,6 +70,7 @@ export type Database = {
           commandeid: string
           datecommande: string | null
           messagefournisseur: string | null
+          numero_commande_global: number
           termine: string | null
         }
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           commandeid?: string
           datecommande?: string | null
           messagefournisseur?: string | null
+          numero_commande_global?: number
           termine?: string | null
         }
         Update: {
@@ -92,6 +94,7 @@ export type Database = {
           commandeid?: string
           datecommande?: string | null
           messagefournisseur?: string | null
+          numero_commande_global?: number
           termine?: string | null
         }
         Relationships: [

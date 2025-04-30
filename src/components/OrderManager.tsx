@@ -63,11 +63,8 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
     setCheckedState(newChecked);
   };
 
-  // Format du titre personnalisé
-  const displayTitle = order.displayTitle || 
-    (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
-      : `Demande #${order.commandeid.substring(0, 8)}`);
+  // Utiliser directement le titre d'affichage stocké
+  const displayTitle = order.displayTitle || `Demande #${order.commandeid.substring(0, 8)}`;
 
   const handleStatusChange = async () => {
     await updateOrderStatus(
