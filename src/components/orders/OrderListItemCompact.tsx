@@ -15,8 +15,12 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
-  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+  // Extraire uniquement le numéro de commande (format D00001) à partir du displayTitle
+  const orderNumber = order.displayTitle ? 
+    order.displayTitle.match(/D\d{5}/) ? 
+    order.displayTitle.match(/D\d{5}/)![0] : 
+    `D${String(order.orderNumber).padStart(5, '0')}` : 
+    "[ERREUR: Numéro manquant]";
 
   // Format de la date avec heure incluse pour plus de précision
   const formattedDate = order.datecommande 
@@ -37,7 +41,7 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
         <div className="space-y-1.5">
           <CardTitle className="text-base">
-            {displayTitle}
+            {orderNumber}
           </CardTitle>
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <span>{formattedDate}</span>
