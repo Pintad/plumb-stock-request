@@ -7,7 +7,7 @@ import {
   createOrderInDb, 
   updateOrderStatusInDb, 
   updateOrderInDb 
-} from './orders/orderOperations';
+} from './orders';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useOrders = () => {
