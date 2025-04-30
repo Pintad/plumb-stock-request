@@ -1,11 +1,12 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Order } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
 export const useOrderManagement = (initialOrder: Order | undefined) => {
-  const { updateOrder, updateOrderStatus } = useAppContext();
+  const { updateOrder, updateOrderStatus, loadOrders } = useAppContext();
   const [order, setOrder] = useState<Order | undefined>(initialOrder);
   const [messageText, setMessageText] = useState<string>(initialOrder?.messagefournisseur || "");
   const [articles, setArticles] = useState<any[]>(
@@ -16,6 +17,44 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
   );
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Mettre à jour l'état local lorsque les props changent
+  useEffect(() => {
+    if (initialOrder) {
+      setOrder(initialOrder);
+      setMessageText(initialOrder.messagefournisseur || "");
+      setArticles(initialOrder.articles.map(article => ({
+        ...article,
+        completed: article.completed || false
+      })) || []);
+    }
+  }, [initialOrder]);
+
+  // S'abonner aux changements en temps réel pour cette commande
+  useEffect(() => {
+    if (!order?.commandeid) return;
+
+    const channel = supabase
+      .channel(`order-detail-${order.commandeid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'commandes',
+          filter: `commandeid=eq.${order.commandeid}`
+        },
+        () => {
+          // Recharger les commandes quand des changements sont détectés
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [order?.commandeid, loadOrders]);
 
   const handleItemCompletionToggle = (index: number) => {
     if (!order) return;

@@ -15,11 +15,12 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  // Construct display title with project information and order number
+  // Format d'affichage pour les commandes:
+  // [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
   const displayTitle = order.displayTitle || 
     (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
-      : `Demande #${order.commandeid.substring(0, 8)}`);
+      ? `${order.projectCode} - ${order.projectName} - ${order.clientname} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
+      : `${order.clientname} - D${order.commandeid.substring(0, 5)}`);
 
   return (
     <Card 

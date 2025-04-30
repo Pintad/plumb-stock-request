@@ -75,7 +75,7 @@ export const createOrderInDb = async (
   try {
     if (!user || cart.length === 0) return false;
 
-    // Compter TOUTES les commandes existantes pour déterminer le prochain numéro de séquence
+    // Compter TOUTES les commandes existantes pour déterminer le prochain numéro de séquence global
     const { count, error: countError } = await supabase
       .from('commandes')
       .select('commandeid', { count: 'exact', head: true });
@@ -85,12 +85,13 @@ export const createOrderInDb = async (
       return false;
     }
 
-    // Déterminer le numéro de séquence
+    // Déterminer le numéro de séquence global
     const orderCount = typeof count === 'number' ? count : 0;
     const nextOrderNumber = orderCount + 1;
     
-    // Générer le titre de la commande au format D0001, D0002, etc.
-    const orderName = `D${String(nextOrderNumber).padStart(4, '0')}`;
+    // Générer le titre de la commande au format D00001, D00002, etc.
+    // Avec zéro-padding sur 5 chiffres
+    const orderName = `D${String(nextOrderNumber).padStart(5, '0')}`;
 
     // Ajouter completed: false à chaque article
     const cartWithCompletionStatus = cart.map(item => ({
@@ -117,9 +118,10 @@ export const createOrderInDb = async (
     // Construire le titre d'affichage personnalisé
     let displayTitle = "";
     if (affaireCode && affaireName) {
-      displayTitle = `${affaireCode} - ${affaireName} - ${orderName}`;
+      // Format: [Code Affaire] - [Nom Affaire] - [Nom Utilisateur] - D00001
+      displayTitle = `${affaireCode} - ${affaireName} - ${user.name} - ${orderName}`;
     } else {
-      displayTitle = orderName;
+      displayTitle = `${user.name} - ${orderName}`;
     }
 
     const orderData = {

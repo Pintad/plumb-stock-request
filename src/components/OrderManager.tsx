@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, CartItem } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAppContext } from '@/context/AppContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderManagerProps {
   order: Order;
@@ -13,9 +14,42 @@ interface OrderManagerProps {
   isOpen?: boolean;
 }
 
-const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
-  const { updateOrderStatus, isAdmin } = useAppContext();
-  const [message, setMessage] = useState(order.messagefournisseur || '');
+const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderManagerProps) => {
+  const { updateOrderStatus, isAdmin, loadOrders } = useAppContext();
+  const [order, setOrder] = useState(initialOrder);
+  const [message, setMessage] = useState(initialOrder.messagefournisseur || '');
+
+  // Utiliser useEffect pour écouter les changements en temps réel
+  useEffect(() => {
+    // Mettre à jour l'état local quand l'order change (props)
+    setOrder(initialOrder);
+    setMessage(initialOrder.messagefournisseur || '');
+  }, [initialOrder]);
+
+  useEffect(() => {
+    // S'abonner aux mises à jour en temps réel de cette commande spécifique
+    const channel = supabase
+      .channel(`order-${order.commandeid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'commandes',
+          filter: `commandeid=eq.${order.commandeid}`
+        },
+        (payload) => {
+          // Recharger toutes les commandes quand celle-ci est mise à jour
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    // Se désabonner quand le composant est démonté
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [order.commandeid, loadOrders]);
 
   // Gestion des cases cochées des articles (etat local)
   // Initialement aucune case cochée
@@ -32,7 +66,7 @@ const OrderManager = ({ order, onClose, isOpen = true }: OrderManagerProps) => {
   // Format du titre personnalisé
   const displayTitle = order.displayTitle || 
     (order.projectCode && order.projectName 
-      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(4, '0')}` : ''}`
+      ? `${order.projectCode} - ${order.projectName} - ${order.orderNumber ? `D${String(order.orderNumber).padStart(5, '0')}` : ''}`
       : `Demande #${order.commandeid.substring(0, 8)}`);
 
   const handleStatusChange = async () => {

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,12 @@ import OrderEmailConfirmDialog from '@/components/orders/OrderEmailConfirmDialog
 import OrderDetailsHeader from '@/components/orders/OrderDetailsHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
+import { supabase } from '@/integrations/supabase/client';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { orders, isAdmin } = useAppContext();
+  const { orders, isAdmin, loadOrders } = useAppContext();
   const isMobile = useIsMobile();
   
   const initialOrder = orderId ? orders.find(o => o.commandeid === orderId) : undefined;
@@ -35,6 +36,30 @@ const OrderDetails = () => {
     handleSaveMessage,
     handleSendEmail
   } = useOrderManagement(initialOrder);
+
+  // S'abonner aux mises à jour en temps réel des commandes
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-order-details')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'commandes',
+          filter: orderId ? `commandeid=eq.${orderId}` : undefined
+        },
+        () => {
+          // Recharger les commandes quand des changements sont détectés
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, loadOrders]);
 
   if (!order) {
     return (

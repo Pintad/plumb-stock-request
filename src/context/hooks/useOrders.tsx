@@ -8,6 +8,7 @@ import {
   updateOrderStatusInDb, 
   updateOrderInDb 
 } from './orders/orderOperations';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -16,6 +17,30 @@ export const useOrders = () => {
   // Charge automatiquement les commandes au montage du hook
   useEffect(() => {
     loadOrders();
+  }, []);
+
+  // Écouter les modifications en temps réel sur la table commandes
+  useEffect(() => {
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Écouter tous les événements (insert, update, delete)
+          schema: 'public',
+          table: 'commandes'
+        },
+        () => {
+          // Recharger les commandes quand des changements sont détectés
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    // Se désabonner quand le composant est démonté
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Load orders from the database
