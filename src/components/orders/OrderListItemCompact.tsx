@@ -35,6 +35,12 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
             <span>{order.datecommande ? new Date(order.datecommande).toLocaleDateString('fr-FR') : ''}</span>
             <span>•</span>
             <span>{order.clientname}</span>
+            {order.projectCode && order.projectName && (
+              <>
+                <span>•</span>
+                <span className="font-medium">{order.projectCode} - {order.projectName}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

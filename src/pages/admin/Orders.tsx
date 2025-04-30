@@ -5,7 +5,6 @@ import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import OrderListItemCompact from '@/components/orders/OrderListItemCompact';
 import { useAppContext } from '@/context/AppContext';
 import { Order } from '@/types';
@@ -65,6 +64,7 @@ const AdminOrders = () => {
   
   // Sort orders by date (newest first)
   const sortedOrders = [...filteredOrders].sort((a, b) => {
+    // Convert strings to Date objects first to ensure proper comparison
     const dateA = a.datecommande ? new Date(a.datecommande).getTime() : 0;
     const dateB = b.datecommande ? new Date(b.datecommande).getTime() : 0;
     return dateB - dateA;

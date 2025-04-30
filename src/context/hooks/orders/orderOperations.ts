@@ -1,3 +1,4 @@
+
 import { Order, CartItem, User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -52,27 +53,34 @@ export const fetchOrders = async (): Promise<Order[]> => {
     
     // Pour les commandes qui ont un affaire_id, récupérer le code et nom d'affaire
     if (mappedOrders.length > 0) {
-      const ordersWithAffaireId = mappedOrders.filter(order => order.displayTitle && !order.projectCode);
+      // Fetch all projects once to avoid multiple database queries
+      const { data: allProjects, error: projectsError } = await supabase
+        .from('affaires')
+        .select('id, code, name');
       
-      if (ordersWithAffaireId.length > 0) {
-        // Pour chaque commande avec un affaire_id mais sans projectCode
-        for (const order of ordersWithAffaireId) {
-          const { data: commande, error: cmdError } = await supabase
-            .from('commandes')
-            .select('affaire_id')
-            .eq('commandeid', order.commandeid)
-            .maybeSingle();
-            
-          if (!cmdError && commande && commande.affaire_id) {
-            const { data: affaire, error: affaireError } = await supabase
-              .from('affaires')
-              .select('code, name')
-              .eq('id', commande.affaire_id)
-              .maybeSingle();
-              
-            if (!affaireError && affaire) {
-              order.projectCode = affaire.code;
-              order.projectName = affaire.name;
+      if (!projectsError && allProjects) {
+        const projectsMap = new Map(allProjects.map(p => [p.id, { code: p.code, name: p.name }]));
+        
+        // Get affaire_ids for all orders at once
+        const { data: orderAffaires, error: orderAffairesError } = await supabase
+          .from('commandes')
+          .select('commandeid, affaire_id')
+          .in('commandeid', mappedOrders.map(o => o.commandeid))
+          .not('affaire_id', 'is', null);
+        
+        if (!orderAffairesError && orderAffaires) {
+          // Create a map of commandeid to affaire_id
+          const orderAffaireMap = new Map(orderAffaires.map(o => [o.commandeid, o.affaire_id]));
+          
+          // Update each order with project info in a single loop
+          for (const order of mappedOrders) {
+            const affaireId = orderAffaireMap.get(order.commandeid);
+            if (affaireId) {
+              const projectInfo = projectsMap.get(affaireId);
+              if (projectInfo) {
+                order.projectCode = projectInfo.code;
+                order.projectName = projectInfo.name;
+              }
             }
           }
         }
