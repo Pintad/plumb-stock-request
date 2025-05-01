@@ -31,6 +31,15 @@ const OrderArticlesList = ({ articles }: OrderArticlesListProps) => {
     return parts.join(' - ');
   };
 
+  // Récupère l'unité appropriée (du variant sélectionné ou de l'article principal)
+  const getArticleUnit = (article: CartItem) => {
+    if (article.selectedVariantId && article.variants) {
+      const selectedVariant = article.variants.find(v => v.id === article.selectedVariantId);
+      return selectedVariant?.unit || article.unit || '';
+    }
+    return article.unit || '';
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -54,7 +63,7 @@ const OrderArticlesList = ({ articles }: OrderArticlesListProps) => {
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="font-bold text-lg px-3 py-1 bg-gray-100 rounded-md">
-                    {article.quantity}
+                    {article.quantity} <span className="text-sm text-gray-600 ml-1">{getArticleUnit(article)}</span>
                   </span>
                 </TableCell>
                 <TableCell>

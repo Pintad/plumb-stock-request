@@ -31,6 +31,15 @@ const OrderArticlesSection = ({ articles, isAdmin, onItemCompletionToggle }: Ord
     return parts.join(' - ');
   };
 
+  // Récupère l'unité appropriée (du variant sélectionné ou de l'article principal)
+  const getArticleUnit = (article: CartItem) => {
+    if (article.selectedVariantId && article.variants) {
+      const selectedVariant = article.variants.find(v => v.id === article.selectedVariantId);
+      return selectedVariant?.unit || article.unit || '';
+    }
+    return article.unit || '';
+  };
+
   return (
     <div className="border-t pt-4">
       <p className="font-medium mb-2">Articles</p>
@@ -57,7 +66,7 @@ const OrderArticlesSection = ({ articles, isAdmin, onItemCompletionToggle }: Ord
               
               <div className="flex items-center gap-3">
                 <span className="font-bold text-lg px-3 py-1 bg-gray-100 rounded-md">
-                  {article.quantity}
+                  {article.quantity} <span className="text-sm text-gray-600 ml-1">{getArticleUnit(article)}</span>
                 </span>
                 
                 <Popover>
