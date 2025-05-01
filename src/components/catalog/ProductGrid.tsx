@@ -3,13 +3,23 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/types';
+import PaginationControls from '@/components/catalog/Pagination';
 
 interface ProductGridProps {
   products: Product[];
   resetFilters: () => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, resetFilters }) => {
+const ProductGrid: React.FC<ProductGridProps> = ({ 
+  products, 
+  resetFilters, 
+  currentPage,
+  totalPages,
+  onPageChange
+}) => {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 bg-white rounded-lg shadow">
@@ -29,6 +39,16 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, resetFilters }) => 
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
+      
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </div>
+      )}
     </>
   );
 };
