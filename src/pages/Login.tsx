@@ -65,7 +65,7 @@ const Login = () => {
   return <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-plumbing-blue">PlumbStock</CardTitle>
+          <CardTitle className="text-2xl font-bold text-plumbing-blue">Pintade</CardTitle>
           <CardDescription>
             Application de gestion de stock pour plomberie et chauffage
           </CardDescription>
