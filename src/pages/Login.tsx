@@ -83,12 +83,6 @@ const Login = () => {
             <Button type="submit" className="w-full bg-plumbing-blue hover:bg-blue-600" disabled={isSubmitting}>
               {isSubmitting ? "Connexion..." : "Se connecter"}
             </Button>
-            
-            <div className="mt-4 text-sm text-center text-gray-500">
-              <p>Utilisateurs e démo :</p>
-              <p>Ouvrier : dupont / test123</p>
-              <p>Admin : admin / admin123</p>
-            </div>
           </form>
         </CardContent>
       </Card>
