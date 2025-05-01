@@ -54,7 +54,7 @@ const OrderArticlesList = ({ articles }: OrderArticlesListProps) => {
         <TableBody>
           {articles && articles.length > 0 ? (
             articles.map((article, index) => (
-              <TableRow key={index}>
+              <TableRow key={article.cartItemId || `${article.id}-${article.selectedVariantId || ''}-${index}`}>
                 <TableCell>
                   <div className="font-medium">{formatArticleDisplay(article)}</div>
                 </TableCell>

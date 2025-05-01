@@ -31,8 +31,14 @@ export const useCart = () => {
       updatedCart[existingItemIndex].quantity += quantity;
       setCart(updatedCart);
     } else {
+      // Create a unique compound ID for the cart item that includes variant information
+      const cartItemId = product.selectedVariantId 
+        ? `${product.id}-${product.selectedVariantId}`
+        : product.id;
+        
       const newItem: CartItem = {
         ...product,
+        cartItemId, // Add a unique ID specifically for cart operations
         quantity,
         completed: false
       };
@@ -45,18 +51,18 @@ export const useCart = () => {
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.id !== productId));
+  const removeFromCart = (cartItemId: string) => {
+    setCart(cart.filter(item => item.cartItemId !== cartItemId));
   };
 
-  const updateCartItemQuantity = (productId: string, quantity: number) => {
+  const updateCartItemQuantity = (cartItemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
       return;
     }
 
     const updatedCart = cart.map(item =>
-      item.id === productId ? { ...item, quantity } : item
+      item.cartItemId === cartItemId ? { ...item, quantity } : item
     );
     setCart(updatedCart);
   };

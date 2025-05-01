@@ -21,6 +21,7 @@ export interface CartItem extends Product {
   quantity: number;
   completed?: boolean;
   selectedVariantId?: string;
+  cartItemId?: string; // Added unique cart item identifier
 }
 
 export interface Order {

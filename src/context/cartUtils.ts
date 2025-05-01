@@ -24,9 +24,15 @@ export const addToCart = (
     updatedCart[existingItemIndex].quantity += quantity;
     setCart(updatedCart);
   } else {
+    // Create a unique compound ID for the cart item that includes variant information
+    const cartItemId = product.selectedVariantId 
+      ? `${product.id}-${product.selectedVariantId}`
+      : product.id;
+      
     // Ajout d'un nouveau produit au panier
     const newItem: CartItem = {
       ...product,
+      cartItemId,
       quantity,
       completed: false
     };
@@ -42,24 +48,24 @@ export const addToCart = (
 export const removeFromCart = (
   cart: CartItem[],
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>,
-  productId: string
+  cartItemId: string
 ) => {
-  setCart(cart.filter(item => item.id !== productId));
+  setCart(cart.filter(item => item.cartItemId !== cartItemId));
 };
 
 export const updateCartItemQuantity = (
   cart: CartItem[],
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>,
-  productId: string,
+  cartItemId: string,
   quantity: number
 ) => {
   if (quantity <= 0) {
-    removeFromCart(cart, setCart, productId);
+    removeFromCart(cart, setCart, cartItemId);
     return;
   }
 
   const updatedCart = cart.map(item =>
-    item.id === productId ? { ...item, quantity } : item
+    item.cartItemId === cartItemId ? { ...item, quantity } : item
   );
   setCart(updatedCart);
 };

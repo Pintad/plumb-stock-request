@@ -58,7 +58,7 @@ const CartPage = () => {
                     </TableHeader>
                     <TableBody>
                       {cart.map((item) => (
-                        <TableRow key={item.id}>
+                        <TableRow key={item.cartItemId || `${item.id}-${item.selectedVariantId || ''}`}>
                           <TableCell>
                             <div className="flex items-center">
                               {item.imageUrl && (
@@ -82,7 +82,7 @@ const CartPage = () => {
                                 variant="outline" 
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity - 1)}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
@@ -93,7 +93,7 @@ const CartPage = () => {
                                 variant="outline" 
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity + 1)}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
@@ -103,7 +103,7 @@ const CartPage = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(item.cartItemId || item.id)}
                               className="text-red-500 hover:text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="h-4 w-4" />
