@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Order, CartItem, User } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { 
@@ -13,15 +13,30 @@ import { supabase } from '@/integrations/supabase/client';
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Charge automatiquement les commandes au montage du hook
   useEffect(() => {
     loadOrders();
+    
+    return () => {
+      // Nettoyage de la souscription lors du démontage
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, []);
 
-  // Écouter les modifications en temps réel sur la table commandes
+  // Écouter les modifications en temps réel sur la table commandes avec une référence stable
   useEffect(() => {
-    const channel = supabase
+    // S'assurer qu'on ne crée qu'une seule souscription
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+    
+    // Créer une nouvelle souscription
+    channelRef.current = supabase
       .channel('orders-changes')
       .on(
         'postgres_changes',
@@ -37,9 +52,12 @@ export const useOrders = () => {
       )
       .subscribe();
 
-    // Se désabonner quand le composant est démonté
+    // Nettoyage lors du démontage
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

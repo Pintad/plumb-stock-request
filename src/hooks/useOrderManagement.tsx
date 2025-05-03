@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Order } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +16,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
   );
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Mettre à jour l'état local lorsque les props changent
   useEffect(() => {
@@ -30,11 +30,17 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     }
   }, [initialOrder]);
 
-  // S'abonner aux changements en temps réel pour cette commande
+  // S'abonner aux changements en temps réel pour cette commande avec une référence stable
   useEffect(() => {
     if (!order?.commandeid) return;
 
-    const channel = supabase
+    // Nettoyer toute souscription précédente
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    // Créer une nouvelle souscription
+    channelRef.current = supabase
       .channel(`order-detail-${order.commandeid}`)
       .on(
         'postgres_changes',
@@ -51,8 +57,12 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
       )
       .subscribe();
 
+    // Nettoyage lors du démontage ou changement d'ID de commande
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [order?.commandeid, loadOrders]);
 

@@ -1,5 +1,4 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,7 @@ const OrderDetails = () => {
   const navigate = useNavigate();
   const { orders, isAdmin, loadOrders } = useAppContext();
   const isMobile = useIsMobile();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   
   const initialOrder = orderId ? orders.find(o => o.commandeid === orderId) : undefined;
   const {
@@ -37,27 +37,39 @@ const OrderDetails = () => {
     handleSendEmail
   } = useOrderManagement(initialOrder);
 
-  // S'abonner aux mises à jour en temps réel des commandes
+  // S'abonner aux mises à jour en temps réel des commandes avec une référence stable
   useEffect(() => {
-    const channel = supabase
-      .channel('admin-order-details')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'commandes',
-          filter: orderId ? `commandeid=eq.${orderId}` : undefined
-        },
-        () => {
-          // Recharger les commandes quand des changements sont détectés
-          loadOrders();
-        }
-      )
-      .subscribe();
+    // Nettoyer toute souscription précédente
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
 
+    if (orderId) {
+      // Créer une nouvelle souscription
+      channelRef.current = supabase
+        .channel('admin-order-details')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'commandes',
+            filter: `commandeid=eq.${orderId}`
+          },
+          () => {
+            // Recharger les commandes quand des changements sont détectés
+            loadOrders();
+          }
+        )
+        .subscribe();
+    }
+
+    // Nettoyage lors du démontage ou changement d'ID de commande
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [orderId, loadOrders]);
 

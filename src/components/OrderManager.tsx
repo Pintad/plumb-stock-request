@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Order, CartItem } from '@/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Order } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,7 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
   const { updateOrderStatus, isAdmin, loadOrders } = useAppContext();
   const [order, setOrder] = useState(initialOrder);
   const [message, setMessage] = useState(initialOrder.messagefournisseur || '');
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Utiliser useEffect pour écouter les changements en temps réel
   useEffect(() => {
@@ -27,8 +28,13 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
   }, [initialOrder]);
 
   useEffect(() => {
+    // Nettoyer toute souscription précédente
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
     // S'abonner aux mises à jour en temps réel de cette commande spécifique
-    const channel = supabase
+    channelRef.current = supabase
       .channel(`order-${order.commandeid}`)
       .on(
         'postgres_changes',
@@ -38,16 +44,19 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
           table: 'commandes',
           filter: `commandeid=eq.${order.commandeid}`
         },
-        (payload) => {
+        () => {
           // Recharger toutes les commandes quand celle-ci est mise à jour
           loadOrders();
         }
       )
       .subscribe();
 
-    // Se désabonner quand le composant est démonté
+    // Se désabonner quand le composant est démonté ou quand l'ID de commande change
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [order.commandeid, loadOrders]);
 
