@@ -14,7 +14,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
-  const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading } = useProjects();
+  const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, loadOrders } = useOrders();
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
@@ -31,6 +31,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return undefined;
   };
+
+  // Si aucun projet n'est chargé et qu'il y a une erreur, essayer de recharger
+  // discrètement les projets lorsque l'utilisateur interagit avec l'application
+  useEffect(() => {
+    if (projects.length === 0 && projectsError) {
+      const handleUserActivity = () => {
+        loadProjects(false); // Chargement discret sans message d'erreur
+      };
+
+      window.addEventListener('click', handleUserActivity, { once: true });
+      return () => window.removeEventListener('click', handleUserActivity);
+    }
+  }, [projects.length, projectsError, loadProjects]);
 
   return (
     <AppContext.Provider

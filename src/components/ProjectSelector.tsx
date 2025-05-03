@@ -15,7 +15,10 @@ interface ProjectSelectorProps {
 }
 
 const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProject, onSelectProject }) => {
-  const { projects } = useAppContext();
+  const { projects, isLoading } = useAppContext();
+  
+  // Conserver la valeur actuelle même si les projets ne sont pas chargés
+  const keepSelectedValue = !projects.length && selectedProject !== 'none';
 
   return (
     <div className="mb-6">
@@ -23,6 +26,7 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProject, onSe
       <Select 
         value={selectedProject} 
         onValueChange={onSelectProject}
+        disabled={isLoading}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Sélectionner une affaire" />
@@ -34,6 +38,11 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({ selectedProject, onSe
               {project.code} - {project.name}
             </SelectItem>
           ))}
+          {keepSelectedValue && (
+            <SelectItem value={selectedProject}>
+              {selectedProject} - Chargement...
+            </SelectItem>
+          )}
         </SelectContent>
       </Select>
       <p className="text-xs text-gray-500 mt-1">

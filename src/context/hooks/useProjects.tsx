@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Project } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -8,11 +8,20 @@ export const useProjects = (initialProjects: Project[] = []) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadAttemptCount = useRef(0);
+  const lastLoadTime = useRef<number | null>(null);
+  const MIN_RETRY_INTERVAL = 10000; // 10 secondes minimum entre les tentatives
 
   // Function to load projects from Supabase - wrapped in useCallback to avoid recreation
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (showToastOnError: boolean = true) => {
+    // Éviter les rechargements trop fréquents
+    const now = Date.now();
+    if (lastLoadTime.current && now - lastLoadTime.current < MIN_RETRY_INTERVAL) {
+      return; // Éviter les appels trop rapprochés
+    }
+    
+    lastLoadTime.current = now;
     setIsLoading(true);
-    setError(null);
     
     try {
       const { data, error } = await supabase
@@ -29,17 +38,24 @@ export const useProjects = (initialProjects: Project[] = []) => {
           name: item.name,
         }));
         setProjects(projectsFromDB);
+        setError(null);
+        loadAttemptCount.current = 0; // Réinitialiser le compteur sur succès
       } else {
         setProjects([]);
       }
     } catch (error: any) {
       console.error("Erreur lors du chargement des projets depuis Supabase:", error);
       setError("Impossible de charger les affaires depuis la base de données.");
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les affaires depuis la base de données.",
-        variant: "destructive",
-      });
+      
+      // Ne pas afficher le toast pour chaque erreur
+      if (showToastOnError && loadAttemptCount.current < 2) { // Limiter les toasts d'erreur
+        loadAttemptCount.current++;
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les affaires depuis la base de données.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -47,8 +63,19 @@ export const useProjects = (initialProjects: Project[] = []) => {
 
   // Load projects only once on component mount
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    loadProjects(false); // Ne pas afficher de toast au chargement initial
+    
+    // Créer un intervalle pour vérifier la connectivité si nécessaire
+    const reconnectInterval = setInterval(() => {
+      if (error) {
+        loadProjects(false); // Tenter de se reconnecter discrètement
+      }
+    }, 30000); // Tenter de se reconnecter toutes les 30 secondes
+    
+    return () => {
+      clearInterval(reconnectInterval);
+    };
+  }, [loadProjects, error]);
 
   const addProject = useCallback(async (project: Project) => {
     try {
