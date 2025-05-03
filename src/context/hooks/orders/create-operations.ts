@@ -37,6 +37,9 @@ export const createOrderInDb = async (
       }
     }
 
+    // Convertir la date en string ISO si elle existe
+    const formattedDate = dateMiseADisposition ? dateMiseADisposition.toISOString() : null;
+
     // Les données de la commande à insérer
     // CORRECTION: Utiliser maintenant datecommande: null pour laisser Supabase générer automatiquement la date et l'heure
     const orderData = {
@@ -46,7 +49,7 @@ export const createOrderInDb = async (
       archive: false,
       affaire_id: affaireId || null,
       messagefournisseur: null,
-      date_mise_a_disposition: dateMiseADisposition || null, // Ajout de la date de mise à disposition
+      date_mise_a_disposition: formattedDate, // Date convertie en format ISO string
     };
 
     // Insérer la commande pour obtenir le numero_commande_global généré automatiquement
