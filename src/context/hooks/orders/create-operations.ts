@@ -9,7 +9,8 @@ import { Json } from '@/integrations/supabase/types';
 export const createOrderInDb = async (
   user: User | null,
   cart: CartItem[],
-  affaireId?: string
+  affaireId?: string,
+  dateMiseADisposition?: Date | null
 ): Promise<boolean> => {
   try {
     if (!user || cart.length === 0) return false;
@@ -45,6 +46,7 @@ export const createOrderInDb = async (
       archive: false,
       affaire_id: affaireId || null,
       messagefournisseur: null,
+      date_mise_a_disposition: dateMiseADisposition || null, // Ajout de la date de mise à disposition
     };
 
     // Insérer la commande pour obtenir le numero_commande_global généré automatiquement

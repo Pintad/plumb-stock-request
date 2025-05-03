@@ -9,9 +9,18 @@ import { Trash2, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import ProjectSelector from '@/components/ProjectSelector';
+import { DatePicker } from '@/components/DatePicker';
 
 const CartPage = () => {
-  const { cart, updateCartItemQuantity, removeFromCart, clearCart, createOrder } = useAppContext();
+  const { 
+    cart, 
+    updateCartItemQuantity, 
+    removeFromCart, 
+    clearCart, 
+    createOrder,
+    selectedDeliveryDate,
+    setSelectedDeliveryDate
+  } = useAppContext();
   const [selectedProject, setSelectedProject] = useState('none');
   const navigate = useNavigate();
   
@@ -23,6 +32,14 @@ const CartPage = () => {
         description: "Votre panier est vide, impossible de créer une commande.",
       });
       return;
+    }
+    
+    // Vérifier si une date de mise à disposition a été sélectionnée (optionnel)
+    if (!selectedDeliveryDate) {
+      // Optionnel: afficher une confirmation avant de créer sans date
+      if (!window.confirm("Aucune date de mise à disposition n'a été sélectionnée. Voulez-vous continuer sans spécifier de date ?")) {
+        return;
+      }
     }
     
     // If selectedProject is "none", pass undefined instead
@@ -137,10 +154,15 @@ const CartPage = () => {
                 <CardHeader>
                   <CardTitle>Résumé</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <ProjectSelector 
                     selectedProject={selectedProject}
                     onSelectProject={setSelectedProject}
+                  />
+                  
+                  <DatePicker 
+                    date={selectedDeliveryDate}
+                    onDateChange={setSelectedDeliveryDate}
                   />
                   
                   <div className="my-4">

@@ -37,6 +37,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
         titre_affichage: orderDisplayTitle, 
+        date_mise_a_disposition: order.date_mise_a_disposition || null, // Nouvelle date souhaitée
         // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
         projectCode: '', 
         projectName: '', 

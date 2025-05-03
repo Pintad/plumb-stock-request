@@ -65,10 +65,11 @@ export const useOrders = () => {
     user: User | null,
     cart: CartItem[],
     clearCart: () => void,
-    affaireId?: string
+    affaireId?: string,
+    dateMiseADisposition?: Date | null
   ): Promise<boolean> => {
     try {
-      const success = await createOrderInDb(user, cart, affaireId);
+      const success = await createOrderInDb(user, cart, affaireId, dateMiseADisposition);
       
       if (success) {
         clearCart();

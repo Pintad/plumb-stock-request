@@ -68,6 +68,7 @@ export type Database = {
           articles: Json
           clientname: string
           commandeid: string
+          date_mise_a_disposition: string | null
           datecommande: string | null
           messagefournisseur: string | null
           numero_commande_global: number
@@ -81,6 +82,7 @@ export type Database = {
           articles: Json
           clientname: string
           commandeid?: string
+          date_mise_a_disposition?: string | null
           datecommande?: string | null
           messagefournisseur?: string | null
           numero_commande_global?: number
@@ -94,6 +96,7 @@ export type Database = {
           articles?: Json
           clientname?: string
           commandeid?: string
+          date_mise_a_disposition?: string | null
           datecommande?: string | null
           messagefournisseur?: string | null
           numero_commande_global?: number

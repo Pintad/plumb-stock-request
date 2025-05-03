@@ -34,4 +34,6 @@ export interface AppContextType {
   addProduct: (product: Product) => Promise<boolean>;
   updateProduct: (product: Product) => Promise<boolean>;
   deleteProduct: (productId: string) => Promise<boolean>;
+  selectedDeliveryDate: Date | undefined;
+  setSelectedDeliveryDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
 }

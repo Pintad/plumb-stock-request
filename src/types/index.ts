@@ -34,6 +34,7 @@ export interface Order {
   messagefournisseur: string | null;
   affaire_id?: string;
   titre_affichage: string;   // Correctly typed as non-optional string
+  date_mise_a_disposition?: string | null; // Nouvelle date de mise à disposition souhaitée
 
   // Frontend fields for UI rendering
   archived?: boolean;

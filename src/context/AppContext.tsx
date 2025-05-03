@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
 import { useProjects } from './hooks/useProjects';
@@ -17,6 +17,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading } = useProjects();
   const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, loadOrders } = useOrders();
+  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
 
   // Wrapper to pass affaireId (projectCode) to createOrder in useOrders hook
   const createOrderWrapper = (projectCode?: string) => {
@@ -25,7 +26,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // So we need to find the actual project id by code to pass
       const projectObj = projects.find(p => p.code === projectCode);
       const affaireId = projectObj?.id;
-      createOrder(user, cart, clearCart, affaireId);
+      createOrder(user, cart, clearCart, affaireId, selectedDeliveryDate);
       return undefined;
     }
     return undefined;
@@ -65,6 +66,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProduct,
         updateProduct,
         deleteProduct,
+        selectedDeliveryDate,
+        setSelectedDeliveryDate
       }}
     >
       {children}
