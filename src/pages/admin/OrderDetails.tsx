@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -13,14 +14,13 @@ import OrderEmailConfirmDialog from '@/components/orders/OrderEmailConfirmDialog
 import OrderDetailsHeader from '@/components/orders/OrderDetailsHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
-import { supabase } from '@/integrations/supabase/client';
+import { useOrderRealtime } from '@/hooks/useOrderRealtime';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { orders, isAdmin, loadOrders } = useAppContext();
   const isMobile = useIsMobile();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   
   const initialOrder = orderId ? orders.find(o => o.commandeid === orderId) : undefined;
   const {
@@ -36,42 +36,9 @@ const OrderDetails = () => {
     handleSaveMessage,
     handleSendEmail
   } = useOrderManagement(initialOrder);
-
-  // S'abonner aux mises à jour en temps réel des commandes avec une référence stable
-  useEffect(() => {
-    // Nettoyer toute souscription précédente
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    if (orderId) {
-      // Créer une nouvelle souscription
-      channelRef.current = supabase
-        .channel('admin-order-details')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'commandes',
-            filter: `commandeid=eq.${orderId}`
-          },
-          () => {
-            // Recharger les commandes quand des changements sont détectés
-            loadOrders();
-          }
-        )
-        .subscribe();
-    }
-
-    // Nettoyage lors du démontage ou changement d'ID de commande
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [orderId, loadOrders]);
+  
+  // Subscribe to real-time updates for the current order
+  useOrderRealtime(orderId, loadOrders);
 
   if (!order) {
     return (
