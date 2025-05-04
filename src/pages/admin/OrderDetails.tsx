@@ -44,7 +44,7 @@ const OrderDetails = () => {
     return (
       <div className="min-h-screen flex flex-col bg-gray-100">
         <Header />
-        <main className="flex-1 container px-4 py-6">
+        <main className={`flex-1 container ${isMobile ? 'px-2 py-3' : 'px-4 py-6'}`}>
           <div className="flex items-center space-x-4 mb-6">
             <Button 
               variant="outline" 
@@ -66,7 +66,7 @@ const OrderDetails = () => {
       <Header />
       <main className={`flex-1 container ${isMobile ? 'px-2' : 'px-4'} py-6`}>
         <Card className="mb-6">
-          <CardHeader>
+          <CardHeader className={isMobile ? 'px-3 py-3' : ''}>
             <OrderDetailsHeader
               order={order}
               isAdmin={isAdmin}
@@ -75,7 +75,7 @@ const OrderDetails = () => {
               onStatusChange={handleManualStatusChange}
             />
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? 'px-3' : ''}>
             <div className="space-y-4">
               <OrderInfoSection order={order} />
               
@@ -86,8 +86,9 @@ const OrderDetails = () => {
                     className="flex items-center gap-2"
                     onClick={() => setShowEmailConfirm(true)}
                     disabled={sendingEmail}
+                    size={isMobile ? "sm" : "default"}
                   >
-                    <Mail className="h-4 w-4" />
+                    <Mail className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                     {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
                   </Button>
                 </div>
@@ -97,6 +98,7 @@ const OrderDetails = () => {
                 articles={articles}
                 isAdmin={isAdmin}
                 onItemCompletionToggle={handleItemCompletionToggle}
+                isMobile={isMobile}
               />
 
               {isAdmin && (
@@ -104,6 +106,7 @@ const OrderDetails = () => {
                   message={messageText}
                   onChange={handleMessageChange}
                   onSave={handleSaveMessage}
+                  isMobile={isMobile}
                 />
               )}
 

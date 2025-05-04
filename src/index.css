@@ -66,3 +66,58 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* Responsive adjustements for mobile devices */
+@media (max-width: 768px) {
+  .container {
+    @apply px-2 py-2;
+  }
+  
+  .card {
+    @apply rounded-md shadow-sm;
+  }
+  
+  h1 {
+    @apply text-xl;
+  }
+  
+  h2 {
+    @apply text-lg;
+  }
+  
+  /* Touch-friendly targets */
+  button, 
+  [role="button"], 
+  a, 
+  input[type="checkbox"], 
+  input[type="radio"], 
+  select {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Better spacing on mobile forms */
+  .form-group {
+    @apply mb-4;
+  }
+  
+  /* Fix issues with fixed headers on mobile */
+  .mobile-content-area {
+    @apply pt-14;
+  }
+}
+
+/* Desktop-specific styling */
+@media (min-width: 769px) {
+  /* Add desktop-specific styles here if needed */
+}
+
+/* General responsive typography */
+html {
+  font-size: 16px;
+}
+
+@media screen and (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}

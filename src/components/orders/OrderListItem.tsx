@@ -12,6 +12,7 @@ import {
 import { ClipboardList, MessageSquare } from 'lucide-react';
 import OrderArticlesList from './OrderArticlesList';
 import OrderActions from './OrderActions';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OrderListItemProps {
   order: Order;
@@ -56,6 +57,8 @@ const OrderListItem = ({
   onExportCSV,
   onPrintOrder
 }: OrderListItemProps) => {
+  const isMobile = useIsMobile();
+  
   // Always use the DB-stored display title without any fallbacks
   const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
@@ -72,52 +75,60 @@ const OrderListItem = ({
 
   return (
     <Card className={`overflow-hidden ${order.archived ? 'opacity-70' : ''}`}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+      <CardHeader className={`${isMobile ? 'pb-1 pt-3 px-3' : 'pb-2'}`}>
+        <div className={`flex ${isMobile ? 'flex-col' : 'justify-between items-start'}`}>
           <div>
-            <CardTitle className="text-lg flex items-center">
+            <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} flex items-center`}>
               <ClipboardList className="mr-2 h-5 w-5 text-gray-500" />
-              <span>{displayTitle}</span>
-              {showUser && order.clientname && (
+              <span className={`${isMobile ? 'truncate max-w-[200px]' : ''}`}>
+                {displayTitle}
+              </span>
+              {showUser && order.clientname && !isMobile && (
                 <span className="ml-2 text-sm font-normal">({order.clientname})</span>
               )}
             </CardTitle>
-            <p className="text-sm text-gray-500">
+            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
               {formattedDate}
+              {showUser && order.clientname && isMobile && (
+                <> • {order.clientname}</>
+              )}
             </p>
             {(order.projectCode || order.projectName) && (
-              <div className="mt-1">
-                <Badge variant="outline" className="font-normal">
+              <div className={`${isMobile ? 'mt-1' : 'mt-1'}`}>
+                <Badge variant="outline" className={`font-normal ${isMobile ? 'text-xs py-0 px-1.5' : ''}`}>
                   Affaire: {order.projectCode} 
-                  {order.projectName ? ` - ${order.projectName}` : projectName ? ` - ${projectName}` : ''}
+                  {!isMobile && order.projectName ? ` - ${order.projectName}` : ''}
+                  {!isMobile && projectName ? ` - ${projectName}` : ''}
                 </Badge>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${isMobile ? 'mt-2 justify-between w-full' : ''}`}>
             {order.messagefournisseur && !isAdmin && (
-              <div className="flex items-center text-sm text-gray-600 mr-2">
+              <div className={`flex items-center text-sm text-gray-600 ${isMobile ? 'text-xs' : 'mr-2'}`}>
                 <MessageSquare className="h-4 w-4 mr-1" />
-                {order.messagefournisseur}
+                <span className={isMobile ? 'truncate max-w-[150px]' : ''}>
+                  {order.messagefournisseur}
+                </span>
               </div>
             )}
-            <Badge className={`${getStatusColor(order.termine)} text-white`}>
+            <Badge className={`${getStatusColor(order.termine)} text-white ${isMobile ? 'text-xs px-1.5' : ''}`}>
               {getStatusLabel(order.termine)}
             </Badge>
             {order.archived && (
-              <Badge variant="outline" className="bg-gray-200">
+              <Badge variant="outline" className={`bg-gray-200 ${isMobile ? 'text-xs' : ''}`}>
                 Archivée
               </Badge>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className={isMobile ? 'py-2 px-3' : ''}>
         <OrderArticlesList articles={order.articles} />
       </CardContent>
-      <CardFooter className="bg-gray-50 py-2">
-        <div className="flex justify-between w-full text-sm items-center">
-          <span>
+      <CardFooter className={`bg-gray-50 ${isMobile ? 'py-2 px-3' : 'py-2'}`}>
+        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between'} w-full text-sm items-center`}>
+          <span className={isMobile ? 'self-start text-xs' : ''}>
             Articles: <span className="font-semibold">
               {order.articles?.length || 0}
             </span>

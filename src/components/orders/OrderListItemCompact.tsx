@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OrderListItemCompactProps {
   order: Order;
@@ -15,6 +16,8 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
+  const isMobile = useIsMobile();
+  
   // Always use the display title from the titre_affichage field without any fallbacks
   // If it's missing, show a clear error message
   const orderDisplayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
@@ -40,26 +43,38 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
       className="cursor-pointer hover:bg-gray-50 transition-colors"
       onClick={onClick}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 py-4">
+      <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'py-3 px-4' : 'py-4'}`}>
         <div className="space-y-1.5">
-          <CardTitle className="text-base">
+          <CardTitle className={`${isMobile ? 'text-sm' : 'text-base'}`}>
             {orderNumber}
           </CardTitle>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>{formattedDate}</span>
-            <span>•</span>
-            <span>{order.clientname}</span>
-            {order.projectCode && order.projectName && (
+          <div className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center space-x-2'} text-sm text-muted-foreground`}>
+            <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>{formattedDate}</span>
+            
+            {isMobile ? (
+              <div className="flex items-center space-x-1 text-xs">
+                <span>{order.clientname}</span>
+                {order.projectCode && (
+                  <span className="font-medium truncate max-w-[140px]">{order.projectCode}</span>
+                )}
+              </div>
+            ) : (
               <>
                 <span>•</span>
-                <span className="font-medium">{order.projectCode} - {order.projectName}</span>
+                <span>{order.clientname}</span>
+                {order.projectCode && order.projectName && (
+                  <>
+                    <span>•</span>
+                    <span className="font-medium">{order.projectCode} - {order.projectName}</span>
+                  </>
+                )}
               </>
             )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Badge 
-            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : 'bg-green-500'} text-white`}
+            className={`${order.termine === 'Non' ? 'bg-yellow-500' : order.termine === 'En cours' ? 'bg-blue-500' : 'bg-green-500'} text-white ${isMobile ? 'text-xs px-1.5 py-0.5' : ''}`}
           >
             {order.termine === 'Non' ? 'En attente' : order.termine === 'En cours' ? 'En cours' : 'Terminée'}
           </Badge>
