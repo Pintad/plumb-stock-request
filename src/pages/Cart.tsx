@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import ProjectSelector from '@/components/ProjectSelector';
 import { DatePicker } from '@/components/DatePicker';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CartPage = () => {
   const { 
@@ -23,6 +24,7 @@ const CartPage = () => {
   } = useAppContext();
   const [selectedProject, setSelectedProject] = useState('none');
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const handleCreateOrder = () => {
     if (cart.length === 0) {
@@ -53,7 +55,7 @@ const CartPage = () => {
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       
-      <main className="flex-1 container px-4 py-6">
+      <main className={`flex-1 container ${isMobile ? 'px-2 py-3' : 'px-4 py-6'}`}>
         <h1 className="text-2xl font-bold mb-6">Mon panier</h1>
         
         {cart.length > 0 ? (
@@ -64,78 +66,137 @@ const CartPage = () => {
                   <CardTitle>Articles</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produit</TableHead>
-                        <TableHead>Référence</TableHead>
-                        <TableHead>Quantité</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <div className={`${isMobile ? 'block' : 'hidden'}`}>
+                    {/* Version mobile: afficher comme une liste de cartes */}
+                    <div className="space-y-4">
                       {cart.map((item) => (
-                        <TableRow key={item.cartItemId || `${item.id}-${item.selectedVariantId || ''}`}>
-                          <TableCell>
-                            <div className="flex items-center">
+                        <Card key={item.cartItemId || `${item.id}-${item.selectedVariantId || ''}`} className="overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex items-start">
                               {item.imageUrl && (
-                                <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-contain mr-4" />
+                                <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-contain mr-3" />
                               )}
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <div className="text-xs text-gray-500">{item.unit}</div>
-                                {item.category && (
-                                  <div className="text-xs text-gray-500">Catégorie: {item.category}</div>
-                                )}
+                              <div className="flex-1">
+                                <div className="font-medium text-sm mb-1">{item.name}</div>
+                                <div className="text-xs text-gray-500 mb-1">{item.reference}</div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div className="flex items-center border rounded-md">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-10 w-10 p-0 rounded-r-none"
+                                      onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity - 1)}
+                                      aria-label="Diminuer la quantité"
+                                    >
+                                      <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <span className="font-medium w-10 text-center">
+                                      {item.quantity}
+                                    </span>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-10 w-10 p-0 rounded-l-none"
+                                      onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity + 1)}
+                                      aria-label="Augmenter la quantité"
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeFromCart(item.cartItemId || item.id)}
+                                    className="text-red-500 h-10 w-10"
+                                    aria-label="Supprimer l'article"
+                                  >
+                                    <Trash2 className="h-5 w-5" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {item.reference}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity - 1)}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="font-medium w-10 text-center">
-                                {item.quantity}
-                              </span>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity + 1)}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFromCart(item.cartItemId || item.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                          </CardContent>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </div>
+                  
+                  <div className={`${isMobile ? 'hidden' : 'block'} overflow-x-auto`}>
+                    {/* Version desktop: afficher comme un tableau */}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Produit</TableHead>
+                          <TableHead>Référence</TableHead>
+                          <TableHead>Quantité</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cart.map((item) => (
+                          <TableRow key={item.cartItemId || `${item.id}-${item.selectedVariantId || ''}`}>
+                            <TableCell>
+                              <div className="flex items-center">
+                                {item.imageUrl && (
+                                  <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-contain mr-4" />
+                                )}
+                                <div>
+                                  <div className="font-medium">{item.name}</div>
+                                  <div className="text-xs text-gray-500">{item.unit}</div>
+                                  {item.category && (
+                                    <div className="text-xs text-gray-500">Catégorie: {item.category}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {item.reference}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity - 1)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="font-medium w-10 text-center">
+                                  {item.quantity}
+                                </span>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => updateCartItemQuantity(item.cartItemId || item.id, item.quantity + 1)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFromCart(item.cartItemId || item.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
                 <CardFooter>
                   <div className="flex justify-between items-center w-full">
                     <Button 
                       variant="outline" 
                       onClick={clearCart}
+                      className={isMobile ? "text-sm py-5" : ""}
                     >
                       Vider le panier
                     </Button>
@@ -174,7 +235,7 @@ const CartPage = () => {
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    className="w-full bg-plumbing-blue hover:bg-blue-600"
+                    className={`w-full bg-plumbing-blue hover:bg-blue-600 ${isMobile ? 'py-6' : ''}`}
                     onClick={handleCreateOrder}
                     disabled={cart.length === 0}
                   >
@@ -195,7 +256,7 @@ const CartPage = () => {
               Vous n'avez aucun produit dans votre panier
             </p>
             <Button 
-              className="bg-plumbing-blue hover:bg-blue-600"
+              className={`bg-plumbing-blue hover:bg-blue-600 ${isMobile ? 'py-6' : ''}`}
               onClick={() => navigate('/')}
             >
               Parcourir les produits

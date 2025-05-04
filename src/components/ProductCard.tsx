@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProductCardProps {
   product: Product;
@@ -26,6 +27,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     product.variants && product.variants.length > 0 ? product.variants[0] : null
   );
   const { addToCart } = useAppContext();
+  const isMobile = useIsMobile();
   
   const handleAddToCart = () => {
     // Ensure quantity is at least 1 before adding to cart
@@ -154,37 +156,42 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <div className="flex items-center w-24">
+        <div className={`flex items-center ${isMobile ? 'w-full' : 'w-24'}`}>
           <Button 
             type="button" 
             variant="outline" 
             size="icon" 
-            className="h-8 w-8 rounded-r-none"
+            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-r-none`}
             onClick={decrementQuantity}
+            aria-label="Diminuer la quantité"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
           </Button>
           <Input
             type="text"
             value={inputValue}
             onChange={handleQuantityChange}
             onBlur={handleBlur}
-            className="h-8 text-center rounded-none border-x-0"
+            className={`${isMobile ? 'h-10' : 'h-8'} text-center rounded-none border-x-0`}
             min="1"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            aria-label="Quantité"
           />
           <Button 
             type="button" 
             variant="outline" 
             size="icon" 
-            className="h-8 w-8 rounded-l-none"
+            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-l-none`}
             onClick={incrementQuantity}
+            aria-label="Augmenter la quantité"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
           </Button>
         </div>
         <Button 
           onClick={handleAddToCart}
-          className="w-full sm:w-auto bg-plumbing-blue hover:bg-blue-600"
+          className={`${isMobile ? 'w-full py-6' : 'w-full sm:w-auto'} bg-plumbing-blue hover:bg-blue-600`}
           disabled={product.variants && product.variants.length > 0 && !selectedVariant}
         >
           Ajouter
