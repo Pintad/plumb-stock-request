@@ -27,7 +27,11 @@ const OrderDetails = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <OrderDetailsReadOnly order={order} backUrl="/my-orders" isMobile={isMobile} />
+      <OrderDetailsReadOnly 
+        order={order} 
+        backUrl="/my-orders" 
+        isMobile={isMobile} 
+      />
     </div>
   );
 };

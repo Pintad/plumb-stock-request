@@ -11,13 +11,14 @@ import OrderArticlesList from './OrderArticlesList';
 interface OrderDetailsReadOnlyProps {
   order: Order;
   backUrl: string;
+  isMobile?: boolean; // Added isMobile as optional prop
 }
 
-const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => {
+const OrderDetailsReadOnly = ({ order, backUrl, isMobile }: OrderDetailsReadOnlyProps) => {
   const navigate = useNavigate();
   
   // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
-  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+  const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
   // Format de la date avec heure incluse pour plus de précision
   const formattedDate = order.datecommande 
@@ -32,7 +33,7 @@ const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => 
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      <main className="flex-1 container px-4 py-6">
+      <main className={`flex-1 container ${isMobile ? 'px-2 py-3' : 'px-4 py-6'}`}>
         <div className="flex items-center space-x-4 mb-6">
           <Button 
             variant="outline" 
@@ -46,7 +47,7 @@ const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => 
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
               {displayTitle}
             </CardTitle>
             <div className="mt-2">
@@ -66,13 +67,13 @@ const OrderDetailsReadOnly = ({ order, backUrl }: OrderDetailsReadOnlyProps) => 
               <OrderInfoSection order={order} />
               
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Articles</h3>
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-4`}>Articles</h3>
                 <OrderArticlesList articles={order.articles} />
               </div>
               
               {order.messagefournisseur && (
                 <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium mb-2">Message du magasinier</h3>
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-2`}>Message du magasinier</h3>
                   <p className="text-gray-600">{order.messagefournisseur}</p>
                 </div>
               )}
