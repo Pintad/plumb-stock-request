@@ -56,8 +56,8 @@ const OrderListItem = ({
   onExportCSV,
   onPrintOrder
 }: OrderListItemProps) => {
-  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
-  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+  // Always use the DB-stored display title without any fallbacks
+  const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
   // Format de la date avec heure incluse pour plus de précision
   const formattedDate = order.datecommande 

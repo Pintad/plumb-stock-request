@@ -72,8 +72,8 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
     setCheckedState(newChecked);
   };
 
-  // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
-  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+  // Use only the stored display title from the database without fallback
+  const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
   const handleStatusChange = async () => {
     await updateOrderStatus(

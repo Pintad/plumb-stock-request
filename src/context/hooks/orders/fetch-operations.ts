@@ -26,7 +26,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       
       // Récupérer directement le titre d'affichage depuis la base de données
       // Si titre_affichage est null ou undefined, utiliser un message d'erreur clair
-      const orderDisplayTitle = (order as any).titre_affichage || "[ERREUR: Titre manquant]";
+      const orderDisplayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
       return {
         commandeid: order.commandeid,
@@ -37,12 +37,13 @@ export const fetchOrders = async (): Promise<Order[]> => {
         messagefournisseur: order.messagefournisseur,
         archived: false, // Removed archive functionality
         titre_affichage: orderDisplayTitle, 
-        date_mise_a_disposition: order.date_mise_a_disposition || null, // Nouvelle date souhaitée
-        // Ces champs seront remplis si nécessaire lors de requêtes supplémentaires
+        date_mise_a_disposition: order.date_mise_a_disposition || null,
+        // Toujours utiliser les données stockées dans la base
         projectCode: '', 
         projectName: '', 
         status: order.termine === 'Oui' ? 'completed' : 'pending',
-        displayTitle: orderDisplayTitle, // Utiliser directement le titre stocké en base
+        // Utiliser directement le titre stocké en base
+        displayTitle: orderDisplayTitle,
         orderNumber: order.numero_commande_global || 0
       };
     }) || [];

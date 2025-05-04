@@ -21,8 +21,8 @@ const OrderDetailsHeader = ({
   onNavigateBack,
   onStatusChange
 }: OrderDetailsHeaderProps) => {
-  // Utiliser uniquement le titre d'affichage stocké, sans fallback
-  const displayTitle = order.displayTitle || "[ERREUR: Titre manquant]";
+  // Use only the stored display title without fallback
+  const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
   return (
     <>

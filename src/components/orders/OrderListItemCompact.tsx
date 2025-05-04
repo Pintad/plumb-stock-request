@@ -15,12 +15,14 @@ interface OrderListItemCompactProps {
 }
 
 const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
-  // Extraire uniquement le numéro de commande (format D00001) à partir du displayTitle
-  const orderNumber = order.displayTitle ? 
-    order.displayTitle.match(/D\d{5}/) ? 
-    order.displayTitle.match(/D\d{5}/)![0] : 
-    `D${String(order.orderNumber).padStart(5, '0')}` : 
-    "[ERREUR: Numéro manquant]";
+  // Always use the display title from the titre_affichage field without any fallbacks
+  // If it's missing, show a clear error message
+  const orderDisplayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
+  
+  // Extract the order number pattern (D00001) from the display title if possible
+  const orderNumber = orderDisplayTitle.match(/D\d{5}/) 
+    ? orderDisplayTitle.match(/D\d{5}/)![0]
+    : "[ERREUR: Numéro manquant]";
 
   // Format de la date avec heure incluse pour plus de précision
   const formattedDate = order.datecommande 
