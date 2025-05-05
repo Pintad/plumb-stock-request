@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
-import { ShoppingCart, Package, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase } from 'lucide-react';
+import { ShoppingCart, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,8 +24,12 @@ export const Header = () => {
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center">
-            <Package className="h-6 w-6 text-blue-600" />
-            <span className="ml-2 text-xl font-bold">PrestockPro</span>
+            <img 
+              src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
+              alt="Pintade Logo" 
+              className="h-10 w-auto" 
+            />
+            <span className="ml-2 text-xl font-bold">Pintade</span>
           </Link>
           
           {user && (
@@ -33,7 +37,7 @@ export const Header = () => {
               <Link 
                 to="/" 
                 className={`text-sm font-medium transition-colors ${
-                  location.pathname === '/' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                  location.pathname === '/' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                 }`}
               >
                 Catalogue
@@ -41,7 +45,7 @@ export const Header = () => {
               <Link 
                 to="/my-orders" 
                 className={`text-sm font-medium transition-colors ${
-                  location.pathname === '/my-orders' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                  location.pathname === '/my-orders' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                 }`}
               >
                 Mes demandes
@@ -52,7 +56,7 @@ export const Header = () => {
                     to="/admin" 
                     className={`text-sm font-medium transition-colors ${
                       location.pathname.startsWith('/admin') && location.pathname === '/admin' 
-                        ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                        ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
                     Dashboard
@@ -60,7 +64,7 @@ export const Header = () => {
                   <Link 
                     to="/admin/orders" 
                     className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/orders' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                      location.pathname === '/admin/orders' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
                     Commandes
@@ -68,7 +72,7 @@ export const Header = () => {
                   <Link 
                     to="/admin/products" 
                     className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/products' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                      location.pathname === '/admin/products' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
                     Produits
@@ -76,7 +80,7 @@ export const Header = () => {
                   <Link 
                     to="/admin/categories" 
                     className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/categories' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                      location.pathname === '/admin/categories' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
                     Catégories
@@ -84,7 +88,7 @@ export const Header = () => {
                   <Link 
                     to="/admin/projects" 
                     className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/projects' ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+                      location.pathname === '/admin/projects' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
                     Affaires
@@ -98,11 +102,11 @@ export const Header = () => {
         <div className="flex items-center gap-4">
           {user && !isAdmin && (
             <Link to="/cart" className="relative">
-              <Button variant="outline" size="icon" className="rounded-full">
-                <ShoppingCart className="h-5 w-5" />
+              <Button variant="outline" size="icon" className="rounded-full border-amber-300 hover:bg-amber-50">
+                <ShoppingCart className="h-5 w-5 text-amber-600" />
               </Button>
               {cartItemsCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItemsCount}
                 </span>
               )}
@@ -114,7 +118,7 @@ export const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-800">
+                    <AvatarFallback className="bg-amber-100 text-gray-800">
                       {user.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -135,7 +139,11 @@ export const Header = () => {
                 <div className="md:hidden">
                   <DropdownMenuItem asChild>
                     <Link to="/" className="flex cursor-pointer items-center">
-                      <Package className="mr-2 h-4 w-4" />
+                      <img 
+                        src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
+                        alt="Pintade Icon" 
+                        className="mr-2 h-4 w-4" 
+                      />
                       <span>Catalogue</span>
                     </Link>
                   </DropdownMenuItem>
@@ -161,7 +169,11 @@ export const Header = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/admin/products" className="flex cursor-pointer items-center">
-                          <Package className="mr-2 h-4 w-4" />
+                          <img 
+                            src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
+                            alt="Pintade Icon" 
+                            className="mr-2 h-4 w-4" 
+                          />
                           <span>Produits</span>
                         </Link>
                       </DropdownMenuItem>

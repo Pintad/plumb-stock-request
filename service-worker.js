@@ -1,10 +1,10 @@
-const CACHE_NAME = 'plumb-stock-home-v1';
+
+const CACHE_NAME = 'pintade-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png'
 ];
 
 self.addEventListener('install', (event) => {
