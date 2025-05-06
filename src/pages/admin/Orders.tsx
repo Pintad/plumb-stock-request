@@ -1,6 +1,6 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { useOrdersFiltering } from '@/hooks/useOrdersFiltering';
@@ -24,7 +24,15 @@ const ITEMS_PER_PAGE = 10;
 const AdminOrders = () => {
   const { orders, projects, loadOrders, isLoading } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
+  
+  // Get status from URL query parameter
+  const queryParams = new URLSearchParams(location.search);
+  const statusFilter = queryParams.get('status');
+
+  // State to track active status filter
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(statusFilter);
   
   const {
     selectedProject,
@@ -37,8 +45,21 @@ const AdminOrders = () => {
     uniqueUsers,
     paginatedOrders,
     totalPages,
-    handlePageChange
-  } = useOrdersFiltering({ orders, itemsPerPage: ITEMS_PER_PAGE });
+    handlePageChange,
+    setStatusFilter
+  } = useOrdersFiltering({ 
+    orders, 
+    itemsPerPage: ITEMS_PER_PAGE,
+    initialStatusFilter: statusFilter
+  });
+  
+  // Apply status filter from URL when component mounts or URL changes
+  useEffect(() => {
+    if (statusFilter) {
+      setActiveStatusFilter(statusFilter);
+      setStatusFilter(statusFilter);
+    }
+  }, [statusFilter, setStatusFilter]);
   
   // Load orders when the component mounts
   useEffect(() => {
@@ -58,6 +79,9 @@ const AdminOrders = () => {
         <div className={`flex justify-between items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
           <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
             Gestion des demandes
+            {activeStatusFilter === 'pending' && " - En attente"}
+            {activeStatusFilter === 'inProgress' && " - En cours"}
+            {activeStatusFilter === 'completed' && " - Terminées"}
           </h1>
           
           {isMobile && (
@@ -82,6 +106,11 @@ const AdminOrders = () => {
                     setSearchTerm={setSearchTerm}
                     projects={projects}
                     uniqueUsers={uniqueUsers}
+                    activeStatusFilter={activeStatusFilter}
+                    setActiveStatusFilter={(status) => {
+                      setActiveStatusFilter(status);
+                      setStatusFilter(status);
+                    }}
                   />
                 </div>
                 <DrawerFooter>
@@ -104,6 +133,11 @@ const AdminOrders = () => {
             setSearchTerm={setSearchTerm}
             projects={projects}
             uniqueUsers={uniqueUsers}
+            activeStatusFilter={activeStatusFilter}
+            setActiveStatusFilter={(status) => {
+              setActiveStatusFilter(status);
+              setStatusFilter(status);
+            }}
           />
         )}
         

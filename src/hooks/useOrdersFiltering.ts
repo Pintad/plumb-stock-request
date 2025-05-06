@@ -5,13 +5,19 @@ import { Order } from '@/types';
 interface UseOrdersFilteringProps {
   orders: Order[];
   itemsPerPage: number;
+  initialStatusFilter?: string | null;
 }
 
-export const useOrdersFiltering = ({ orders, itemsPerPage }: UseOrdersFilteringProps) => {
+export const useOrdersFiltering = ({ 
+  orders, 
+  itemsPerPage,
+  initialStatusFilter = null
+}: UseOrdersFilteringProps) => {
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedUser, setSelectedUser] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string | null>(initialStatusFilter);
   
   // Get unique users from orders
   const uniqueUsers = useMemo(() => {
@@ -21,6 +27,13 @@ export const useOrdersFiltering = ({ orders, itemsPerPage }: UseOrdersFilteringP
   // Filter orders based on current filter settings
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Filter by status
+      if (statusFilter) {
+        if (statusFilter === 'pending' && order.termine !== 'Non') return false;
+        if (statusFilter === 'inProgress' && order.termine !== 'En cours') return false;
+        if (statusFilter === 'completed' && order.termine !== 'Oui') return false;
+      }
+      
       // Filter by project
       if (selectedProject !== "all") {
         if (selectedProject === "none" && order.projectCode) return false;
@@ -45,7 +58,7 @@ export const useOrdersFiltering = ({ orders, itemsPerPage }: UseOrdersFilteringP
 
       return true;
     });
-  }, [orders, selectedProject, selectedUser, searchTerm]);
+  }, [orders, selectedProject, selectedUser, searchTerm, statusFilter]);
   
   // Paginate orders
   const paginatedOrders = useMemo(() => {
@@ -61,7 +74,7 @@ export const useOrdersFiltering = ({ orders, itemsPerPage }: UseOrdersFilteringP
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [selectedProject, selectedUser, searchTerm]);
+  }, [selectedProject, selectedUser, searchTerm, statusFilter]);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -81,6 +94,8 @@ export const useOrdersFiltering = ({ orders, itemsPerPage }: UseOrdersFilteringP
     filteredOrders,
     paginatedOrders,
     totalPages,
-    handlePageChange
+    handlePageChange,
+    statusFilter,
+    setStatusFilter
   };
 };

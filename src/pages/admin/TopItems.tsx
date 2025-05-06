@@ -31,8 +31,7 @@ const TopItems = () => {
               : '',
             count: 0,
             quantity: 0,
-            productId: article.id,
-            stock: 0
+            productId: article.id
           };
         }
         
@@ -46,21 +45,7 @@ const TopItems = () => {
       count: number; 
       quantity: number; 
       productId: string;
-      stock: number;
     }>);
-    
-    // Ajouter les informations de stock aux articles
-    Object.values(itemCounts).forEach(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        if (item.variantName && product.variants) {
-          const variant = product.variants.find(v => v.variantName === item.variantName);
-          item.stock = variant?.stock || 0;
-        } else {
-          item.stock = product.stock || 0;
-        }
-      }
-    });
     
     // Convertir en tableau et trier par nombre de commandes
     return Object.values(itemCounts)
@@ -70,8 +55,7 @@ const TopItems = () => {
         displayName: item.name,
         variant: item.variantName,
         count: item.count,
-        quantity: item.quantity,
-        stock: item.stock
+        quantity: item.quantity
       }));
   }, [orders, products]);
 
@@ -171,12 +155,6 @@ const TopItems = () => {
                           <TrendingUp className="ml-2 h-4 w-4 text-amber-500" />
                         </div>
                       </th>
-                      <th className="text-center py-4 px-6 font-medium text-gray-600">
-                        <div className="flex items-center justify-center">
-                          <span>Stock actuel</span>
-                          <Package className="ml-2 h-4 w-4 text-blue-500" />
-                        </div>
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -192,17 +170,6 @@ const TopItems = () => {
                         <td className="py-3 px-6 text-center font-semibold">
                           <span className="bg-amber-100 text-amber-800 py-1 px-2 rounded-full">
                             {item.quantity}
-                          </span>
-                        </td>
-                        <td className="py-3 px-6 text-center">
-                          <span className={`py-1 px-2 rounded-full ${
-                            item.stock > item.quantity
-                              ? 'bg-green-100 text-green-800'
-                              : item.stock > 0
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.stock}
                           </span>
                         </td>
                       </tr>
@@ -233,15 +200,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         {item.variant && <p className="text-gray-600">{item.variant}</p>}
         <p className="text-amber-600 mt-1">Quantité totale: {item.quantity}</p>
         <p className="text-purple-600">Nombre de demandes: {item.count}</p>
-        <p className={`mt-1 ${
-          item.stock > item.quantity 
-            ? 'text-green-600' 
-            : item.stock > 0 
-            ? 'text-amber-600' 
-            : 'text-red-600'
-        }`}>
-          Stock disponible: {item.stock}
-        </p>
       </div>
     );
   }

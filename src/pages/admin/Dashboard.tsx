@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -159,7 +158,7 @@ const Dashboard = () => {
         
         {/* Cartes de statistiques principales */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Link to="/admin/orders" className="block">
+          <Link to="/admin/orders?status=pending" className="block">
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">En attente</CardTitle>
@@ -172,7 +171,7 @@ const Dashboard = () => {
             </Card>
           </Link>
           
-          <Link to="/admin/orders" className="block">
+          <Link to="/admin/orders?status=inProgress" className="block">
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">En cours</CardTitle>
@@ -185,7 +184,7 @@ const Dashboard = () => {
             </Card>
           </Link>
           
-          <Link to="/admin/orders" className="block">
+          <Link to="/admin/orders?status=completed" className="block">
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">Terminées</CardTitle>

@@ -1,19 +1,28 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Project } from '@/types';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface OrderFiltersProps {
   selectedProject: string;
-  setSelectedProject: (value: string) => void;
+  setSelectedProject: (project: string) => void;
   selectedUser: string;
-  setSelectedUser: (value: string) => void;
+  setSelectedUser: (user: string) => void;
   searchTerm: string;
-  setSearchTerm: (value: string) => void;
+  setSearchTerm: (term: string) => void;
   projects: Project[];
   uniqueUsers: string[];
+  activeStatusFilter?: string | null;
+  setActiveStatusFilter?: (status: string | null) => void;
 }
 
 const OrderFilters = ({
@@ -24,68 +33,85 @@ const OrderFilters = ({
   searchTerm,
   setSearchTerm,
   projects,
-  uniqueUsers
+  uniqueUsers,
+  activeStatusFilter,
+  setActiveStatusFilter
 }: OrderFiltersProps) => {
+  const handleStatusChange = (value: string) => {
+    if (setActiveStatusFilter) {
+      setActiveStatusFilter(value === "all" ? null : value);
+    }
+  };
+
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Project filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Filtrer par affaire</label>
-            <Select 
-              value={selectedProject} 
-              onValueChange={setSelectedProject}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Toutes les affaires" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les affaires</SelectItem>
-                <SelectItem value="none">Sans affaire</SelectItem>
-                {projects.map(project => (
-                  <SelectItem key={project.id} value={project.code}>
-                    {project.code} - {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* User filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Filtrer par utilisateur</label>
-            <Select 
-              value={selectedUser} 
-              onValueChange={setSelectedUser}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Tous les utilisateurs" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                {uniqueUsers.map((user, index) => (
-                  <SelectItem key={index} value={user}>
-                    {user}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Rechercher</label>
-            <Input 
-              type="text" 
-              placeholder="Rechercher une commande..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+    <div className="mb-6 space-y-4">
+      {/* Status Filter Tabs */}
+      {setActiveStatusFilter && (
+        <Tabs 
+          defaultValue={activeStatusFilter || "all"} 
+          className="w-full" 
+          onValueChange={handleStatusChange}
+        >
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="all">Tous</TabsTrigger>
+            <TabsTrigger value="pending">En attente</TabsTrigger>
+            <TabsTrigger value="inProgress">En cours</TabsTrigger>
+            <TabsTrigger value="completed">Terminées</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+          <Input
+            type="text"
+            placeholder="Rechercher une commande..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* Project Filter */}
+        <Select
+          value={selectedProject}
+          onValueChange={setSelectedProject}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Filtrer par projet" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les projets</SelectItem>
+            <SelectItem value="none">Sans projet</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.code}>
+                {project.name} ({project.code})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* User Filter */}
+        <Select
+          value={selectedUser}
+          onValueChange={setSelectedUser}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Filtrer par demandeur" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les demandeurs</SelectItem>
+            {uniqueUsers.map((user) => (
+              <SelectItem key={user} value={user}>
+                {user}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
   );
 };
 
