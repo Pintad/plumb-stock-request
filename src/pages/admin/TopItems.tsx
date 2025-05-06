@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
@@ -85,13 +86,12 @@ const TopItems = () => {
       
       // Style pour l'en-tête
       const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true };
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Texte blanc
       headerRow.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'FFF97316' } // Couleur ambre comme dans l'interface
       };
-      headerRow.color = { argb: 'FFFFFFFF' }; // Texte blanc
       
       // Ajouter les données
       topItemsData.forEach(item => {

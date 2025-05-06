@@ -31,7 +31,7 @@ export const exportDataToExcel = async <T extends Record<string, any>>(
       pattern: 'solid',
       fgColor: { argb: 'FFF97316' } // Couleur ambre
     };
-    headerRow.color = { argb: 'FFFFFFFF' }; // Texte blanc
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Texte blanc
     
     // Ajouter les données
     data.forEach(item => {
