@@ -4,7 +4,16 @@ import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
-import { Package, TrendingUp, ArrowUpDown } from 'lucide-react';
+import { Package, TrendingUp, ArrowUpDown, FileDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   ChartContainer,
   ChartTooltip,
@@ -70,6 +79,38 @@ const TopItems = () => {
     count: { color: "#6E59A5", label: "Nombre de demandes" },
   };
 
+  // Fonction d'export Excel
+  const exportToExcel = () => {
+    try {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // En-têtes
+      csvContent += "Article,Variante,Demandes,Quantité totale\n";
+      
+      // Données
+      topItemsData.forEach(item => {
+        const row = [
+          `"${item.displayName}"`,
+          `"${item.variant || ''}"`,
+          item.count,
+          item.quantity
+        ].join(",");
+        csvContent += row + "\n";
+      });
+      
+      // Créer un lien de téléchargement
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `articles_plus_commandes_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Erreur lors de l'export Excel:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
@@ -130,7 +171,16 @@ const TopItems = () => {
                 Triés par quantité totale commandée
               </CardDescription>
             </div>
-            <TrendingUp className="h-6 w-6 text-amber-500" />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex gap-2 items-center" 
+                onClick={exportToExcel}
+              >
+                <FileDown className="h-4 w-4" />
+                Exporter CSV
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
