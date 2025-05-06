@@ -18,6 +18,7 @@ import OrderDetails from "./pages/admin/OrderDetails";
 import AdminProducts from "./pages/admin/Products";
 import AdminProjects from "./pages/admin/Projects";
 import AdminCategories from "./pages/admin/Categories";
+import TopItems from "./pages/admin/TopItems";
 import NotFound from "./pages/NotFound";
 import UserOrderDetails from "./pages/OrderDetails";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/admin/products" element={<AuthGuard requireAdmin><AdminProducts /></AuthGuard>} />
             <Route path="/admin/projects" element={<AuthGuard requireAdmin><AdminProjects /></AuthGuard>} />
             <Route path="/admin/categories" element={<AuthGuard requireAdmin><AdminCategories /></AuthGuard>} />
+            <Route path="/admin/top-items" element={<AuthGuard requireAdmin><TopItems /></AuthGuard>} />
             
             {/* Redirection index */}
             <Route path="/index" element={<Navigate to="/" replace />} />

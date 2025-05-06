@@ -3,28 +3,18 @@ import React, { useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
-import { Package, ArrowUpRightFromCircle, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { 
-  ChartContainer,
-  ChartTooltip
-} from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+import { Package, TrendingUp, ArrowUpDown } from 'lucide-react';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
 
 const TopItems = () => {
-  const { orders, isLoading } = useAppContext();
-
-  // Analyser les données pour créer un classement des articles les plus commandés
+  const { orders, products, isLoading } = useAppContext();
+  
+  // Données pour les articles les plus commandés
   const topItemsData = useMemo(() => {
     // Comptabiliser tous les articles commandés
     const itemCounts = orders.reduce((acc, order) => {
@@ -35,74 +25,65 @@ const TopItems = () => {
         
         if (!acc[itemKey]) {
           acc[itemKey] = {
-            id: article.id,
             name: article.name,
             variantName: article.selectedVariantId 
               ? article.variants?.find(v => v.id === article.selectedVariantId)?.variantName || ''
               : '',
-            reference: article.reference || article.selectedVariantId 
-              ? article.variants?.find(v => v.id === article.selectedVariantId)?.reference || ''
-              : '',
-            unit: article.unit || article.selectedVariantId
-              ? article.variants?.find(v => v.id === article.selectedVariantId)?.unit || ''
-              : '',
-            category: article.category || '',
-            count: 0,           // Nombre de commandes contenant cet article
-            quantity: 0,        // Quantité totale commandée
-            pendingQuantity: 0, // Quantité en attente
-            imageUrl: article.imageUrl || ''
+            count: 0,
+            quantity: 0,
+            productId: article.id,
+            stock: 0
           };
         }
         
         acc[itemKey].count += 1;
         acc[itemKey].quantity += article.quantity;
-        
-        // Si la commande n'est pas terminée, ajouter à la quantité en attente
-        if (order.termine !== 'Oui') {
-          acc[itemKey].pendingQuantity += article.quantity;
-        }
       });
       return acc;
-    }, {} as Record<string, {
-      id: string;
-      name: string;
-      variantName: string;
-      reference: string;
-      unit: string;
-      category: string;
-      count: number;
-      quantity: number;
-      pendingQuantity: number;
-      imageUrl: string;
+    }, {} as Record<string, { 
+      name: string; 
+      variantName: string; 
+      count: number; 
+      quantity: number; 
+      productId: string;
+      stock: number;
     }>);
+    
+    // Ajouter les informations de stock aux articles
+    Object.values(itemCounts).forEach(item => {
+      const product = products.find(p => p.id === item.productId);
+      if (product) {
+        if (item.variantName && product.variants) {
+          const variant = product.variants.find(v => v.variantName === item.variantName);
+          item.stock = variant?.stock || 0;
+        } else {
+          item.stock = product.stock || 0;
+        }
+      }
+    });
     
     // Convertir en tableau et trier par nombre de commandes
     return Object.values(itemCounts)
-      .sort((a, b) => b.quantity - a.quantity);
-  }, [orders]);
+      .sort((a, b) => b.quantity - a.quantity)
+      .map(item => ({
+        name: item.variantName ? `${item.name} (${item.variantName})` : item.name,
+        displayName: item.name,
+        variant: item.variantName,
+        count: item.count,
+        quantity: item.quantity,
+        stock: item.stock
+      }));
+  }, [orders, products]);
 
-  // Données pour le graphique des articles les plus commandés (top 10)
-  const topItemsChartData = useMemo(() => {
-    return topItemsData.slice(0, 10).map(item => ({
-      name: item.variantName ? `${item.name} (${item.variantName})` : item.name,
-      shortName: (item.variantName 
-        ? `${item.name.substring(0, 15)}... (${item.variantName.substring(0, 5)}...)`
-        : item.name.substring(0, 20) + (item.name.length > 20 ? '...' : '')),
-      quantity: item.quantity,
-      pending: item.pendingQuantity
-    }));
+  // Données pour le graphique
+  const chartData = useMemo(() => {
+    return topItemsData.slice(0, 10); // Top 10 des articles
   }, [topItemsData]);
 
   // Configuration des couleurs pour les graphiques
   const chartConfig = {
     quantity: { color: "#f97316", label: "Quantité totale" },
-    pending: { color: "#9b87f5", label: "En attente" },
-  };
-
-  // Fonction pour tronquer le texte trop long
-  const truncateText = (text: string, maxLength: number) => {
-    if (!text) return '';
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+    count: { color: "#6E59A5", label: "Nombre de demandes" },
   };
 
   return (
@@ -113,73 +94,59 @@ const TopItems = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Articles les plus commandés</h1>
-            <p className="text-gray-500">Analyse des produits pour l'anticipation des stocks</p>
+            <p className="text-gray-500">Analyse des articles les plus demandés pour anticiper les stocks</p>
           </div>
           <Package className="h-8 w-8 text-amber-500" />
         </div>
-
-        {/* Graphique des articles les plus demandés */}
+        
+        {/* Graphique des articles les plus commandés */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Top 10 des articles</CardTitle>
-            <CardDescription>Articles les plus demandés en quantité</CardDescription>
+            <CardTitle>Top 10 des articles les plus demandés</CardTitle>
+            <CardDescription>Par quantité totale commandée</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-              </div>
-            ) : (
-              <ChartContainer
-                config={chartConfig}
-                className="h-[400px] mt-4"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    layout="vertical"
-                    data={topItemsChartData}
-                    margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis type="number" />
-                    <YAxis 
-                      type="category" 
-                      dataKey="shortName" 
-                      width={150}
-                    />
-                    <Tooltip 
-                      content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
-                          const item = payload[0].payload;
-                          return (
-                            <div className="bg-white p-3 rounded-md shadow-md border border-gray-200 text-sm">
-                              <p className="font-semibold">{item.name}</p>
-                              <p className="text-amber-600">Quantité totale: {item.quantity}</p>
-                              <p className="text-purple-600">En attente: {item.pending}</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar 
-                      dataKey="quantity" 
-                      name="Quantité totale" 
-                      fill={chartConfig.quantity.color}
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            )}
+            <ChartContainer
+              config={chartConfig}
+              className="h-80 mt-4"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 70 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar 
+                    dataKey="quantity" 
+                    name="Quantité totale" 
+                    fill={chartConfig.quantity.color}
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
         
-        {/* Tableau détaillé */}
+        {/* Tableau détaillé des articles */}
         <Card>
-          <CardHeader>
-            <CardTitle>Liste complète des articles</CardTitle>
-            <CardDescription>Classés par popularité</CardDescription>
+          <CardHeader className="flex flex-row justify-between items-center">
+            <div>
+              <CardTitle>Liste complète des articles commandés</CardTitle>
+              <CardDescription>
+                Triés par quantité totale commandée
+              </CardDescription>
+            </div>
+            <TrendingUp className="h-6 w-6 text-amber-500" />
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
@@ -188,77 +155,64 @@ const TopItems = () => {
               </div>
             ) : topItemsData.length > 0 ? (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Article</TableHead>
-                      <TableHead>Référence</TableHead>
-                      <TableHead>Catégorie</TableHead>
-                      <TableHead className="text-center">Commandes</TableHead>
-                      <TableHead className="text-right">
-                        <div className="flex items-center justify-end">
-                          <span>Quantité</span>
-                          <TrendingUp className="ml-2 h-4 w-4" />
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      <th className="text-left py-4 px-6 font-medium text-gray-600">Article</th>
+                      <th className="text-center py-4 px-6 font-medium text-gray-600">
+                        <div className="flex items-center justify-center">
+                          <span>Demandes</span>
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
-                      </TableHead>
-                      <TableHead className="text-right">En attente</TableHead>
-                      <TableHead className="text-right">Unité</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                      </th>
+                      <th className="text-center py-4 px-6 font-medium text-gray-600">
+                        <div className="flex items-center justify-center">
+                          <span>Quantité totale</span>
+                          <TrendingUp className="ml-2 h-4 w-4 text-amber-500" />
+                        </div>
+                      </th>
+                      <th className="text-center py-4 px-6 font-medium text-gray-600">
+                        <div className="flex items-center justify-center">
+                          <span>Stock actuel</span>
+                          <Package className="ml-2 h-4 w-4 text-blue-500" />
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
                     {topItemsData.map((item, index) => (
-                      <TableRow key={index} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {item.imageUrl && (
-                              <img 
-                                src={item.imageUrl} 
-                                alt={item.name} 
-                                className="w-8 h-8 object-contain rounded border border-gray-200" 
-                              />
-                            )}
-                            <div>
-                              {truncateText(item.name, 30)}
-                              {item.variantName && (
-                                <div className="text-xs text-gray-500">
-                                  {truncateText(item.variantName, 20)}
-                                </div>
-                              )}
-                            </div>
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="py-3 px-6">
+                          <div>
+                            <p className="font-medium">{item.displayName}</p>
+                            {item.variant && <p className="text-sm text-gray-500">{item.variant}</p>}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-gray-500">{truncateText(item.reference, 15)}</TableCell>
-                        <TableCell>
-                          {item.category && (
-                            <Badge variant="outline" className="bg-gray-50">
-                              {truncateText(item.category, 15)}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">{item.count}</TableCell>
-                        <TableCell className="text-right font-semibold">
+                        </td>
+                        <td className="py-3 px-6 text-center">{item.count}</td>
+                        <td className="py-3 px-6 text-center font-semibold">
                           <span className="bg-amber-100 text-amber-800 py-1 px-2 rounded-full">
                             {item.quantity}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.pendingQuantity > 0 ? (
-                            <span className="bg-purple-100 text-purple-800 py-1 px-2 rounded-full">
-                              {item.pendingQuantity}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right text-gray-500">{item.unit}</TableCell>
-                      </TableRow>
+                        </td>
+                        <td className="py-3 px-6 text-center">
+                          <span className={`py-1 px-2 rounded-full ${
+                            item.stock > item.quantity
+                              ? 'bg-green-100 text-green-800'
+                              : item.stock > 0
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {item.stock}
+                          </span>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="p-6">
-                <p className="text-center text-gray-500">Aucun article commandé</p>
+              <div className="p-6 text-center text-gray-500">
+                Aucun article n'a été commandé
               </div>
             )}
           </CardContent>
@@ -266,6 +220,33 @@ const TopItems = () => {
       </main>
     </div>
   );
+};
+
+// Composant personnalisé pour le tooltip du graphique
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload;
+    
+    return (
+      <div className="bg-white p-3 rounded-md shadow-md border border-gray-200 text-sm">
+        <p className="font-semibold">{item.displayName}</p>
+        {item.variant && <p className="text-gray-600">{item.variant}</p>}
+        <p className="text-amber-600 mt-1">Quantité totale: {item.quantity}</p>
+        <p className="text-purple-600">Nombre de demandes: {item.count}</p>
+        <p className={`mt-1 ${
+          item.stock > item.quantity 
+            ? 'text-green-600' 
+            : item.stock > 0 
+            ? 'text-amber-600' 
+            : 'text-red-600'
+        }`}>
+          Stock disponible: {item.stock}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default TopItems;
