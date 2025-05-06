@@ -4,6 +4,7 @@ export interface ProductVariant {
   variantName: string;
   reference: string;
   unit: string;
+  stock?: number; // Adding stock property
 }
 
 export interface Product {
@@ -15,6 +16,7 @@ export interface Product {
   category?: string;
   variants?: ProductVariant[];
   selectedVariantId?: string;
+  stock?: number; // Adding stock property
 }
 
 export interface CartItem extends Product {
