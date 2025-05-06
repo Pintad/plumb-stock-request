@@ -4,6 +4,34 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Order } from '@/types';
 
+// Define and export the interfaces needed for the dashboard data
+export interface TopRequesterData {
+  name: string;
+  orderCount: number;
+  itemCount: number;
+  anticipatedOrders: number;
+}
+
+export interface OrderStatsData {
+  pendingOrders: number;
+  inProgressOrders: number;
+  completedOrders: number;
+  totalItems: number;
+}
+
+export interface TopItemData {
+  name: string;
+  count: number;
+  quantity: number;
+}
+
+export interface OrderByDateData {
+  date: string;
+  displayDate: string;
+  pending: number;
+  completed: number;
+}
+
 export const useDashboardData = (orders: Order[], products: any[]) => {
   // Préparation des données pour les statistiques
   const orderStats = useMemo(() => {
@@ -80,13 +108,13 @@ export const useDashboardData = (orders: Order[], products: any[]) => {
       }
       
       return acc;
-    }, {});
+    }, {} as Record<string, TopRequesterData>);
     
     // Convertir en tableau et trier par nombre de commandes
     return Object.values(requestsByWorker)
-      .sort((a: any, b: any) => b.anticipatedOrders - a.anticipatedOrders || b.orderCount - a.orderCount)
+      .sort((a, b) => b.anticipatedOrders - a.anticipatedOrders || b.orderCount - a.orderCount)
       .slice(0, 5); // Top 5 des demandeurs
-  }, [orders]);
+  }, [orders]) as TopRequesterData[];
 
   // Données des commandes par date pour voir les tendances
   const ordersByDateData = useMemo(() => {

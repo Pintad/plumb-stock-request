@@ -4,13 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trophy } from 'lucide-react';
-
-interface TopRequesterData {
-  name: string;
-  orderCount: number;
-  itemCount: number;
-  anticipatedOrders: number;
-}
+import { TopRequesterData } from '@/hooks/useDashboardData';
 
 interface TopRequestersChartProps {
   topRequestersData: TopRequesterData[];
