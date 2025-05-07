@@ -7,8 +7,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Toolti
 import { Package, TrendingUp, ArrowUpDown, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import * as ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
 
 const TopItems = () => {
@@ -73,68 +71,29 @@ const TopItems = () => {
   // Fonction d'export Excel
   const exportToExcel = async () => {
     try {
-      // Créer un nouveau classeur Excel
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Articles commandés');
+      // Préparation des données pour l'export
+      const exportData = topItemsData.map(item => ({
+        article: item.displayName,
+        variante: item.variant || '',
+        demandes: item.count,
+        quantite: item.quantity
+      }));
       
-      // Ajouter les en-têtes avec style
-      worksheet.columns = [
+      // Configuration des colonnes
+      const columns = [
         { header: 'Article', key: 'article', width: 30 },
         { header: 'Variante', key: 'variante', width: 20 },
         { header: 'Demandes', key: 'demandes', width: 15 },
         { header: 'Quantité totale', key: 'quantite', width: 15 }
       ];
       
-      // Style pour l'en-tête
-      const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Texte blanc
-      headerRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF97316' } // Couleur ambre comme dans l'interface
-      };
-      
-      // Ajouter les données
-      topItemsData.forEach(item => {
-        worksheet.addRow({
-          article: item.displayName,
-          variante: item.variant || '',
-          demandes: item.count,
-          quantite: item.quantity
-        });
-      });
-      
-      // Appliquer des bordures légères à toutes les cellules
-      worksheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell) => {
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
-          };
-          
-          // Alignement du texte
-          cell.alignment = { vertical: 'middle' };
-          
-          // Colorer les cellules de quantité pour les mettre en évidence
-          if (rowNumber > 1 && cell.col === 4) {  // Fix: Converting cell.col to number or comparing with a number 
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFFFF3E0' } // Fond ambre clair
-            };
-            cell.font = { bold: true };
-          }
-        });
-      });
-      
-      // Générer le fichier Excel
-      const buffer = await workbook.xlsx.writeBuffer();
-      
-      // Créer un blob et le télécharger
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, `articles_plus_commandes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      // Utiliser la fonction utilitaire d'export
+      await exportDataToExcel(
+        exportData,
+        columns,
+        `articles_plus_commandes_${new Date().toISOString().slice(0, 10)}`,
+        'Articles commandés'
+      );
       
     } catch (error) {
       console.error("Erreur lors de l'export Excel:", error);
