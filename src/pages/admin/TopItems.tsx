@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
