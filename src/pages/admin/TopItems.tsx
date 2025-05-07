@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { exportDataToExcel } from '@/lib/utils/excelUtils';
 
 const TopItems = () => {
   const { orders, products, isLoading } = useAppContext();
@@ -117,7 +118,7 @@ const TopItems = () => {
           cell.alignment = { vertical: 'middle' };
           
           // Colorer les cellules de quantité pour les mettre en évidence
-          if (rowNumber > 1 && cell.col === 4) {
+          if (rowNumber > 1 && cell.col === 4) {  // Fix: Converting cell.col to number or comparing with a number 
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
