@@ -28,6 +28,7 @@ export const Header = () => {
               src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
               alt="Pintade Logo" 
               className="h-10 w-auto" 
+              loading="eager" 
             />
             <span className="ml-2 text-xl font-bold">Pintade</span>
           </Link>
