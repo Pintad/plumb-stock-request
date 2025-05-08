@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-
 const Login = () => {
   const {
     login,
@@ -27,7 +25,6 @@ const Login = () => {
       navigate(isAdmin ? '/admin' : '/');
     }
   }, [user, session, isAdmin, navigate, isLoading]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -65,23 +62,14 @@ const Login = () => {
   if (user && session) {
     return null; // L'effet s'occupera de la redirection
   }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <img 
-              src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
-              alt="Pintade Logo" 
-              className="h-8 w-auto" 
-              loading="eager"
-            />
+            <img src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" alt="Pintade Logo" className="h-8 w-auto" loading="eager" />
             <CardTitle className="text-2xl font-bold text-plumbing-blue">Pintade</CardTitle>
           </div>
-          <CardDescription>
-            Application de gestion de stock pour plomberie et chauffage
-          </CardDescription>
+          <CardDescription>Outils de gestion de stock </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,8 +87,6 @@ const Login = () => {
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default Login;
