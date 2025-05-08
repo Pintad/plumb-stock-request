@@ -69,7 +69,7 @@ const Login = () => {
             <img src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" alt="Pintade Logo" className="h-8 w-auto" loading="eager" />
             <CardTitle className="text-2xl font-bold text-plumbing-blue">Pintade</CardTitle>
           </div>
-          <CardDescription>Outils de gestion de stock </CardDescription>
+          <CardDescription></CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
