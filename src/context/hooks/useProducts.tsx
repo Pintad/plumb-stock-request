@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import { toast } from '@/components/ui/use-toast';
@@ -12,19 +11,28 @@ import {
 export const useProducts = (initialProducts: Product[] = []) => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>([]);
+  const [superCategories, setSuperCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Extraire les catégories des produits
+  // Extraire les catégories et sur-catégories des produits
   useEffect(() => {
     const uniqueCategories = [...new Set(products
       .map(product => product.category)
       .filter(Boolean) as string[]
     )].sort();
     
+    const uniqueSuperCategories = [...new Set(products
+      .map(product => product.superCategory)
+      .filter(Boolean) as string[]
+    )].sort();
+    
     setCategories(uniqueCategories);
+    setSuperCategories(uniqueSuperCategories);
     
     console.log(`${uniqueCategories.length} catégories extraites des produits`);
+    console.log(`${uniqueSuperCategories.length} sur-catégories extraites des produits`);
     console.log('Catégories disponibles:', uniqueCategories);
+    console.log('Sur-catégories disponibles:', uniqueSuperCategories);
     
     // Ajout de logs détaillés sur les produits par catégorie
     uniqueCategories.forEach(category => {
@@ -86,6 +94,10 @@ export const useProducts = (initialProducts: Product[] = []) => {
         
         if (product.category && !categories.includes(product.category)) {
           setCategories(prev => [...prev, product.category!].sort());
+        }
+        
+        if (product.superCategory && !superCategories.includes(product.superCategory)) {
+          setSuperCategories(prev => [...prev, product.superCategory!].sort());
         }
         
         toast({
@@ -173,6 +185,21 @@ export const useProducts = (initialProducts: Product[] = []) => {
     ));
   };
 
+  // Gérer les sur-catégories
+  const addSuperCategory = (superCategory: string) => {
+    if (superCategories.includes(superCategory)) return;
+    setSuperCategories([...superCategories, superCategory].sort());
+  };
+
+  const deleteSuperCategory = (superCategory: string) => {
+    setSuperCategories(superCategories.filter(sc => sc !== superCategory));
+    setProducts(products.map(product => 
+      product.superCategory === superCategory 
+        ? { ...product, superCategory: undefined } 
+        : product
+    ));
+  };
+
   // Méthode pour rafraîchir les produits depuis Supabase
   const loadProductsFromCSV = async () => {
     try {
@@ -195,8 +222,11 @@ export const useProducts = (initialProducts: Product[] = []) => {
     products,
     setProducts,
     categories,
+    superCategories,
     addCategory,
     deleteCategory,
+    addSuperCategory,
+    deleteSuperCategory,
     addProduct,
     updateProduct,
     deleteProduct,

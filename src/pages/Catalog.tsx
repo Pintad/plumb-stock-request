@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Product } from '@/types';
 
 // Import refactored components
-import CategorySidebar from '@/components/catalog/CategorySidebar';
+import HierarchicalCategorySidebar from '@/components/catalog/HierarchicalCategorySidebar';
 import CatalogHeader from '@/components/catalog/CatalogHeader';
 import MobileCategoryBadge from '@/components/catalog/MobileCategoryBadge';
 import ProductGrid from '@/components/catalog/ProductGrid';
@@ -18,10 +18,11 @@ const Catalog = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | 'all'>('all');
+  const [activeSuperCategory, setActiveSuperCategory] = useState<string | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
   
-  // Filtrer les produits basés sur la recherche et les catégories
+  // Filtrer les produits basés sur la recherche et les catégories/sur-catégories
   useEffect(() => {
     const term = searchTerm.toLowerCase().trim();
     
@@ -31,10 +32,23 @@ const Catalog = () => {
         product.name.toLowerCase().includes(term) ||
         (product.reference && product.reference.toLowerCase().includes(term));
       
-      // Filtre par catégories sélectionnées
-      const matchesCategory = activeCategory === 'all' || 
-        (product.category && 
-          (activeCategory === product.category || selectedCategories.includes(product.category)));
+      // Filtre par catégories et sur-catégories
+      let matchesCategory = true;
+      
+      if (activeSuperCategory && activeCategory === 'all') {
+        // Si une sur-catégorie est sélectionnée, montrer tous les produits de cette sur-catégorie
+        matchesCategory = product.superCategory === activeSuperCategory;
+      } else if (activeCategory !== 'all') {
+        // Si une catégorie spécifique est sélectionnée
+        if (activeSuperCategory) {
+          // Vérifier à la fois la sur-catégorie et la catégorie
+          matchesCategory = product.superCategory === activeSuperCategory && product.category === activeCategory;
+        } else {
+          // Vérifier seulement la catégorie
+          matchesCategory = product.category === activeCategory;
+        }
+      }
+      // Si activeCategory === 'all' et pas de sur-catégorie, on montre tout
       
       return matchesSearch && matchesCategory;
     });
@@ -42,7 +56,7 @@ const Catalog = () => {
     setFilteredProducts(filtered);
     // Retourner à la première page quand les filtres changent
     setCurrentPage(1);
-  }, [searchTerm, products, selectedCategories, activeCategory]);
+  }, [searchTerm, products, selectedCategories, activeCategory, activeSuperCategory]);
 
   // Paginer les résultats filtrés
   useEffect(() => {
@@ -67,9 +81,16 @@ const Catalog = () => {
     setCurrentPage(1);
   };
 
+  const setSuperCategory = (superCategory: string | undefined) => {
+    setActiveSuperCategory(superCategory);
+    // Retourner à la première page
+    setCurrentPage(1);
+  };
+
   const resetFilters = () => {
     setSearchTerm('');
     setCategory('all');
+    setSuperCategory(undefined);
     setCurrentPage(1);
   };
 
@@ -88,11 +109,12 @@ const Catalog = () => {
       
       <main className="flex flex-1 container px-4 py-6">
         {/* Sidebar for categories */}
-        <CategorySidebar 
-          categories={categories}
+        <HierarchicalCategorySidebar 
           products={products}
           activeCategory={activeCategory}
+          activeSuperCategory={activeSuperCategory}
           setCategory={setCategory}
+          setSuperCategory={setSuperCategory}
         />
         
         <div className="flex-1">
@@ -103,11 +125,16 @@ const Catalog = () => {
             products={products}
             categories={categories}
             activeCategory={activeCategory}
+            activeSuperCategory={activeSuperCategory}
             setCategory={setCategory}
+            setSuperCategory={setSuperCategory}
           />
           
           {/* Mobile category display */}
-          <MobileCategoryBadge activeCategory={activeCategory} />
+          <MobileCategoryBadge 
+            activeCategory={activeCategory} 
+            activeSuperCategory={activeSuperCategory}
+          />
           
           {/* Product grid with pagination */}
           <ProductGrid 

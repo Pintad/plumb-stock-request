@@ -37,6 +37,7 @@ export type Database = {
           id: string
           image_url: string | null
           reference: string | null
+          sur_categorie: string | null
           unite: string | null
           variante: string | null
         }
@@ -46,6 +47,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           reference?: string | null
+          sur_categorie?: string | null
           unite?: string | null
           variante?: string | null
         }
@@ -55,6 +57,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           reference?: string | null
+          sur_categorie?: string | null
           unite?: string | null
           variante?: string | null
         }

@@ -1,4 +1,3 @@
-
 export interface ProductVariant {
   id: string;
   variantName: string;
@@ -14,6 +13,7 @@ export interface Product {
   unit?: string;
   imageUrl?: string;
   category?: string;
+  superCategory?: string; // Nouvelle propriété pour la sur-catégorie
   variants?: ProductVariant[];
   selectedVariantId?: string;
   stock?: number; // Adding stock property
@@ -69,6 +69,19 @@ export interface CatalogueItem {
   reference?: string;
   unite?: string;
   categorie?: string;
+  sur_categorie?: string; // Nouvelle propriété
   image_url?: string;
   variante?: string;
+}
+
+// Nouvelles interfaces pour la structure hiérarchique
+export interface SuperCategory {
+  name: string;
+  categories: string[];
+  productCount: number;
+}
+
+export interface CategoryHierarchy {
+  superCategories: SuperCategory[];
+  uncategorizedCategories: string[];
 }

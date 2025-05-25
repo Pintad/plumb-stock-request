@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductSearch from '@/components/ProductSearch';
-import MobileCategoryFilter from './MobileCategoryFilter';
+import HierarchicalMobileCategoryFilter from './HierarchicalMobileCategoryFilter';
 
 interface CatalogHeaderProps {
   searchTerm: string;
@@ -13,7 +13,9 @@ interface CatalogHeaderProps {
   products: any[];
   categories: string[];
   activeCategory: string | 'all';
+  activeSuperCategory?: string;
   setCategory: (category: string | 'all') => void;
+  setSuperCategory?: (superCategory: string | undefined) => void;
 }
 
 const CatalogHeader: React.FC<CatalogHeaderProps> = ({
@@ -23,7 +25,9 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   products,
   categories,
   activeCategory,
-  setCategory
+  activeSuperCategory,
+  setCategory,
+  setSuperCategory
 }) => {
   return (
     <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
@@ -32,11 +36,12 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-2">
-        <MobileCategoryFilter
-          categories={categories}
+        <HierarchicalMobileCategoryFilter
           products={products}
           activeCategory={activeCategory}
+          activeSuperCategory={activeSuperCategory}
           setCategory={setCategory}
+          setSuperCategory={setSuperCategory}
         />
         
         {cartItemsCount > 0 && (
