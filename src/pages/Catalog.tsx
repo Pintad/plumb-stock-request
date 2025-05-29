@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Header } from '@/components/Header';
@@ -30,11 +31,16 @@ const Catalog = () => {
       let matchesSearch = true;
       
       if (term !== '') {
+        // Debug: log pour vérifier les valeurs des champs
+        console.log('Recherche pour:', term);
+        console.log('Produit:', product.name, 'Référence:', product.reference);
+        
         // Recherche dans la désignation (nom)
         const matchesName = product.name.toLowerCase().includes(term);
         
-        // Recherche dans la référence
-        const matchesReference = product.reference ? product.reference.toLowerCase().includes(term) : false;
+        // Recherche dans la référence - amélioration de la vérification
+        const productRef = product.reference?.toLowerCase() || '';
+        const matchesReference = productRef.includes(term);
         
         // Recherche dans la catégorie
         const matchesCategory = product.category ? product.category.toLowerCase().includes(term) : false;
@@ -46,15 +52,22 @@ const Catalog = () => {
         const searchWords = term.split(/\s+/).filter(word => word.length > 0);
         const allFields = [
           product.name.toLowerCase(),
-          product.reference?.toLowerCase() || '',
+          productRef,
           product.category?.toLowerCase() || '',
           product.superCategory?.toLowerCase() || ''
         ].join(' ');
         
         const matchesMultiWord = searchWords.every(word => allFields.includes(word));
         
+        // Debug: log des résultats de matching
+        console.log('Matches - Name:', matchesName, 'Reference:', matchesReference, 'Category:', matchesCategory, 'SuperCategory:', matchesSuperCategory, 'MultiWord:', matchesMultiWord);
+        
         // Un produit correspond s'il match au moins un des critères
         matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesMultiWord;
+        
+        if (matchesSearch) {
+          console.log('Produit trouvé:', product.name, 'pour le terme:', term);
+        }
       }
       
       // Filtre par catégories et sur-catégories
