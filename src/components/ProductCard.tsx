@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAppContext } from '@/context/AppContext';
 import { Product, ProductVariant } from '@/types';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import HighlightedText from '@/components/catalog/HighlightedText';
 
 interface ProductCardProps {
@@ -16,6 +16,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, searchTerms = [] }) => {
   const { addToCart } = useAppContext();
+  const { toast } = useToast();
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     product.selectedVariantId || product.variants?.[0]?.id || ''
   );
