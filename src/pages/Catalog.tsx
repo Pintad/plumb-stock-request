@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Header } from '@/components/Header';
@@ -31,11 +30,6 @@ const Catalog = () => {
       let matchesSearch = true;
       
       if (term !== '') {
-        // Debug: log pour vérifier les valeurs des champs
-        console.log('Recherche pour:', term);
-        console.log('Produit:', product.name, 'Référence produit:', product.reference);
-        console.log('Variantes:', product.variants?.map(v => v.reference) || 'Aucune');
-        
         // Recherche dans la désignation (nom)
         const matchesName = product.name.toLowerCase().includes(term);
         
@@ -74,9 +68,6 @@ const Catalog = () => {
         ].join(' ');
         
         const matchesMultiWord = searchWords.every(word => allFields.includes(word));
-        
-        // Debug: log des résultats de matching
-        console.log('Matches - Name:', matchesName, 'Product Ref:', matchesProductReference, 'Variant Ref:', matchesVariantReference, 'Category:', matchesCategory, 'SuperCategory:', matchesSuperCategory, 'MultiWord:', matchesMultiWord);
         
         // Un produit correspond s'il match au moins un des critères
         matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesMultiWord;
