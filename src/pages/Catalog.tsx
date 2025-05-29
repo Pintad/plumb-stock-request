@@ -33,14 +33,24 @@ const Catalog = () => {
       if (term !== '') {
         // Debug: log pour vérifier les valeurs des champs
         console.log('Recherche pour:', term);
-        console.log('Produit:', product.name, 'Référence:', product.reference);
+        console.log('Produit:', product.name, 'Référence produit:', product.reference);
+        console.log('Variantes:', product.variants?.map(v => v.reference) || 'Aucune');
         
         // Recherche dans la désignation (nom)
         const matchesName = product.name.toLowerCase().includes(term);
         
-        // Recherche dans la référence - amélioration de la vérification
+        // Recherche dans la référence du produit principal
         const productRef = product.reference?.toLowerCase() || '';
-        const matchesReference = productRef.includes(term);
+        const matchesProductReference = productRef.includes(term);
+        
+        // Recherche dans les références des variantes
+        const matchesVariantReference = product.variants ? 
+          product.variants.some(variant => 
+            variant.reference?.toLowerCase().includes(term)
+          ) : false;
+        
+        // Combiner les deux types de recherche de référence
+        const matchesReference = matchesProductReference || matchesVariantReference;
         
         // Recherche dans la catégorie
         const matchesCategory = product.category ? product.category.toLowerCase().includes(term) : false;
@@ -50,17 +60,23 @@ const Catalog = () => {
         
         // Recherche multi-mots : diviser le terme de recherche et vérifier si tous les mots sont présents
         const searchWords = term.split(/\s+/).filter(word => word.length > 0);
+        
+        // Construire une chaîne avec tous les champs cherchables
+        const variantRefs = product.variants ? 
+          product.variants.map(v => v.reference?.toLowerCase() || '').join(' ') : '';
+        
         const allFields = [
           product.name.toLowerCase(),
           productRef,
           product.category?.toLowerCase() || '',
-          product.superCategory?.toLowerCase() || ''
+          product.superCategory?.toLowerCase() || '',
+          variantRefs
         ].join(' ');
         
         const matchesMultiWord = searchWords.every(word => allFields.includes(word));
         
         // Debug: log des résultats de matching
-        console.log('Matches - Name:', matchesName, 'Reference:', matchesReference, 'Category:', matchesCategory, 'SuperCategory:', matchesSuperCategory, 'MultiWord:', matchesMultiWord);
+        console.log('Matches - Name:', matchesName, 'Product Ref:', matchesProductReference, 'Variant Ref:', matchesVariantReference, 'Category:', matchesCategory, 'SuperCategory:', matchesSuperCategory, 'MultiWord:', matchesMultiWord);
         
         // Un produit correspond s'il match au moins un des critères
         matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesMultiWord;
