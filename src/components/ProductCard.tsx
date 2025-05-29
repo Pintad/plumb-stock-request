@@ -1,202 +1,119 @@
 
 import React, { useState } from 'react';
-import { Package, Tag, Plus, Minus } from 'lucide-react';
-import { Product, ProductVariant } from '@/types';
-import { useAppContext } from '@/context/AppContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useAppContext } from '@/context/AppContext';
+import { Product, ProductVariant } from '@/types';
+import { toast } from '@/components/ui/use-toast';
+import HighlightedText from '@/components/catalog/HighlightedText';
 
 interface ProductCardProps {
   product: Product;
+  searchTerms?: string[];
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const [quantity, setQuantity] = useState(1);
-  const [inputValue, setInputValue] = useState('1');
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product.variants && product.variants.length > 0 ? product.variants[0] : null
-  );
+const ProductCard: React.FC<ProductCardProps> = ({ product, searchTerms = [] }) => {
   const { addToCart } = useAppContext();
-  const isMobile = useIsMobile();
-  
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(
+    product.selectedVariantId || product.variants?.[0]?.id || ''
+  );
+
   const handleAddToCart = () => {
-    // Ensure quantity is at least 1 before adding to cart
-    const finalQuantity = quantity < 1 ? 1 : quantity;
+    const productToAdd = {
+      ...product,
+      selectedVariantId: product.variants?.length ? selectedVariantId : undefined
+    };
+
+    addToCart(productToAdd);
     
-    if (selectedVariant) {
-      // Produit avec variante sélectionnée
-      const productWithVariant = {
-        ...product,
-        reference: selectedVariant.reference,
-        unit: selectedVariant.unit,
-        selectedVariantId: selectedVariant.id
-      };
-      addToCart(productWithVariant, finalQuantity);
-    } else {
-      // Produit simple sans variante
-      addToCart(product, finalQuantity);
-    }
-    setQuantity(1);
-    setInputValue('1');
-  };
-  
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    
-    // Allow empty field for user input flexibility
-    if (value === '') {
-      setInputValue('');
-      setQuantity(0); // Temporarily set to 0
-      return;
-    }
-    
-    // Convert to number and validate
-    const numValue = parseInt(value);
-    if (!isNaN(numValue)) {
-      setQuantity(numValue);
-      setInputValue(value);
-    }
+    toast({
+      title: "Produit ajouté",
+      description: `${product.name} a été ajouté au panier`,
+    });
   };
 
-  // Handle blur event to prevent empty value when user leaves the field
-  const handleBlur = () => {
-    if (inputValue === '' || quantity < 1) {
-      setQuantity(1);
-      setInputValue('1');
+  const getDisplayReference = () => {
+    if (product.variants?.length) {
+      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+      return selectedVariant?.reference || '';
     }
+    return product.reference || '';
   };
 
-  const incrementQuantity = () => {
-    const newQuantity = quantity + 1;
-    setQuantity(newQuantity);
-    setInputValue(newQuantity.toString());
-  };
-
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      const newQuantity = quantity - 1;
-      setQuantity(newQuantity);
-      setInputValue(newQuantity.toString());
+  const getDisplayUnit = () => {
+    if (product.variants?.length) {
+      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+      return selectedVariant?.unit || '';
     }
+    return product.unit || '';
   };
-
-  const handleVariantChange = (variantId: string) => {
-    if (product.variants) {
-      const variant = product.variants.find(v => v.id === variantId);
-      if (variant) {
-        setSelectedVariant(variant);
-      }
-    }
-  };
-
-  // Référence actuelle (de la variante sélectionnée ou du produit principal)
-  const currentReference = selectedVariant ? selectedVariant.reference : product.reference;
-  // Unité actuelle (de la variante sélectionnée ou du produit principal)
-  const currentUnit = selectedVariant ? selectedVariant.unit : product.unit;
 
   return (
-    <Card className="h-full">
-      <CardContent className="pt-6">
-        <div className="mb-4 bg-gray-50 rounded-md p-4 flex justify-center">
-          {product.imageUrl ? (
-            <img 
-              src={product.imageUrl} 
-              alt={product.name} 
-              className="h-32 object-contain"
-            />
-          ) : (
-            <Package size={48} className="text-gray-400" />
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap gap-1 mb-2">
+          {product.superCategory && (
+            <Badge variant="secondary" className="text-xs">
+              <HighlightedText 
+                text={product.superCategory} 
+                searchTerms={searchTerms}
+              />
+            </Badge>
           )}
-        </div>
-        <div className="space-y-2">
-          <h3 className="font-medium text-base">{product.name}</h3>
-          
-          {/* Sélection de la variante si applicable */}
-          {product.variants && product.variants.length > 0 && (
-            <div className="pt-1">
-              <label className="text-xs text-gray-500 mb-1 block">Variante:</label>
-              <Select 
-                value={selectedVariant?.id} 
-                onValueChange={handleVariantChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choisir une variante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {product.variants.map(variant => (
-                    <SelectItem key={variant.id} value={variant.id}>
-                      {variant.variantName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
-          {currentReference && <p className="text-sm text-gray-500">Réf: {currentReference}</p>}
-          {currentUnit && <p className="text-xs text-gray-500">Unité: {currentUnit}</p>}
           {product.category && (
-            <div className="flex items-center">
-              <Tag className="w-3 h-3 text-gray-500 mr-1" />
-              <Badge variant="outline" className="font-normal text-xs">
-                {product.category}
-              </Badge>
-            </div>
+            <Badge variant="outline" className="text-xs">
+              <HighlightedText 
+                text={product.category} 
+                searchTerms={searchTerms}
+              />
+            </Badge>
           )}
         </div>
-      </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <div className={`flex items-center ${isMobile ? 'w-full' : 'w-24'}`}>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="icon" 
-            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-r-none`}
-            onClick={decrementQuantity}
-            aria-label="Diminuer la quantité"
-          >
-            <Minus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          </Button>
-          <Input
-            type="text"
-            value={inputValue}
-            onChange={handleQuantityChange}
-            onBlur={handleBlur}
-            className={`${isMobile ? 'h-10' : 'h-8'} text-center rounded-none border-x-0`}
-            min="1"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            aria-label="Quantité"
+        <CardTitle className="text-sm font-medium leading-tight">
+          <HighlightedText 
+            text={product.name} 
+            searchTerms={searchTerms}
           />
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="icon" 
-            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-l-none`}
-            onClick={incrementQuantity}
-            aria-label="Augmenter la quantité"
-          >
-            <Plus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          </Button>
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="flex-1 flex flex-col justify-between p-4 pt-0">
+        <div className="space-y-2 mb-4">
+          {product.variants?.length ? (
+            <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choisir une variante" />
+              </SelectTrigger>
+              <SelectContent>
+                {product.variants.map((variant: ProductVariant) => (
+                  <SelectItem key={variant.id} value={variant.id}>
+                    {variant.variantName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          
+          <div className="text-xs text-gray-600 space-y-1">
+            {getDisplayReference() && (
+              <p><span className="font-medium">Réf:</span> {getDisplayReference()}</p>
+            )}
+            {getDisplayUnit() && (
+              <p><span className="font-medium">Unité:</span> {getDisplayUnit()}</p>
+            )}
+          </div>
         </div>
+        
         <Button 
-          onClick={handleAddToCart}
-          className={`${isMobile ? 'w-full py-6' : 'w-full sm:w-auto'} bg-plumbing-blue hover:bg-blue-600`}
-          disabled={product.variants && product.variants.length > 0 && !selectedVariant}
+          onClick={handleAddToCart} 
+          className="w-full bg-plumbing-blue hover:bg-blue-600"
+          disabled={product.variants?.length > 0 && !selectedVariantId}
         >
-          Ajouter
+          Ajouter au panier
         </Button>
-      </CardFooter>
+      </CardContent>
     </Card>
   );
 };
