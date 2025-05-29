@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Header } from '@/components/Header';
@@ -27,10 +26,36 @@ const Catalog = () => {
     const term = searchTerm.toLowerCase().trim();
     
     const filtered = products.filter(product => {
-      // Filtre par terme de recherche
-      const matchesSearch = term === '' ||
-        product.name.toLowerCase().includes(term) ||
-        (product.reference && product.reference.toLowerCase().includes(term));
+      // Amélioration de la logique de recherche pour inclure plusieurs champs
+      let matchesSearch = true;
+      
+      if (term !== '') {
+        // Recherche dans la désignation (nom)
+        const matchesName = product.name.toLowerCase().includes(term);
+        
+        // Recherche dans la référence
+        const matchesReference = product.reference ? product.reference.toLowerCase().includes(term) : false;
+        
+        // Recherche dans la catégorie
+        const matchesCategory = product.category ? product.category.toLowerCase().includes(term) : false;
+        
+        // Recherche dans la sur-catégorie
+        const matchesSuperCategory = product.superCategory ? product.superCategory.toLowerCase().includes(term) : false;
+        
+        // Recherche multi-mots : diviser le terme de recherche et vérifier si tous les mots sont présents
+        const searchWords = term.split(/\s+/).filter(word => word.length > 0);
+        const allFields = [
+          product.name.toLowerCase(),
+          product.reference?.toLowerCase() || '',
+          product.category?.toLowerCase() || '',
+          product.superCategory?.toLowerCase() || ''
+        ].join(' ');
+        
+        const matchesMultiWord = searchWords.every(word => allFields.includes(word));
+        
+        // Un produit correspond s'il match au moins un des critères
+        matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesMultiWord;
+      }
       
       // Filtre par catégories et sur-catégories
       let matchesCategory = true;
