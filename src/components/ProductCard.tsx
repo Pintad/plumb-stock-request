@@ -53,6 +53,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, searchTerms = [] }) 
 
   return (
     <Card className="h-full flex flex-col">
+      {/* Image section */}
+      {product.imageUrl && (
+        <div className="aspect-square overflow-hidden rounded-t-lg">
+          <img 
+            src={product.imageUrl} 
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      
       <CardHeader className="pb-2">
         <div className="flex flex-wrap gap-1 mb-2">
           {product.superCategory && (
@@ -99,7 +110,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, searchTerms = [] }) 
           
           <div className="text-xs text-gray-600 space-y-1">
             {getDisplayReference() && (
-              <p><span className="font-medium">Réf:</span> {getDisplayReference()}</p>
+              <p><span className="font-medium">Réf:</span> <HighlightedText text={getDisplayReference()} searchTerms={searchTerms} /></p>
             )}
             {getDisplayUnit() && (
               <p><span className="font-medium">Unité:</span> {getDisplayUnit()}</p>
