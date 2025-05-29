@@ -11,7 +11,6 @@ interface ProductGridProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  searchTerms?: string[];
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({ 
@@ -19,8 +18,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   resetFilters, 
   currentPage,
   totalPages,
-  onPageChange,
-  searchTerms = []
+  onPageChange
 }) => {
   if (products.length === 0) {
     return (
@@ -38,11 +36,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       <p className="text-sm text-gray-500 mb-4">{products.length} produits trouvés</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {products.map((product) => (
-          <ProductCard 
-            key={product.id} 
-            product={product} 
-            searchTerms={searchTerms}
-          />
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
       

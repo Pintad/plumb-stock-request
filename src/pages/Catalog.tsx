@@ -22,33 +22,15 @@ const Catalog = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
   
-  // Fonction pour analyser les termes de recherche
-  const parseSearchTerms = (term: string): string[] => {
-    return term.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
-  };
-
-  // Fonction de recherche améliorée
-  const matchesSearch = (product: Product, searchTerms: string[]): boolean => {
-    if (searchTerms.length === 0) return true;
-
-    const searchableText = [
-      product.name || '',
-      product.category || '',
-      product.superCategory || '',
-      product.reference || ''
-    ].join(' ').toLowerCase();
-
-    // Vérifier si tous les termes de recherche sont présents
-    return searchTerms.every(term => searchableText.includes(term));
-  };
-  
   // Filtrer les produits basés sur la recherche et les catégories/sur-catégories
   useEffect(() => {
-    const searchTerms = parseSearchTerms(searchTerm);
+    const term = searchTerm.toLowerCase().trim();
     
     const filtered = products.filter(product => {
-      // Filtre par terme de recherche amélioré
-      const matchesSearchTerm = matchesSearch(product, searchTerms);
+      // Filtre par terme de recherche
+      const matchesSearch = term === '' ||
+        product.name.toLowerCase().includes(term) ||
+        (product.reference && product.reference.toLowerCase().includes(term));
       
       // Filtre par catégories et sur-catégories
       let matchesCategory = true;
@@ -68,7 +50,7 @@ const Catalog = () => {
       }
       // Si activeCategory === 'all' et pas de sur-catégorie, on montre tout
       
-      return matchesSearchTerm && matchesCategory;
+      return matchesSearch && matchesCategory;
     });
     
     setFilteredProducts(filtered);
@@ -121,9 +103,6 @@ const Catalog = () => {
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  // Obtenir les termes de recherche pour la surbrillance
-  const searchTerms = parseSearchTerms(searchTerm);
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
@@ -164,7 +143,6 @@ const Catalog = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-            searchTerms={searchTerms}
           />
         </div>
       </main>
