@@ -22,6 +22,7 @@ interface OrdersChartProps {
     completed: { color: string; label: string };
     items: { color: string; label: string };
   };
+  isMobile?: boolean;
 }
 
 // Composant personnalisé pour le tooltip du graphique d'évolution
@@ -44,32 +45,32 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const OrdersChart = ({ ordersByDateData, chartConfig }: OrdersChartProps) => {
+const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: OrdersChartProps) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Évolution des demandes</CardTitle>
-        <CardDescription>Sur les 14 derniers jours</CardDescription>
+      <CardHeader className={isMobile ? 'pb-2 pt-3 px-3' : ''}>
+        <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Évolution des demandes</CardTitle>
+        <CardDescription className={isMobile ? 'text-xs' : ''}>Sur les 14 derniers jours</CardDescription>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={`${isMobile ? 'pt-0 px-3 pb-3' : 'pt-0'}`}>
         <ChartContainer
           config={chartConfig}
-          className="h-[300px] mt-4"
+          className={`${isMobile ? 'h-[200px]' : 'h-[300px]'} mt-4`}
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={ordersByDateData}
-              margin={{ top: 5, right: 5, left: 5, bottom: 25 }}
+              margin={{ top: 5, right: 5, left: 5, bottom: isMobile ? 20 : 25 }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis 
                 dataKey="displayDate" 
-                angle={-45}
+                angle={isMobile ? -90 : -45}
                 textAnchor="end"
-                height={60}
-                tick={{ fontSize: 12 }}
+                height={isMobile ? 50 : 60}
+                tick={{ fontSize: isMobile ? 10 : 12 }}
               />
-              <YAxis allowDecimals={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: isMobile ? 10 : 12 }} />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="pending" 

@@ -9,21 +9,22 @@ import { Order } from '@/types';
 interface RecentOrdersProps {
   orders: Order[];
   isLoading: boolean;
+  isMobile?: boolean;
 }
 
-const RecentOrders = ({ orders, isLoading }: RecentOrdersProps) => {
+const RecentOrders = ({ orders, isLoading, isMobile = false }: RecentOrdersProps) => {
   return (
-    <div className="mt-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Dernières demandes</h2>
-        <Link to="/admin/orders" className="text-sm text-amber-600 hover:underline">
+    <div className={isMobile ? 'mt-6' : 'mt-8'}>
+      <div className={`flex justify-between items-center ${isMobile ? 'mb-3' : 'mb-4'}`}>
+        <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>Dernières demandes</h2>
+        <Link to="/admin/orders" className={`${isMobile ? 'text-xs' : 'text-sm'} text-amber-600 hover:underline`}>
           Voir toutes les demandes →
         </Link>
       </div>
       
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className={`flex justify-center ${isMobile ? 'py-8' : 'py-12'}`}>
+          <div className={`animate-spin rounded-full ${isMobile ? 'h-8 w-8' : 'h-12 w-12'} border-b-2 border-gray-900`}></div>
         </div>
       ) : orders.length > 0 ? (
         <Card>
@@ -33,29 +34,29 @@ const RecentOrders = ({ orders, isLoading }: RecentOrdersProps) => {
                 <Link 
                   key={order.commandeid}
                   to={`/admin/orders/${order.commandeid}`}
-                  className="block px-6 py-4 hover:bg-gray-50"
+                  className={`block ${isMobile ? 'px-3 py-3' : 'px-6 py-4'} hover:bg-gray-50`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                  <div className={`flex items-center justify-between ${isMobile ? 'flex-col gap-2' : ''}`}>
+                    <div className={`flex items-center ${isMobile ? 'w-full' : ''}`}>
                       {order.termine === 'Oui' ? (
-                        <ListChecks className="h-5 w-5 text-green-500 mr-4" />
+                        <ListChecks className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-green-500 ${isMobile ? 'mr-2' : 'mr-4'}`} />
                       ) : order.termine === 'En cours' ? (
-                        <Clock className="h-5 w-5 text-purple-500 mr-4" />
+                        <Clock className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-purple-500 ${isMobile ? 'mr-2' : 'mr-4'}`} />
                       ) : (
-                        <FileText className="h-5 w-5 text-amber-500 mr-4" />
+                        <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-amber-500 ${isMobile ? 'mr-2' : 'mr-4'}`} />
                       )}
-                      <div>
-                        <p className="font-medium">
+                      <div className={isMobile ? 'flex-1' : ''}>
+                        <p className={`font-medium ${isMobile ? 'text-sm truncate' : ''}`}>
                           {order.displayTitle || `Demande #${order.commandeid}`}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
                           Par {order.clientname} · {order.datecommande ? 
                             format(new Date(order.datecommande), 'dd/MM/yyyy') : 'Date inconnue'}
                         </p>
                       </div>
                     </div>
-                    <div className="text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
+                    <div className={`${isMobile ? 'text-xs self-end' : 'text-sm'}`}>
+                      <span className={`px-2 py-1 rounded-full ${isMobile ? 'text-xs' : 'text-xs'} ${
                         order.termine === 'Oui' 
                           ? 'bg-green-100 text-green-800' 
                           : order.termine === 'En cours'
@@ -73,8 +74,8 @@ const RecentOrders = ({ orders, isLoading }: RecentOrdersProps) => {
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-gray-500">Aucune demande enregistrée</p>
+          <CardContent className={isMobile ? 'p-4' : 'p-6'}>
+            <p className={`text-center text-gray-500 ${isMobile ? 'text-sm' : ''}`}>Aucune demande enregistrée</p>
           </CardContent>
         </Card>
       )}
