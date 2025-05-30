@@ -26,7 +26,7 @@ interface OrdersChartProps {
 }
 
 // Composant personnalisé pour le tooltip du graphique d'évolution
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, isMobile }: any) => {
   if (active && payload && payload.length) {
     const pending = payload.find((p: any) => p.name === "En attente")?.value || 0;
     const completed = payload.find((p: any) => p.name === "Terminées")?.value || 0;
@@ -81,7 +81,7 @@ const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: Orders
                 tick={{ fontSize: isMobile ? 8 : 12 }}
                 width={isMobile ? 25 : 40}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip isMobile={isMobile} />} />
               <Bar 
                 dataKey="pending" 
                 name="En attente" 
