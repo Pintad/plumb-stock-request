@@ -33,7 +33,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const total = pending + completed;
     
     return (
-      <div className="bg-white p-3 rounded-md shadow-md border border-gray-200 text-sm">
+      <div className={`bg-white p-2 rounded-md shadow-md border border-gray-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>
         <p className="font-semibold">{label}</p>
         <p className="text-amber-600">En attente: {pending}</p>
         <p className="text-green-600">Terminées: {completed}</p>
@@ -52,32 +52,42 @@ const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: Orders
         <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Évolution des demandes</CardTitle>
         <CardDescription className={isMobile ? 'text-xs' : ''}>Sur les 14 derniers jours</CardDescription>
       </CardHeader>
-      <CardContent className={`${isMobile ? 'pt-0 px-3 pb-3' : 'pt-0'}`}>
+      <CardContent className={`${isMobile ? 'pt-0 px-2 pb-2' : 'pt-0'}`}>
         <ChartContainer
           config={chartConfig}
-          className={`${isMobile ? 'h-[200px]' : 'h-[300px]'} mt-4`}
+          className={`${isMobile ? 'h-[180px]' : 'h-[300px]'} mt-4`}
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={ordersByDateData}
-              margin={{ top: 5, right: 5, left: 5, bottom: isMobile ? 20 : 25 }}
+              margin={{ 
+                top: 5, 
+                right: isMobile ? 10 : 5, 
+                left: isMobile ? 5 : 5, 
+                bottom: isMobile ? 40 : 25 
+              }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis 
                 dataKey="displayDate" 
-                angle={isMobile ? -90 : -45}
+                angle={-90}
                 textAnchor="end"
-                height={isMobile ? 50 : 60}
-                tick={{ fontSize: isMobile ? 10 : 12 }}
+                height={isMobile ? 40 : 60}
+                tick={{ fontSize: isMobile ? 8 : 12 }}
+                interval={isMobile ? 1 : 0}
               />
-              <YAxis allowDecimals={false} tick={{ fontSize: isMobile ? 10 : 12 }} />
+              <YAxis 
+                allowDecimals={false} 
+                tick={{ fontSize: isMobile ? 8 : 12 }}
+                width={isMobile ? 25 : 40}
+              />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="pending" 
                 name="En attente" 
                 stackId="a" 
                 fill={chartConfig.pending.color} 
-                radius={[4, 4, 0, 0]}
+                radius={[0, 0, 0, 0]}
               />
               <Bar 
                 dataKey="completed" 

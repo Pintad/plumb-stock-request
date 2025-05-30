@@ -18,16 +18,16 @@ interface TopRequestersChartProps {
 }
 
 // Composant personnalisé pour le tooltip du graphique des ouvriers
-const CustomWorkerTooltip = ({ active, payload }: any) => {
+const CustomWorkerTooltip = ({ active, payload, isMobile }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     
     return (
-      <div className="bg-white p-3 rounded-md shadow-md border border-gray-200 text-sm">
+      <div className={`bg-white p-2 rounded-md shadow-md border border-gray-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>
         <p className="font-semibold">{data.name}</p>
-        <p>Commandes anticipées: {data.anticipatedOrders}</p>
-        <p>Total commandes: {data.orderCount}</p>
-        <p>Total articles: {data.itemCount}</p>
+        <p>Anticipées: {data.anticipatedOrders}</p>
+        <p>Total: {data.orderCount}</p>
+        <p>Articles: {data.itemCount}</p>
       </div>
     );
   }
@@ -45,30 +45,40 @@ const TopRequestersChart = ({ topRequestersData, chartConfig, isMobile = false }
         </div>
         <Trophy className={`${isMobile ? 'h-4 w-4' : 'h-6 w-6'} text-amber-500`} />
       </CardHeader>
-      <CardContent className={`${isMobile ? 'pt-0 px-3 pb-3' : 'pt-0'}`}>
+      <CardContent className={`${isMobile ? 'pt-0 px-2 pb-2' : 'pt-0'}`}>
         <ChartContainer
           config={chartConfig}
-          className={`${isMobile ? 'h-[200px]' : 'h-[300px]'} mt-4`}
+          className={`${isMobile ? 'h-[180px]' : 'h-[300px]'} mt-4`}
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
               data={topRequestersData}
-              margin={{ top: 5, right: 20, left: isMobile ? 60 : 40, bottom: 5 }}
+              margin={{ 
+                top: 5, 
+                right: isMobile ? 10 : 20, 
+                left: isMobile ? 80 : 40, 
+                bottom: 5 
+              }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: isMobile ? 10 : 12 }} />
+              <XAxis 
+                type="number" 
+                allowDecimals={false} 
+                tick={{ fontSize: isMobile ? 8 : 12 }}
+                width={isMobile ? 30 : 40}
+              />
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={isMobile ? 60 : 100}
-                tick={{ fontSize: isMobile ? 8 : 12 }}
+                width={isMobile ? 80 : 100}
+                tick={{ fontSize: isMobile ? 7 : 12 }}
                 tickFormatter={(value) => {
-                  const maxLength = isMobile ? 8 : 12;
+                  const maxLength = isMobile ? 10 : 12;
                   return value.length > maxLength ? `${value.substring(0, maxLength)}...` : value;
                 }}
               />
-              <Tooltip content={<CustomWorkerTooltip />} />
+              <Tooltip content={<CustomWorkerTooltip isMobile={isMobile} />} />
               <Bar 
                 dataKey="anticipatedOrders" 
                 name="Commandes anticipées" 
