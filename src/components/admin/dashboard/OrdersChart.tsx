@@ -33,11 +33,11 @@ const CustomTooltip = ({ active, payload, label, isMobile }: any) => {
     const total = pending + completed;
     
     return (
-      <div className={`bg-white p-2 rounded-md shadow-md border border-gray-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-        <p className="font-semibold">{label}</p>
+      <div className={`bg-white p-3 rounded-md shadow-lg border border-gray-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+        <p className="font-semibold mb-1">{label}</p>
         <p className="text-amber-600">En attente: {pending}</p>
         <p className="text-green-600">Terminées: {completed}</p>
-        <p className="mt-1 pt-1 border-t border-gray-200 font-medium">Total: {total}</p>
+        <p className="mt-2 pt-1 border-t border-gray-200 font-medium">Total: {total}</p>
       </div>
     );
   }
@@ -47,39 +47,39 @@ const CustomTooltip = ({ active, payload, label, isMobile }: any) => {
 
 const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: OrdersChartProps) => {
   return (
-    <Card>
-      <CardHeader className={isMobile ? 'pb-2 pt-3 px-3' : ''}>
+    <Card className="h-full">
+      <CardHeader className={isMobile ? 'pb-2 pt-3 px-3' : 'pb-4'}>
         <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Évolution des demandes</CardTitle>
         <CardDescription className={isMobile ? 'text-xs' : ''}>Sur les 14 derniers jours</CardDescription>
       </CardHeader>
-      <CardContent className={`${isMobile ? 'pt-0 px-2 pb-2' : 'pt-0'}`}>
+      <CardContent className={`${isMobile ? 'pt-0 px-2 pb-3' : 'pt-0 pb-6'}`}>
         <ChartContainer
           config={chartConfig}
-          className={`${isMobile ? 'h-[180px]' : 'h-[300px]'} mt-4`}
+          className={`${isMobile ? 'h-[160px]' : 'h-[280px]'} w-full`}
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={ordersByDateData}
               margin={{ 
-                top: 5, 
-                right: isMobile ? 10 : 5, 
-                left: isMobile ? 5 : 5, 
-                bottom: isMobile ? 40 : 25 
+                top: 10, 
+                right: isMobile ? 5 : 15, 
+                left: isMobile ? -5 : 0, 
+                bottom: isMobile ? 35 : 20 
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis 
                 dataKey="displayDate" 
-                angle={-90}
+                angle={isMobile ? -90 : -45}
                 textAnchor="end"
-                height={isMobile ? 40 : 60}
-                tick={{ fontSize: isMobile ? 8 : 12 }}
+                height={isMobile ? 35 : 50}
+                tick={{ fontSize: isMobile ? 9 : 11 }}
                 interval={isMobile ? 1 : 0}
               />
               <YAxis 
                 allowDecimals={false} 
-                tick={{ fontSize: isMobile ? 8 : 12 }}
-                width={isMobile ? 25 : 40}
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                width={isMobile ? 30 : 45}
               />
               <Tooltip content={<CustomTooltip isMobile={isMobile} />} />
               <Bar 
@@ -94,7 +94,7 @@ const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: Orders
                 name="Terminées" 
                 stackId="a" 
                 fill={chartConfig.completed.color}
-                radius={[4, 4, 0, 0]} 
+                radius={[3, 3, 0, 0]} 
               />
             </BarChart>
           </ResponsiveContainer>
