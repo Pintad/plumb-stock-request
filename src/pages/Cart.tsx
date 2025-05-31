@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
@@ -32,7 +31,7 @@ const CartPage = () => {
   useEffect(() => {
     console.log('CartPage: Déclenchement du chargement des projets');
     loadProjects(true); // Avec message d'erreur si échec
-  }, []); // Se déclenche uniquement au montage du composant
+  }, [loadProjects]); // Se déclenche uniquement au montage du composant
   
   const handleCreateOrder = () => {
     if (cart.length === 0) {
