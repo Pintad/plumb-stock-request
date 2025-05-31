@@ -11,7 +11,7 @@ import OrderArticlesList from './OrderArticlesList';
 interface OrderDetailsReadOnlyProps {
   order: Order;
   backUrl: string;
-  isMobile?: boolean; // Added isMobile as optional prop
+  isMobile?: boolean;
 }
 
 const OrderDetailsReadOnly = ({ order, backUrl, isMobile }: OrderDetailsReadOnlyProps) => {
@@ -68,7 +68,7 @@ const OrderDetailsReadOnly = ({ order, backUrl, isMobile }: OrderDetailsReadOnly
               
               <div className="border-t pt-6">
                 <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-4`}>Articles</h3>
-                <OrderArticlesList articles={order.articles} />
+                <OrderArticlesList articles={order.articles} isMobile={isMobile} />
               </div>
               
               {order.messagefournisseur && (
