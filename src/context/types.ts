@@ -27,7 +27,7 @@ export interface AppContextType {
   loadOrders: () => void;
   createOrder: (projectCode?: string) => void;
   updateOrderStatus: (orderId: string, status: string, message?: string) => Promise<void>;
-  updateOrder: (updatedOrder: Order) => Promise<void>;
+  updateOrder: (updatedOrder: Order) => Promise<boolean>;
   loadProductsFromCSV: (csvContent: string) => Promise<void>;
   loadProjectsFromCSV: (csvContent: string) => Promise<void>;
   isLoading: boolean;
