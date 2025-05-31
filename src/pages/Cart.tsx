@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,19 @@ const CartPage = () => {
     clearCart, 
     createOrder,
     selectedDeliveryDate,
-    setSelectedDeliveryDate
+    setSelectedDeliveryDate,
+    loadProjects,
+    projects
   } = useAppContext();
   const [selectedProject, setSelectedProject] = useState('none');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  
+  // Forcer le chargement des projets quand on accède au panier
+  useEffect(() => {
+    console.log('CartPage: Déclenchement du chargement des projets');
+    loadProjects(true); // Avec message d'erreur si échec
+  }, []); // Se déclenche uniquement au montage du composant
   
   const handleCreateOrder = () => {
     if (cart.length === 0) {

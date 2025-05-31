@@ -10,18 +10,20 @@ export const useProjects = (initialProjects: Project[] = []) => {
   const [error, setError] = useState<string | null>(null);
   const loadAttemptCount = useRef(0);
   const lastLoadTime = useRef<number | null>(null);
-  const MIN_RETRY_INTERVAL = 10000; // 10 secondes minimum entre les tentatives
+  const MIN_RETRY_INTERVAL = 5000; // Réduit à 5 secondes pour être plus réactif
 
   // Function to load projects from Supabase - wrapped in useCallback to avoid recreation
   const loadProjects = useCallback(async (showToastOnError: boolean = true) => {
     // Éviter les rechargements trop fréquents
     const now = Date.now();
     if (lastLoadTime.current && now - lastLoadTime.current < MIN_RETRY_INTERVAL) {
+      console.log('useProjects: Rechargement trop rapide, ignoré');
       return; // Éviter les appels trop rapprochés
     }
     
     lastLoadTime.current = now;
     setIsLoading(true);
+    console.log('useProjects: Début du chargement des projets');
     
     try {
       const { data, error } = await supabase
@@ -40,19 +42,21 @@ export const useProjects = (initialProjects: Project[] = []) => {
         setProjects(projectsFromDB);
         setError(null);
         loadAttemptCount.current = 0; // Réinitialiser le compteur sur succès
+        console.log(`useProjects: ${projectsFromDB.length} projets chargés avec succès`);
       } else {
         setProjects([]);
+        console.log('useProjects: Aucun projet trouvé');
       }
     } catch (error: any) {
       console.error("Erreur lors du chargement des projets depuis Supabase:", error);
       setError("Impossible de charger les affaires depuis la base de données.");
       
-      // Ne pas afficher le toast pour chaque erreur
-      if (showToastOnError && loadAttemptCount.current < 2) { // Limiter les toasts d'erreur
+      // Afficher le toast seulement si demandé et pas trop d'erreurs consécutives
+      if (showToastOnError && loadAttemptCount.current < 3) { 
         loadAttemptCount.current++;
         toast({
           title: "Erreur",
-          description: "Impossible de charger les affaires depuis la base de données.",
+          description: "Impossible de charger les affaires. Veuillez réessayer.",
           variant: "destructive",
         });
       }
@@ -63,19 +67,9 @@ export const useProjects = (initialProjects: Project[] = []) => {
 
   // Load projects only once on component mount
   useEffect(() => {
+    console.log('useProjects: Initialisation du hook');
     loadProjects(false); // Ne pas afficher de toast au chargement initial
-    
-    // Créer un intervalle pour vérifier la connectivité si nécessaire
-    const reconnectInterval = setInterval(() => {
-      if (error) {
-        loadProjects(false); // Tenter de se reconnecter discrètement
-      }
-    }, 30000); // Tenter de se reconnecter toutes les 30 secondes
-    
-    return () => {
-      clearInterval(reconnectInterval);
-    };
-  }, [loadProjects, error]);
+  }, [loadProjects]);
 
   const addProject = useCallback(async (project: Project) => {
     try {
