@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
@@ -25,7 +26,7 @@ const AdminProducts = () => {
   const handleRefreshProducts = async () => {
     setRefreshing(true);
     try {
-      await loadProductsFromCSV();
+      await loadProductsFromCSV(''); // Pass empty string as default
       toast({
         title: "Catalogue mis à jour",
         description: "Les produits ont été rafraîchis depuis la base de données"
