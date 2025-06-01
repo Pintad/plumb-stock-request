@@ -3,21 +3,16 @@ import React, { useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import StatCards from '@/components/admin/dashboard/StatCards';
 import OrdersChart from '@/components/admin/dashboard/OrdersChart';
 import TopRequestersChart from '@/components/admin/dashboard/TopRequestersChart';
 import TopItemsList from '@/components/admin/dashboard/TopItemsList';
 import RecentOrders from '@/components/admin/dashboard/RecentOrders';
-import NotificationSettings from '@/components/admin/dashboard/NotificationSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
   const { orders, products, user, loadOrders, isLoading } = useAppContext();
   const isMobile = useIsMobile();
-  
-  // Initialize order notifications listener
-  useOrderNotifications();
   
   // Charger les commandes lorsque le tableau de bord se monte
   useEffect(() => {
@@ -39,10 +34,7 @@ const Dashboard = () => {
       <Header />
       
       <main className={`flex-1 container ${isMobile ? 'px-2 py-3' : 'px-4 py-6'}`}>
-        <div className="flex justify-between items-center mb-2">
-          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>Tableau de bord</h1>
-          <NotificationSettings isMobile={isMobile} />
-        </div>
+        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold mb-2`}>Tableau de bord</h1>
         <p className={`text-gray-500 ${isMobile ? 'mb-4 text-sm' : 'mb-6'}`}>Bienvenue, {user?.name}</p>
         
         {/* Cartes de statistiques principales */}
