@@ -44,7 +44,7 @@ serve(async (req) => {
         <h1>Votre commande est prête !</h1>
         <p>Bonjour,</p>
         <p>Nous vous informons que votre commande #${orderNumber} est prête à être retirée.</p>
-        <p>Vous pouvez venir la récupérer pendant nos horaires d'ouverture.</p>
+        <p>Vous pouvez venir la récupérer ou contacter votre charger d'aaffaire pour qu'il vous l'apporte a sont prochain passage</p>
         <p>Merci de votre confiance !</p>
       `
     })
