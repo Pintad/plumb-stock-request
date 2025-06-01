@@ -20,14 +20,12 @@ const OrderDetailsReadOnly = ({ order, backUrl, isMobile }: OrderDetailsReadOnly
   // Utiliser uniquement le titre d'affichage stocké en base, sans fallback
   const displayTitle = order.titre_affichage || "[ERREUR: Titre manquant]";
 
-  // Format de la date avec heure incluse pour plus de précision
+  // Format de la date SANS l'heure
   const formattedDate = order.datecommande 
-    ? new Date(order.datecommande).toLocaleString('fr-FR', { 
+    ? new Date(order.datecommande).toLocaleDateString('fr-FR', { 
         day: '2-digit', 
         month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        year: 'numeric'
       }) 
     : '';
 
