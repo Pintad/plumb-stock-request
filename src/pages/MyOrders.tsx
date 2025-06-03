@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,9 +23,15 @@ const MyOrders = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const navigate = useNavigate();
   
-  useEffect(() => {
+  // Utiliser useCallback pour éviter les rechargements inutiles
+  const memoizedLoadOrders = useCallback(() => {
     loadOrders();
   }, [loadOrders]);
+  
+  useEffect(() => {
+    // Charger les commandes seulement au montage initial
+    memoizedLoadOrders();
+  }, []); // Dépendance vide pour éviter les rechargements
   
   // Filter orders to show only those of the current user
   const userOrders = orders.filter(order => {

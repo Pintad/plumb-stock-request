@@ -17,7 +17,7 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     }
   }, [initialOrder]);
 
-  // Subscribe to real-time updates
+  // Subscribe to real-time updates avec la nouvelle gestion optimisée
   useOrderRealtime(order?.commandeid, loadOrders);
 
   // Import order status management functionality

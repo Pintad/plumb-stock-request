@@ -9,11 +9,16 @@ import {
   updateOrderInDb 
 } from './orders';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserActivity } from '@/hooks/useUserActivity';
 
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const loadingRef = useRef(false);
+  
+  // Détection d'inactivité (5 minutes)
+  const { isActive } = useUserActivity({ timeout: 5 * 60 * 1000 });
 
   // Charge automatiquement les commandes au montage du hook
   useEffect(() => {
@@ -28,16 +33,37 @@ export const useOrders = () => {
     };
   }, []);
 
-  // Écouter les modifications en temps réel sur la table commandes avec une référence stable
+  // Gestion de l'écoute temps réel basée sur l'activité de l'utilisateur
   useEffect(() => {
+    if (isActive) {
+      // Utilisateur actif - activer les souscriptions temps réel
+      setupRealtimeSubscription();
+    } else {
+      // Utilisateur inactif - désactiver les souscriptions
+      if (channelRef.current) {
+        console.log('User inactive - pausing real-time subscriptions');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    }
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [isActive]);
+
+  const setupRealtimeSubscription = () => {
     // S'assurer qu'on ne crée qu'une seule souscription
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
     
-    // Créer une nouvelle souscription
+    // Créer une nouvelle souscription avec un identifiant unique
     channelRef.current = supabase
-      .channel('orders-changes')
+      .channel(`orders-changes-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -45,29 +71,39 @@ export const useOrders = () => {
           schema: 'public',
           table: 'commandes'
         },
-        () => {
-          // Recharger les commandes quand des changements sont détectés
-          loadOrders();
+        (payload) => {
+          console.log('Real-time order change detected:', payload.eventType);
+          // Éviter de recharger si on est déjà en train de charger
+          if (!loadingRef.current) {
+            loadOrders();
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time subscription established');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time subscription error');
+          // Ne pas tenter de se reconnecter immédiatement pour éviter les boucles
+        }
+      });
+  };
 
-    // Nettoyage lors du démontage
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, []);
-
-  // Load orders from the database
+  // Load orders from the database avec protection contre les appels multiples
   const loadOrders = async () => {
+    if (loadingRef.current) {
+      console.log('Load already in progress, skipping...');
+      return;
+    }
+
+    loadingRef.current = true;
     setIsLoading(true);
+    
     try {
       const loadedOrders = await fetchOrders();
       setOrders(loadedOrders);
     } catch (error) {
+      console.error('Error loading orders:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les commandes",
@@ -75,6 +111,7 @@ export const useOrders = () => {
       });
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   };
 
@@ -91,7 +128,10 @@ export const useOrders = () => {
       
       if (success) {
         clearCart();
-        await loadOrders();
+        // Recharger seulement si l'utilisateur est actif
+        if (isActive) {
+          await loadOrders();
+        }
         
         toast({
           title: "Commande créée",
@@ -101,6 +141,7 @@ export const useOrders = () => {
       
       return success;
     } catch (error) {
+      console.error('Error creating order:', error);
       toast({
         title: "Erreur",
         description: "Impossible de créer la commande",
@@ -114,13 +155,18 @@ export const useOrders = () => {
   const updateOrderStatus = async (orderId: string, termine: string, messagefournisseur?: string) => {
     try {
       await updateOrderStatusInDb(orderId, termine, messagefournisseur);
-      await loadOrders();
+      
+      // Recharger seulement si l'utilisateur est actif
+      if (isActive) {
+        await loadOrders();
+      }
       
       toast({
         title: "Commande mise à jour",
         description: "Le statut de la commande a été mis à jour",
       });
     } catch (error) {
+      console.error('Error updating order status:', error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour la commande",
@@ -153,6 +199,7 @@ export const useOrders = () => {
     loadOrders,
     createOrder,
     updateOrderStatus,
-    updateOrder
+    updateOrder,
+    isUserActive: isActive
   };
 };

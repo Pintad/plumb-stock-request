@@ -1,63 +1,71 @@
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserActivity } from './useUserActivity';
 
 export const useOrderRealtime = (orderId: string | undefined, onUpdate: () => void) => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 3;
+  const { isActive } = useUserActivity({ timeout: 3 * 60 * 1000 }); // 3 minutes pour les détails
+  const onUpdateRef = useRef(onUpdate);
+
+  // Mettre à jour la référence du callback
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     if (!orderId) return;
     
-    // Fonction pour créer et configurer un canal
-    const setupChannel = () => {
-      // Nettoyer toute souscription précédente
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+    if (isActive) {
+      // Utilisateur actif - établir la connexion temps réel
+      setupSubscription();
+    } else {
+      // Utilisateur inactif - nettoyer la connexion
+      cleanupSubscription();
+    }
 
-      // Créer une nouvelle souscription
-      channelRef.current = supabase
-        .channel(`order-detail-${orderId}-${Date.now()}`) // Identifiant unique pour éviter les conflits
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'commandes',
-            filter: `commandeid=eq.${orderId}`
-          },
-          () => {
-            // Recharger les commandes quand des changements sont détectés
-            onUpdate();
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'CHANNEL_ERROR' && reconnectAttemptsRef.current < maxReconnectAttempts) {
-            // En cas d'erreur, tentative de reconnexion
-            reconnectAttemptsRef.current++;
-            
-            // Attendre un peu avant de tenter de se reconnecter (délai exponentiel)
-            const delay = Math.pow(2, reconnectAttemptsRef.current) * 1000;
-            setTimeout(setupChannel, delay);
-          }
-        });
-    };
+    return cleanupSubscription;
+  }, [orderId, isActive]);
 
-    // Configuration initiale du canal
-    setupChannel();
+  const setupSubscription = () => {
+    if (!orderId) return;
     
-    // Nettoyage lors du démontage ou changement d'ID de commande
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      reconnectAttemptsRef.current = 0;
-    };
-  }, [orderId, onUpdate]);
+    // Nettoyer toute souscription précédente
+    cleanupSubscription();
+
+    // Créer une nouvelle souscription avec identifiant unique
+    channelRef.current = supabase
+      .channel(`order-detail-${orderId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'commandes',
+          filter: `commandeid=eq.${orderId}`
+        },
+        (payload) => {
+          console.log('Order detail real-time update:', payload.eventType);
+          // Utiliser la référence pour éviter les dépendances stale
+          onUpdateRef.current();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Order detail subscription established for ${orderId}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Order detail subscription error for ${orderId}`);
+        }
+      });
+  };
+
+  const cleanupSubscription = () => {
+    if (channelRef.current) {
+      console.log('Cleaning up order detail subscription');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  };
 
   return null;
 };
