@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAppContext } from '@/context/AppContext';
@@ -76,16 +77,6 @@ const CartPage = () => {
         {(cart.length > 0 || customItems.length > 0) ? (
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-4">
-              {/* Formulaire pour ajouter des articles personnalisés */}
-              <CustomItemForm onAddCustomItem={addCustomItem} />
-              
-              {/* Liste des articles personnalisés */}
-              <CustomItemsList 
-                customItems={customItems}
-                onUpdateQuantity={updateCustomItemQuantity}
-                onRemove={removeCustomItem}
-              />
-              
               {/* Articles du catalogue */}
               {cart.length > 0 && (
                 <Card>
@@ -236,6 +227,16 @@ const CartPage = () => {
                   </CardFooter>
                 </Card>
               )}
+              
+              {/* Formulaire pour ajouter des articles personnalisés */}
+              <CustomItemForm onAddCustomItem={addCustomItem} />
+              
+              {/* Liste des articles personnalisés */}
+              <CustomItemsList 
+                customItems={customItems}
+                onUpdateQuantity={updateCustomItemQuantity}
+                onRemove={removeCustomItem}
+              />
             </div>
             
             <div>
