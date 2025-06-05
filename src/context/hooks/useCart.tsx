@@ -2,9 +2,17 @@
 import { useState, useEffect } from 'react';
 import { CartItem, Product } from '../../types';
 import { toast } from '@/components/ui/use-toast';
+import { useCustomCartItems, CustomCartItem } from '@/hooks/useCustomCartItems';
 
 export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const { 
+    customItems, 
+    addCustomItem, 
+    removeCustomItem, 
+    updateCustomItemQuantity, 
+    clearCustomItems 
+  } = useCustomCartItems();
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
@@ -69,13 +77,23 @@ export const useCart = () => {
 
   const clearCart = () => {
     setCart([]);
+    clearCustomItems();
   };
+
+  // Combiner les articles normaux et personnalisés pour le total
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0) + 
+                    customItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return {
     cart,
+    customItems,
     addToCart,
     removeFromCart,
     updateCartItemQuantity,
-    clearCart
+    clearCart,
+    addCustomItem,
+    removeCustomItem,
+    updateCustomItemQuantity,
+    totalItems
   };
 };

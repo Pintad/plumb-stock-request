@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Order, User } from '../types';
 import { useProducts } from './hooks/useProducts';
@@ -15,18 +14,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { user, session, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
   const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading, error: projectsError } = useProjects();
-  const { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart } = useCart();
+  const { 
+    cart, 
+    customItems,
+    addToCart, 
+    removeFromCart, 
+    updateCartItemQuantity, 
+    clearCart,
+    addCustomItem,
+    removeCustomItem,
+    updateCustomItemQuantity,
+    totalItems
+  } = useCart();
   const { orders, createOrder, updateOrderStatus, updateOrder, loadOrders } = useOrders();
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
 
   // Wrapper to pass affaireId (projectCode) to createOrder in useOrders hook
   const createOrderWrapper = (projectCode?: string) => {
-    if (user && cart.length > 0) {
-      // projectCode in context is actually code, but createOrder expects affaireId (string or undefined)
-      // So we need to find the actual project id by code to pass
+    if (user && (cart.length > 0 || customItems.length > 0)) {
       const projectObj = projects.find(p => p.code === projectCode);
       const affaireId = projectObj?.id;
-      createOrder(user, cart, clearCart, affaireId, selectedDeliveryDate);
+      createOrder(user, cart, customItems, clearCart, affaireId, selectedDeliveryDate);
       return undefined;
     }
     return undefined;
@@ -64,10 +72,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteProject,
         loadProjects,
         cart,
+        customItems,
         addToCart,
         removeFromCart,
         updateCartItemQuantity,
         clearCart,
+        addCustomItem,
+        removeCustomItem,
+        updateCustomItemQuantity,
+        totalItems,
         orders,
         loadOrders,
         createOrder: createOrderWrapper,

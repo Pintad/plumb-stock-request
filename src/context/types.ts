@@ -1,6 +1,6 @@
 
-
 import { Product, Project, User, Order, CartItem } from '../types';
+import { CustomCartItem } from '@/hooks/useCustomCartItems';
 
 export interface AppContextType {
   user: User | null;
@@ -19,10 +19,15 @@ export interface AppContextType {
   deleteProject: (projectId: string) => Promise<void>;
   loadProjects: (showToastOnError?: boolean) => Promise<void>;
   cart: CartItem[];
+  customItems: CustomCartItem[];
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  addCustomItem: (text: string, quantity: number) => void;
+  removeCustomItem: (id: string) => void;
+  updateCustomItemQuantity: (id: string, quantity: number) => void;
+  totalItems: number;
   orders: Order[];
   loadOrders: () => void;
   createOrder: (projectCode?: string) => void;
@@ -37,4 +42,3 @@ export interface AppContextType {
   selectedDeliveryDate: Date | undefined;
   setSelectedDeliveryDate: (date: Date | undefined) => void;
 }
-

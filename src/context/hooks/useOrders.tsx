@@ -119,12 +119,13 @@ export const useOrders = () => {
   const createOrder = async (
     user: User | null,
     cart: CartItem[],
+    customItems: any[] = [],
     clearCart: () => void,
     affaireId?: string,
     dateMiseADisposition?: Date | null
   ): Promise<boolean> => {
     try {
-      const success = await createOrderInDb(user, cart, affaireId, dateMiseADisposition);
+      const success = await createOrderInDb(user, cart, customItems, affaireId, dateMiseADisposition);
       
       if (success) {
         clearCart();
