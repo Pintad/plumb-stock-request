@@ -16,7 +16,7 @@ export const fetchCatalogueItems = async (): Promise<CatalogueItem[]> => {
     if (error || !data) {
       console.log("Récupération directe impossible, utilisation de la pagination");
       
-      let allData: CatalogueItem[] = [];
+      let allData: any[] = [];
       let page = 0;
       const pageSize = 1000;
       let hasMoreData = true;
