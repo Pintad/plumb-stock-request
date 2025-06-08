@@ -38,7 +38,8 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
       unit: hasVariants ? undefined : baseItem.unite,
       imageUrl: baseItem.image_url,
       category: baseItem.categorie,
-      superCategory: baseItem.sur_categorie, // Ajout de la sur-catégorie
+      superCategory: baseItem.sur_categorie,
+      keywords: baseItem.keywords, // Ajout du mapping des mots-clés
       variants: hasVariants ? variants : undefined
     };
   });
@@ -48,6 +49,16 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
   // Log des sur-catégories trouvées
   const superCategories = [...new Set(products.map(p => p.superCategory).filter(Boolean))];
   console.log(`Sur-catégories trouvées: ${superCategories.length}`, superCategories);
+  
+  // Log des mots-clés pour vérifier le mapping
+  const productsWithKeywords = products.filter(p => p.keywords && p.keywords.trim() !== '');
+  console.log(`Produits avec mots-clés: ${productsWithKeywords.length}`);
+  if (productsWithKeywords.length > 0) {
+    console.log('Échantillon de produits avec mots-clés:', productsWithKeywords.slice(0, 3).map(p => ({
+      name: p.name,
+      keywords: p.keywords
+    })));
+  }
   
   return products;
 };
