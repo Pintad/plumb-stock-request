@@ -70,6 +70,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
 
   useEffect(() => {
     if (initialData) {
+      console.log('Initialisation du formulaire avec les données:', {
+        name: initialData.name,
+        keywords: initialData.keywords
+      });
+      
       form.reset({
         name: initialData.name,
         reference: initialData.reference || '',
@@ -96,6 +101,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
+      console.log('Données du formulaire envoyées:', data);
+      
       const formattedData = { ...data };
       
       if (hasVariants && variants.length > 0) {
@@ -199,7 +206,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
               <FormLabel>Catégorie</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>

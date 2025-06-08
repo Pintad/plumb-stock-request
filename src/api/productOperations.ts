@@ -8,6 +8,8 @@ import { convertCatalogueToProducts } from '@/utils/catalogueConverter';
  */
 export const addProductToSupabase = async (product: Product): Promise<boolean> => {
   try {
+    console.log('Ajout du produit avec keywords:', product.keywords);
+    
     // Si le produit a des variantes
     if (product.variants && product.variants.length > 0) {
       // Insérer chaque variante comme une entrée distincte dans le catalogue
@@ -54,6 +56,8 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
  */
 export const updateProductInSupabase = async (product: Product): Promise<boolean> => {
   try {
+    console.log('Mise à jour du produit avec keywords:', product.keywords);
+    
     // D'abord, récupérer toutes les entrées existantes pour ce produit par désignation
     const { data: existingEntries, error: fetchError } = await supabase
       .from('catalogue')
