@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CatalogueItem } from '../types';
 import { toast } from '@/components/ui/use-toast';
@@ -6,19 +7,62 @@ export const fetchCatalogueItems = async (): Promise<CatalogueItem[]> => {
   try {
     console.log("Démarrage de la récupération du catalogue complet");
 
-    // Récupérer tous les éléments sans pagination
-    const { data, error } = await supabase
+    // Approche hybride : d'abord essayer de récupérer tout d'un coup
+    let { data, error } = await supabase
       .from('catalogue')
       .select('*');
-    
-    if (error) {
-      console.error("Erreur lors de la récupération du catalogue:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de chargement",
-        description: "Impossible de charger les produits depuis la base de données",
-      });
-      throw error;
+
+    // Si l'approche directe échoue, utiliser la pagination
+    if (error || !data) {
+      console.log("Récupération directe impossible, utilisation de la pagination");
+      
+      let allData: CatalogueItem[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMoreData = true;
+
+      while (hasMoreData) {
+        const { data: pageData, error: pageError } = await supabase
+          .from('catalogue')
+          .select('*')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (pageError) {
+          console.error(`Erreur lors de la récupération du catalogue (page ${page}):`, pageError);
+          if (page === 0) {
+            // Si la première page échoue, on lance l'erreur
+            toast({
+              variant: "destructive",
+              title: "Erreur de chargement",
+              description: "Impossible de charger les produits depuis la base de données",
+            });
+            throw pageError;
+          } else {
+            // Si une page suivante échoue, on continue avec ce qu'on a
+            console.log(`Arrêt de la pagination à la page ${page} à cause d'une erreur`);
+            break;
+          }
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allData = [...allData, ...pageData];
+          console.log(`Page ${page + 1}: ${pageData.length} éléments récupérés. Total actuel: ${allData.length}`);
+          page++;
+          
+          // Si la page n'est pas complète, on a atteint la fin des données
+          hasMoreData = pageData.length === pageSize;
+        } else {
+          hasMoreData = false;
+        }
+        
+        // Sécurité : éviter les boucles infinies
+        if (page > 100) {
+          console.log("Arrêt de la pagination après 100 pages pour éviter les boucles infinies");
+          break;
+        }
+      }
+      
+      data = allData;
     }
     
     const totalItemsCount = data?.length || 0;
