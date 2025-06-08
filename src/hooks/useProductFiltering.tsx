@@ -43,6 +43,9 @@ export const useProductFiltering = ({ products }: UseProductFilteringProps) => {
         // Search in super-category
         const matchesSuperCategory = product.superCategory ? product.superCategory.toLowerCase().includes(term) : false;
         
+        // Search in keywords (nouvelle fonctionnalité)
+        const matchesKeywords = product.keywords ? product.keywords.toLowerCase().includes(term) : false;
+        
         // Multi-word search: split search term and check if all words are present
         const searchWords = term.split(/\s+/).filter(word => word.length > 0);
         
@@ -55,13 +58,14 @@ export const useProductFiltering = ({ products }: UseProductFilteringProps) => {
           productRef,
           product.category?.toLowerCase() || '',
           product.superCategory?.toLowerCase() || '',
+          product.keywords?.toLowerCase() || '', // Ajout des mots-clés dans la recherche globale
           variantRefs
         ].join(' ');
         
         const matchesMultiWord = searchWords.every(word => allFields.includes(word));
         
         // A product matches if it matches at least one of the criteria
-        matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesMultiWord;
+        matchesSearch = matchesName || matchesReference || matchesCategory || matchesSuperCategory || matchesKeywords || matchesMultiWord;
       }
       
       // Filter by categories and super-categories

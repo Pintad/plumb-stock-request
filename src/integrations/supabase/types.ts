@@ -36,6 +36,7 @@ export type Database = {
           designation: string | null
           id: string
           image_url: string | null
+          keywords: string | null
           reference: string | null
           sur_categorie: string | null
           unite: string | null
@@ -46,6 +47,7 @@ export type Database = {
           designation?: string | null
           id?: string
           image_url?: string | null
+          keywords?: string | null
           reference?: string | null
           sur_categorie?: string | null
           unite?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           designation?: string | null
           id?: string
           image_url?: string | null
+          keywords?: string | null
           reference?: string | null
           sur_categorie?: string | null
           unite?: string | null

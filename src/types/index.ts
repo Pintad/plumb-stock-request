@@ -14,6 +14,7 @@ export interface Product {
   imageUrl?: string;
   category?: string;
   superCategory?: string; // Nouvelle propriété pour la sur-catégorie
+  keywords?: string; // Nouvelle propriété pour les mots-clés
   variants?: ProductVariant[];
   selectedVariantId?: string;
   stock?: number; // Adding stock property
@@ -72,6 +73,7 @@ export interface CatalogueItem {
   sur_categorie?: string; // Nouvelle propriété
   image_url?: string;
   variante?: string;
+  keywords?: string; // Nouvelle propriété pour les mots-clés
 }
 
 // Nouvelles interfaces pour la structure hiérarchique
