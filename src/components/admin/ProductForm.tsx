@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -36,7 +35,6 @@ interface ProductFormData {
   unit?: string;
   imageUrl?: string;
   category?: string;
-  keywords?: string;
   variants?: ProductVariantFormData[];
 }
 
@@ -64,24 +62,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
       unit: initialData?.unit || '',
       imageUrl: initialData?.imageUrl || '',
       category: initialData?.category || '',
-      keywords: initialData?.keywords || '',
     }
   });
 
   useEffect(() => {
     if (initialData) {
-      console.log('Initialisation du formulaire avec les données:', {
-        name: initialData.name,
-        keywords: initialData.keywords
-      });
-      
       form.reset({
         name: initialData.name,
         reference: initialData.reference || '',
         unit: initialData.unit || '',
         imageUrl: initialData.imageUrl || '',
         category: initialData.category || '',
-        keywords: initialData.keywords || '',
       });
       setVariants(initialData.variants || []);
       setHasVariants(initialData.variants && initialData.variants.length > 0);
@@ -101,8 +92,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
-      console.log('Données du formulaire envoyées:', data);
-      
       const formattedData = { ...data };
       
       if (hasVariants && variants.length > 0) {
@@ -206,7 +195,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
               <FormLabel>Catégorie</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                value={field.value}
+                defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -220,25 +209,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="keywords"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mots-clés</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Entrez les mots-clés séparés par des virgules (ex: raccord, laiton, diamètre 20)"
-                  className="resize-none"
-                  rows={3}
-                  {...field} 
-                />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}

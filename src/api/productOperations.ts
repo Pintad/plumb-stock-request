@@ -8,8 +8,6 @@ import { convertCatalogueToProducts } from '@/utils/catalogueConverter';
  */
 export const addProductToSupabase = async (product: Product): Promise<boolean> => {
   try {
-    console.log('Ajout du produit avec keywords:', product.keywords);
-    
     // Si le produit a des variantes
     if (product.variants && product.variants.length > 0) {
       // Insérer chaque variante comme une entrée distincte dans le catalogue
@@ -19,8 +17,7 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
         unite: variant.unit,
         categorie: product.category,
         image_url: product.imageUrl,
-        variante: variant.variantName,
-        keywords: product.keywords
+        variante: variant.variantName
       }));
       
       const { error } = await supabase
@@ -37,8 +34,7 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
           reference: product.reference,
           unite: product.unit,
           categorie: product.category,
-          image_url: product.imageUrl,
-          keywords: product.keywords
+          image_url: product.imageUrl
         });
       
       if (error) throw error;
@@ -56,24 +52,20 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
  */
 export const updateProductInSupabase = async (product: Product): Promise<boolean> => {
   try {
-    console.log('Mise à jour du produit avec keywords:', product.keywords);
-    
-    // D'abord, récupérer toutes les entrées existantes pour ce produit par désignation
-    const { data: existingEntries, error: fetchError } = await supabase
+    // Supprimer toutes les entrées existantes pour ce produit
+    const { error: deleteError } = await supabase
       .from('catalogue')
-      .select('id, designation')
-      .eq('designation', product.name);
+      .delete()
+      .eq('id', product.id);
     
-    if (fetchError) throw fetchError;
-    
-    // Supprimer toutes les entrées existantes pour ce produit par désignation
-    if (existingEntries && existingEntries.length > 0) {
-      const { error: deleteError } = await supabase
+    if (deleteError) {
+      // Si l'ID spécifique n'a pas été trouvé, essayons de supprimer par désignation
+      const { error: deleteByNameError } = await supabase
         .from('catalogue')
         .delete()
         .eq('designation', product.name);
       
-      if (deleteError) throw deleteError;
+      if (deleteByNameError) throw deleteByNameError;
     }
     
     // Réinsérer le produit avec ses nouvelles données
@@ -85,8 +77,7 @@ export const updateProductInSupabase = async (product: Product): Promise<boolean
         unite: variant.unit,
         categorie: product.category,
         image_url: product.imageUrl,
-        variante: variant.variantName,
-        keywords: product.keywords
+        variante: variant.variantName
       }));
       
       const { error } = await supabase
@@ -103,8 +94,7 @@ export const updateProductInSupabase = async (product: Product): Promise<boolean
           reference: product.reference,
           unite: product.unit,
           categorie: product.category,
-          image_url: product.imageUrl,
-          keywords: product.keywords
+          image_url: product.imageUrl
         });
       
       if (error) throw error;
