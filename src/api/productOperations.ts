@@ -54,20 +54,22 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
  */
 export const updateProductInSupabase = async (product: Product): Promise<boolean> => {
   try {
-    // Supprimer toutes les entrées existantes pour ce produit
-    const { error: deleteError } = await supabase
+    // D'abord, récupérer toutes les entrées existantes pour ce produit par désignation
+    const { data: existingEntries, error: fetchError } = await supabase
       .from('catalogue')
-      .delete()
-      .eq('id', product.id);
+      .select('id, designation')
+      .eq('designation', product.name);
     
-    if (deleteError) {
-      // Si l'ID spécifique n'a pas été trouvé, essayons de supprimer par désignation
-      const { error: deleteByNameError } = await supabase
+    if (fetchError) throw fetchError;
+    
+    // Supprimer toutes les entrées existantes pour ce produit par désignation
+    if (existingEntries && existingEntries.length > 0) {
+      const { error: deleteError } = await supabase
         .from('catalogue')
         .delete()
         .eq('designation', product.name);
       
-      if (deleteByNameError) throw deleteByNameError;
+      if (deleteError) throw deleteError;
     }
     
     // Réinsérer le produit avec ses nouvelles données
