@@ -1,61 +1,49 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CatalogueItem } from '../types';
 import { toast } from '@/components/ui/use-toast';
 
 export const fetchCatalogueItems = async (): Promise<CatalogueItem[]> => {
   try {
-    // Utilisation d'une stratégie de pagination pour récupérer tous les éléments
-    let allData: CatalogueItem[] = [];
-    let page = 0;
-    const pageSize = 1000; // Taille maximale par page
-    let hasMoreData = true;
+    console.log("Démarrage de la récupération du catalogue complet");
 
-    console.log("Démarrage de la récupération paginée du catalogue");
-
-    while (hasMoreData) {
-      const { data, error, count } = await supabase
-        .from('catalogue')
-        .select('*', { count: 'exact' })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-      
-      if (error) {
-        console.error("Erreur lors de la récupération du catalogue (page " + page + "):", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur de chargement",
-          description: "Impossible de charger les produits depuis la base de données",
-        });
-        throw error;
-      }
-      
-      if (data && data.length > 0) {
-        allData = [...allData, ...data];
-        console.log(`Page ${page + 1}: ${data.length} éléments récupérés. Total actuel: ${allData.length}`);
-        page++;
-        
-        // Si la page n'est pas complète, on a atteint la fin des données
-        hasMoreData = data.length === pageSize;
-      } else {
-        hasMoreData = false;
-      }
+    // Récupérer tous les éléments sans pagination
+    const { data, error } = await supabase
+      .from('catalogue')
+      .select('*');
+    
+    if (error) {
+      console.error("Erreur lors de la récupération du catalogue:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de chargement",
+        description: "Impossible de charger les produits depuis la base de données",
+      });
+      throw error;
     }
     
-    const totalItemsCount = allData.length;
+    const totalItemsCount = data?.length || 0;
     console.log(`Récupération terminée: ${totalItemsCount} éléments récupérés au total`);
     
+    // Vérifier si nous avons l'article spécifique mentionné
+    const specificItem = data?.find(item => item.reference === '34CO045MF080');
+    if (specificItem) {
+      console.log('Article 34CO045MF080 trouvé dans la base:', specificItem);
+    } else {
+      console.log('Article 34CO045MF080 non trouvé dans la base de données');
+    }
+    
     // Vérifier si nous avons bien la catégorie "cuivre à souder"
-    const cuivreItems = allData.filter(item => 
+    const cuivreItems = data?.filter(item => 
       item.categorie && item.categorie.toLowerCase().includes('cuivre')
-    );
+    ) || [];
     
-    console.log(`Nombre d'éléments dans la catégorie cuivre: ${cuivreItems?.length || 0}`);
+    console.log(`Nombre d'éléments dans la catégorie cuivre: ${cuivreItems.length}`);
     
-    if (cuivreItems && cuivreItems.length > 0) {
+    if (cuivreItems.length > 0) {
       console.log('Échantillon d\'éléments cuivre:', cuivreItems.slice(0, 3));
     }
     
-    return allData;
+    return data || [];
   } catch (error) {
     console.error("Erreur lors de la récupération du catalogue:", error);
     return [];
