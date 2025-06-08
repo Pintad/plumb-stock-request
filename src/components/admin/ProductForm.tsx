@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -35,6 +36,7 @@ interface ProductFormData {
   unit?: string;
   imageUrl?: string;
   category?: string;
+  keywords?: string;
   variants?: ProductVariantFormData[];
 }
 
@@ -62,6 +64,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
       unit: initialData?.unit || '',
       imageUrl: initialData?.imageUrl || '',
       category: initialData?.category || '',
+      keywords: initialData?.keywords || '',
     }
   });
 
@@ -73,6 +76,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         unit: initialData.unit || '',
         imageUrl: initialData.imageUrl || '',
         category: initialData.category || '',
+        keywords: initialData.keywords || '',
       });
       setVariants(initialData.variants || []);
       setHasVariants(initialData.variants && initialData.variants.length > 0);
@@ -209,6 +213,25 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="keywords"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mots-clés</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Entrez les mots-clés séparés par des virgules (ex: raccord, laiton, diamètre 20)"
+                  className="resize-none"
+                  rows={3}
+                  {...field} 
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

@@ -17,7 +17,8 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
         unite: variant.unit,
         categorie: product.category,
         image_url: product.imageUrl,
-        variante: variant.variantName
+        variante: variant.variantName,
+        keywords: product.keywords
       }));
       
       const { error } = await supabase
@@ -34,7 +35,8 @@ export const addProductToSupabase = async (product: Product): Promise<boolean> =
           reference: product.reference,
           unite: product.unit,
           categorie: product.category,
-          image_url: product.imageUrl
+          image_url: product.imageUrl,
+          keywords: product.keywords
         });
       
       if (error) throw error;
@@ -77,7 +79,8 @@ export const updateProductInSupabase = async (product: Product): Promise<boolean
         unite: variant.unit,
         categorie: product.category,
         image_url: product.imageUrl,
-        variante: variant.variantName
+        variante: variant.variantName,
+        keywords: product.keywords
       }));
       
       const { error } = await supabase
@@ -94,7 +97,8 @@ export const updateProductInSupabase = async (product: Product): Promise<boolean
           reference: product.reference,
           unite: product.unit,
           categorie: product.category,
-          image_url: product.imageUrl
+          image_url: product.imageUrl,
+          keywords: product.keywords
         });
       
       if (error) throw error;
