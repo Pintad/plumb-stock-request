@@ -2,21 +2,58 @@
 import { CatalogueItem, Product, ProductVariant } from '../types';
 
 export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Product[] => {
-  // Convertir chaque élément du catalogue en produit distinct
-  const products: Product[] = catalogueItems
-    .filter(item => item.designation) // Garder seulement les éléments avec une désignation
-    .map(item => ({
-      id: item.id,
-      name: item.designation!,
-      reference: item.reference,
-      unit: item.unite,
-      imageUrl: item.image_url,
-      category: item.categorie,
-      superCategory: item.sur_categorie,
-      keywords: item.keywords,
-      // Pas de variantes - chaque article est un produit à part entière
-      variants: undefined
-    }));
+  // Grouper les éléments par désignation ET catégorie pour identifier les vraies variantes
+  const groupedItems = catalogueItems.reduce((acc, item) => {
+    if (!item.designation) return acc;
+    
+    // Clé composite : nom + catégorie pour identifier les variantes d'un même produit
+    const key = `${item.designation}|||${item.categorie || 'NO_CATEGORY'}`;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<string, CatalogueItem[]>);
+
+  // Convertir chaque groupe en produit
+  const products: Product[] = Object.entries(groupedItems).map(([key, items]) => {
+    const baseItem = items[0];
+    
+    // Si il y a plusieurs éléments avec des références différentes, créer des variantes
+    if (items.length > 1) {
+      const variants: ProductVariant[] = items.map((item, index) => ({
+        id: item.id,
+        variantName: item.reference || item.variante || `Variante ${index + 1}`,
+        reference: item.reference || '',
+        unit: item.unite || ''
+      }));
+
+      return {
+        id: baseItem.id,
+        name: baseItem.designation!,
+        reference: undefined, // Pas de référence au niveau du produit principal
+        unit: undefined, // Pas d'unité au niveau du produit principal
+        imageUrl: baseItem.image_url,
+        category: baseItem.categorie,
+        superCategory: baseItem.sur_categorie,
+        keywords: baseItem.keywords,
+        variants: variants
+      };
+    } else {
+      // Si il n'y a qu'un seul élément, créer un produit simple
+      return {
+        id: baseItem.id,
+        name: baseItem.designation!,
+        reference: baseItem.reference,
+        unit: baseItem.unite,
+        imageUrl: baseItem.image_url,
+        category: baseItem.categorie,
+        superCategory: baseItem.sur_categorie,
+        keywords: baseItem.keywords,
+        variants: undefined
+      };
+    }
+  });
 
   console.log(`Conversion terminée: ${products.length} produits créés à partir de ${catalogueItems.length} éléments du catalogue`);
   
@@ -33,16 +70,17 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
       keywords: p.keywords
     })));
   }
-  
-  // Log pour vérifier les doublons de noms
-  const nameGroups = products.reduce((acc, product) => {
-    acc[product.name] = (acc[product.name] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const duplicateNames = Object.entries(nameGroups).filter(([name, count]) => count > 1);
-  if (duplicateNames.length > 0) {
-    console.log(`Articles avec le même nom (affichés séparément): ${duplicateNames.length}`, duplicateNames);
+
+  // Log pour vérifier le regroupement des variantes
+  const productsWithVariants = products.filter(p => p.variants && p.variants.length > 0);
+  console.log(`Produits avec variantes: ${productsWithVariants.length}`);
+  if (productsWithVariants.length > 0) {
+    console.log('Échantillon de produits avec variantes:', productsWithVariants.slice(0, 3).map(p => ({
+      name: p.name,
+      category: p.category,
+      variantsCount: p.variants?.length || 0,
+      variants: p.variants?.map(v => v.variantName)
+    })));
   }
   
   return products;
