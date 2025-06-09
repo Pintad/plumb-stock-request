@@ -1,20 +1,16 @@
 
 import React, { useState } from 'react';
-import { Package, Tag, Plus, Minus } from 'lucide-react';
 import { Product, ProductVariant } from '@/types';
 import { useAppContext } from '@/context/AppContext';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Import refactored components
+import ProductImage from '@/components/product-card/ProductImage';
+import ProductInfo from '@/components/product-card/ProductInfo';
+import VariantSelector from '@/components/product-card/VariantSelector';
+import QuantitySelector from '@/components/product-card/QuantitySelector';
+import AddToCartButton from '@/components/product-card/AddToCartButton';
 
 interface ProductCardProps {
   product: Product;
@@ -107,95 +103,39 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Card className="h-full">
       <CardContent className="pt-6">
-        <div className="mb-4 bg-gray-50 rounded-md p-4 flex justify-center">
-          {product.imageUrl ? (
-            <img 
-              src={product.imageUrl} 
-              alt={product.name} 
-              className="h-32 object-contain"
-            />
-          ) : (
-            <Package size={48} className="text-gray-400" />
-          )}
-        </div>
-        <div className="space-y-2">
-          <h3 className="font-medium text-base">{product.name}</h3>
-          
-          {/* Sélection de la variante si applicable */}
-          {product.variants && product.variants.length > 0 && (
-            <div className="pt-1">
-              <label className="text-xs text-gray-500 mb-1 block">Variante:</label>
-              <Select 
-                value={selectedVariant?.id} 
-                onValueChange={handleVariantChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choisir une variante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {product.variants.map(variant => (
-                    <SelectItem key={variant.id} value={variant.id}>
-                      {variant.variantName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
-          {currentReference && <p className="text-sm text-gray-500">Réf: {currentReference}</p>}
-          {currentUnit && <p className="text-xs text-gray-500">Unité: {currentUnit}</p>}
-          {product.category && (
-            <div className="flex items-center">
-              <Tag className="w-3 h-3 text-gray-500 mr-1" />
-              <Badge variant="outline" className="font-normal text-xs">
-                {product.category}
-              </Badge>
-            </div>
-          )}
-        </div>
+        <ProductImage 
+          imageUrl={product.imageUrl} 
+          name={product.name} 
+        />
+        
+        <ProductInfo 
+          name={product.name}
+          reference={currentReference}
+          unit={currentUnit}
+          category={product.category}
+        />
+        
+        <VariantSelector 
+          variants={product.variants}
+          selectedVariant={selectedVariant}
+          onVariantChange={handleVariantChange}
+        />
       </CardContent>
+      
       <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <div className={`flex items-center ${isMobile ? 'w-full' : 'w-24'}`}>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="icon" 
-            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-r-none`}
-            onClick={decrementQuantity}
-            aria-label="Diminuer la quantité"
-          >
-            <Minus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          </Button>
-          <Input
-            type="text"
-            value={inputValue}
-            onChange={handleQuantityChange}
-            onBlur={handleBlur}
-            className={`${isMobile ? 'h-10' : 'h-8'} text-center rounded-none border-x-0`}
-            min="1"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            aria-label="Quantité"
-          />
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="icon" 
-            className={`${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-l-none`}
-            onClick={incrementQuantity}
-            aria-label="Augmenter la quantité"
-          >
-            <Plus className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`} />
-          </Button>
-        </div>
-        <Button 
-          onClick={handleAddToCart}
-          className={`${isMobile ? 'w-full py-6' : 'w-full sm:w-auto'} bg-plumbing-blue hover:bg-blue-600`}
+        <QuantitySelector 
+          quantity={quantity}
+          inputValue={inputValue}
+          onQuantityChange={handleQuantityChange}
+          onBlur={handleBlur}
+          onIncrement={incrementQuantity}
+          onDecrement={decrementQuantity}
+        />
+        
+        <AddToCartButton 
+          onAddToCart={handleAddToCart}
           disabled={product.variants && product.variants.length > 0 && !selectedVariant}
-        >
-          Ajouter
-        </Button>
+        />
       </CardFooter>
     </Card>
   );
