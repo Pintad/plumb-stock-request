@@ -23,7 +23,7 @@ export const convertCatalogueToProducts = (catalogueItems: CatalogueItem[]): Pro
     if (items.length > 1) {
       const variants: ProductVariant[] = items.map((item, index) => ({
         id: item.id,
-        variantName: item.reference || item.variante || `Variante ${index + 1}`,
+        variantName: item.variante || item.reference || `Variante ${index + 1}`,
         reference: item.reference || '',
         unit: item.unite || ''
       }));
