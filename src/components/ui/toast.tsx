@@ -13,6 +13,7 @@ const ToastViewport = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
+    aria-live="polite"  // <-- Ajout important pour accessibilité et annonces
     className={cn(
       "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
       className
@@ -42,14 +43,14 @@ const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants> & {
-      duration?: number  // ajout de la prop duration
+      duration?: number
     }
->(({ className, variant, duration = 5000, ...props }, ref) => {
+>(({ className, variant, duration = 1000, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
-      duration={duration}  // passage de la durée ici
+      duration={duration}  // <-- Durée personnalisée (par défaut 1000ms)
       {...props}
     />
   )
