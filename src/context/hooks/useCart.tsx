@@ -56,6 +56,7 @@ export const useCart = () => {
     toast({
       title: "Produit ajouté au panier",
       description: `${quantity} × ${product.name}${product.selectedVariantId ? ` (${product.variants?.find(v => v.id === product.selectedVariantId)?.variantName})` : ''}`,
+      duration: 1000,
     });
   };
 
