@@ -71,22 +71,6 @@ export const Header = () => {
                     Commandes
                   </Link>
                   <Link 
-                    to="/admin/products" 
-                    className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/products' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
-                    }`}
-                  >
-                    Produits
-                  </Link>
-                  <Link 
-                    to="/admin/categories" 
-                    className={`text-sm font-medium transition-colors ${
-                      location.pathname === '/admin/categories' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
-                    }`}
-                  >
-                    Catégories
-                  </Link>
-                  <Link 
                     to="/admin/projects" 
                     className={`text-sm font-medium transition-colors ${
                       location.pathname === '/admin/projects' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
@@ -166,22 +150,6 @@ export const Header = () => {
                         <Link to="/admin/orders" className="flex cursor-pointer items-center">
                           <ClipboardList className="mr-2 h-4 w-4" />
                           <span>Commandes</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/products" className="flex cursor-pointer items-center">
-                          <img 
-                            src="/lovable-uploads/c40b3b5e-ab31-4815-a5c0-845fdff4a728.png" 
-                            alt="Pintade Icon" 
-                            className="mr-2 h-4 w-4" 
-                          />
-                          <span>Produits</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/categories" className="flex cursor-pointer items-center">
-                          <Tag className="mr-2 h-4 w-4" />
-                          <span>Catégories</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
