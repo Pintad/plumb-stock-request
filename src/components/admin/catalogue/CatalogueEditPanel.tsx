@@ -30,12 +30,14 @@ interface CatalogueEditPanelProps {
   item: GroupedCatalogueItem;
   onSave: (data: any) => void;
   onCancel: () => void;
+  isNewItem?: boolean;
 }
 
 export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
   item,
   onSave,
-  onCancel
+  onCancel,
+  isNewItem = false
 }) => {
   const [formData, setFormData] = useState({
     designation: '',
@@ -122,7 +124,9 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
         <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Modifier l'article</h2>
+          <h2 className="text-xl font-semibold">
+            {isNewItem ? 'Ajouter un nouvel article' : 'Modifier l\'article'}
+          </h2>
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <X className="h-4 w-4" />
           </Button>
@@ -315,7 +319,7 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
             Annuler
           </Button>
           <Button onClick={handleSave}>
-            Enregistrer
+            {isNewItem ? 'Ajouter' : 'Sauvegarder'}
           </Button>
         </div>
       </div>

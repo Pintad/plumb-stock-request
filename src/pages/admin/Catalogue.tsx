@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CatalogueTable } from '@/components/admin/catalogue/CatalogueTable';
 import { CatalogueFilters } from '@/components/admin/catalogue/CatalogueFilters';
 import { CataloguePagination } from '@/components/admin/catalogue/CataloguePagination';
-import { AddCatalogueForm } from '@/components/admin/catalogue/AddCatalogueForm';
+
 import { CatalogueEditPanel } from '@/components/admin/catalogue/CatalogueEditPanel';
 import { useCatalogueManagement } from '@/hooks/useCatalogueManagement';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -102,12 +102,22 @@ const Catalogue: React.FC = () => {
           </CardContent>
         </Card>
 
-      {showAddForm && (
-        <AddCatalogueForm
-          onSave={handleSave}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
+        {showAddForm && (
+          <CatalogueEditPanel
+            item={{
+              id: '',
+              designation: '',
+              categorie: '',
+              sur_categorie: 'RACCORD',
+              image_url: '',
+              keywords: '',
+              variants: [{ id: '', variante: '', reference: '', unite: 'U' }]
+            }}
+            onSave={handleSave}
+            onCancel={() => setShowAddForm(false)}
+            isNewItem={true}
+          />
+        )}
 
         {editingItem && (
           <CatalogueEditPanel
