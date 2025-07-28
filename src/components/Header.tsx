@@ -84,7 +84,7 @@ export const Header = () => {
                       location.pathname === '/admin/catalogue' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
                   >
-                    Catalogue
+                    Gestion
                   </Link>
                 </>
               )}
@@ -169,7 +169,7 @@ export const Header = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/admin/catalogue" className="flex cursor-pointer items-center">
                           <Package className="mr-2 h-4 w-4" />
-                          <span>Catalogue</span>
+                          <span>Gestion</span>
                         </Link>
                       </DropdownMenuItem>
                     </>

@@ -21,9 +21,12 @@ interface CatalogueFilters {
   keywords: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export const useCatalogueManagement = () => {
   const [catalogueItems, setCatalogueItems] = useState<CatalogueItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<CatalogueFilters>({
     search: '',
     categorie: '',
@@ -115,6 +118,19 @@ export const useCatalogueManagement = () => {
     });
   }, [catalogueItems, filters]);
 
+  // Pagination
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredItems.slice(startIndex, endIndex);
+  }, [filteredItems, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   const refreshItems = () => {
     fetchItems();
   };
@@ -134,13 +150,22 @@ export const useCatalogueManagement = () => {
     [catalogueItems]
   );
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return {
-    catalogueItems: filteredItems,
+    catalogueItems: paginatedItems,
+    filteredItems,
     loading,
     filters,
     setFilters,
     categories,
     surCategories,
+    currentPage,
+    totalPages,
+    handlePageChange,
     addItem,
     updateItem,
     deleteItem,
