@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Project } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { PasswordConfirmationDialog } from '@/components/ui/password-confirmation-dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -19,6 +19,7 @@ type SortDirection = 'asc' | 'desc';
 const ProjectTable = React.memo(({ projects, onEditProject, onDeleteProject, isLoading }: ProjectTableProps) => {
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [deleteProject, setDeleteProject] = useState<Project | null>(null);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -55,6 +56,13 @@ const ProjectTable = React.memo(({ projects, onEditProject, onDeleteProject, isL
       return 0;
     });
   }, [projects, sortField, sortDirection]);
+
+  const handleConfirmDelete = () => {
+    if (deleteProject) {
+      onDeleteProject(deleteProject.id);
+      setDeleteProject(null);
+    }
+  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -141,38 +149,29 @@ const ProjectTable = React.memo(({ projects, onEditProject, onDeleteProject, isL
                     <Edit className="h-4 w-4 mr-1" />
                     Modifier
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Supprimer
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous sûr de vouloir supprimer l'affaire "{project.name}" ({project.code}) ? 
-                          Cette action est irréversible.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => onDeleteProject(project.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Supprimer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setDeleteProject(project)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Supprimer
+                  </Button>
                 </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      
+      <PasswordConfirmationDialog
+        open={!!deleteProject}
+        onOpenChange={(open) => !open && setDeleteProject(null)}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer l'affaire"
+        description="Cette action est irréversible. Êtes-vous sûr de vouloir supprimer cette affaire ?"
+        itemName={deleteProject ? `${deleteProject.code} - ${deleteProject.name}` : undefined}
+      />
     </div>
   );
 });

@@ -11,17 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { PasswordConfirmationDialog } from '@/components/ui/password-confirmation-dialog';
 
 interface CatalogueVariant {
   id: string;
@@ -54,6 +44,7 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
   onDelete
 }) => {
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const [deleteItem, setDeleteItem] = React.useState<{id: string, name: string, type: 'item' | 'variant'} | null>(null);
 
   const toggleExpanded = (itemId: string) => {
     const newExpanded = new Set(expandedItems);
@@ -63,6 +54,13 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
       newExpanded.add(itemId);
     }
     setExpandedItems(newExpanded);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteItem) {
+      onDelete(deleteItem.id);
+      setDeleteItem(null);
+    }
   };
   if (loading) {
     return (
@@ -198,28 +196,13 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer "{item.designation}" et toutes ses variantes ?
-                            Cette action est irréversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDelete(item.id)}>
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setDeleteItem({id: item.id, name: item.designation, type: 'item'})}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -262,27 +245,13 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Supprimer la variante</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Êtes-vous sûr de vouloir supprimer cette variante ?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(variant.id)}>
-                              Supprimer
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setDeleteItem({id: variant.id, name: variant.variante || 'Variante', type: 'variant'})}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -291,6 +260,19 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
           ))}
         </TableBody>
       </Table>
+      
+      <PasswordConfirmationDialog
+        open={!!deleteItem}
+        onOpenChange={(open) => !open && setDeleteItem(null)}
+        onConfirm={handleConfirmDelete}
+        title={deleteItem?.type === 'item' ? "Supprimer l'article" : "Supprimer la variante"}
+        description={
+          deleteItem?.type === 'item' 
+            ? "Cette action supprimera l'article et toutes ses variantes. Cette action est irréversible."
+            : "Cette action supprimera cette variante. Cette action est irréversible."
+        }
+        itemName={deleteItem?.name}
+      />
     </div>
   );
 };
