@@ -89,16 +89,37 @@ export const useCatalogueManagement = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('catalogue')
-        .select('*')
-        .order('designation', { ascending: true });
+      
+      // Récupérer TOUS les articles avec pagination
+      let allItems: CatalogueItem[] = [];
+      let from = 0;
+      const limit = 1000; // Limite par batch
+      let hasMore = true;
 
-      if (error) throw error;
-      setCatalogueItems(data || []);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('catalogue')
+          .select('*')
+          .range(from, from + limit - 1)
+          .order('designation', { ascending: true });
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allItems = [...allItems, ...data];
+          from += limit;
+          hasMore = data.length === limit; // Continue si on a récupéré le maximum
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`📦 Total d'articles récupérés: ${allItems.length}`);
+      setCatalogueItems(allItems);
       
       // Grouper les articles par designation, keywords et image_url
-      const grouped = groupCatalogueItems(data || []);
+      const grouped = groupCatalogueItems(allItems);
+      console.log(`🔗 Articles groupés: ${grouped.length} groupes`);
       setGroupedItems(grouped);
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
@@ -193,9 +214,10 @@ export const useCatalogueManagement = () => {
     fetchItems();
   };
 
+  // Ne charger qu'une seule fois au montage
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, []); // Pas de dépendances pour éviter les re-fetches
 
   // Extraction des valeurs uniques pour les filtres
   const categories = useMemo(() => 
