@@ -13,7 +13,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
-  const { projects, addProject, deleteProject, loadProjects, isLoading: projectsLoading, error: projectsError } = useProjects();
+  const { projects, addProject, updateProject, deleteProject, loadProjects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const { 
     cart, 
     customItems,
@@ -69,6 +69,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteCategory,
         projects,
         addProject,
+        updateProject,
         deleteProject,
         loadProjects,
         cart,

@@ -8,16 +8,18 @@ import { Plus } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Project } from '@/types';
 import ProjectCSVImport from '@/components/admin/ProjectCSVImport';
-import ProjectList from '@/components/admin/projects/ProjectList';
+import ProjectTable from '@/components/admin/projects/ProjectTable';
 import ProjectSearch from '@/components/admin/projects/ProjectSearch';
 import AddProjectForm from '@/components/admin/projects/AddProjectForm';
+import ProjectEditDialog from '@/components/admin/projects/ProjectEditDialog';
 
 const AdminProjects = () => {
   // Context and state
-  const { projects, deleteProject, addProject, loadProjects, isLoading } = useAppContext();
+  const { projects, deleteProject, addProject, updateProject, loadProjects, isLoading } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProject, setNewProject] = useState({ code: '', name: '' });
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   
   // Memoize filtered projects to prevent unnecessary re-renders
   const filteredProjects = useMemo(() => {
@@ -68,6 +70,15 @@ const AdminProjects = () => {
     });
   }, [deleteProject]);
 
+  const handleEditProject = useCallback((project: Project) => {
+    setEditingProject(project);
+  }, []);
+
+  const handleUpdateProject = useCallback(async (project: Project) => {
+    await updateProject(project);
+    setEditingProject(null);
+  }, [updateProject]);
+
   const handleProjectChange = useCallback((project: { code: string; name: string }) => {
     setNewProject(project);
   }, []);
@@ -112,8 +123,9 @@ const AdminProjects = () => {
                     onCancel={handleToggleAddForm}
                   />
                 )}
-                <ProjectList 
+                <ProjectTable 
                   projects={filteredProjects}
+                  onEditProject={handleEditProject}
                   onDeleteProject={handleDeleteProject}
                   isLoading={isLoading}
                 />
@@ -124,6 +136,13 @@ const AdminProjects = () => {
             <ProjectCSVImport />
           </div>
         </div>
+
+        <ProjectEditDialog
+          project={editingProject}
+          isOpen={!!editingProject}
+          onClose={() => setEditingProject(null)}
+          onSave={handleUpdateProject}
+        />
       </main>
     </div>
   );

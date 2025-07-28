@@ -62,6 +62,7 @@ export interface Project {
   id: string;
   code: string;
   name: string;
+  created_at?: string;
 }
 
 export interface CatalogueItem {

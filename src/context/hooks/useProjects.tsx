@@ -29,7 +29,7 @@ export const useProjects = (initialProjects: Project[] = []) => {
       const { data, error } = await supabase
         .from('affaires')
         .select('*')
-        .order('name', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -38,6 +38,7 @@ export const useProjects = (initialProjects: Project[] = []) => {
           id: item.id,
           code: item.code,
           name: item.name,
+          created_at: item.created_at,
         }));
         setProjects(projectsFromDB);
         setError(null);
@@ -109,6 +110,40 @@ export const useProjects = (initialProjects: Project[] = []) => {
     }
   }, []);
 
+  const updateProject = useCallback(async (project: Project) => {
+    try {
+      const { data, error } = await supabase
+        .from('affaires')
+        .update({ code: project.code, name: project.name })
+        .eq('id', project.id)
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const updatedProject = data[0];
+        setProjects(prev => 
+          prev.map(p => 
+            p.id === updatedProject.id 
+              ? { id: updatedProject.id, code: updatedProject.code, name: updatedProject.name }
+              : p
+          )
+        );
+        toast({
+          title: "Affaire modifiée",
+          description: "L'affaire a été modifiée avec succès.",
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification d'une affaire:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'affaire dans la base de données.",
+        variant: "destructive",
+      });
+    }
+  }, []);
+
   const deleteProject = useCallback(async (projectId: string) => {
     try {
       const { error } = await supabase
@@ -132,6 +167,7 @@ export const useProjects = (initialProjects: Project[] = []) => {
   return {
     projects,
     addProject,
+    updateProject,
     deleteProject,
     loadProjects,
     isLoading,

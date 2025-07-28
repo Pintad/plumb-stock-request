@@ -16,6 +16,7 @@ export interface AppContextType {
   deleteCategory: (category: string) => void;
   projects: Project[];
   addProject: (project: Project) => Promise<void>;
+  updateProject: (project: Project) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   loadProjects: (showToastOnError?: boolean) => Promise<void>;
   cart: CartItem[];
