@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
     initialData?.variants && initialData.variants.length > 0 ? true : false
   );
   const [variants, setVariants] = useState<ProductVariantFormData[]>(
-    initialData?.variants || []
+    initialData?.variants?.map(v => ({
+      id: v.id,
+      variantName: v.variantName,
+      reference: v.reference,
+      unit: v.unit
+    })) || []
   );
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.imageUrl);
   
@@ -74,7 +78,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         imageUrl: initialData.imageUrl || '',
         category: initialData.category || '',
       });
-      setVariants(initialData.variants || []);
+      setVariants(initialData.variants?.map(v => ({
+        id: v.id,
+        variantName: v.variantName,
+        reference: v.reference,
+        unit: v.unit
+      })) || []);
       setHasVariants(initialData.variants && initialData.variants.length > 0);
       setImagePreview(initialData.imageUrl);
     }
@@ -88,7 +97,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form]);
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
@@ -158,18 +167,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
     }
   };
 
-  const validateImageUrl = (url: string): boolean => {
-    if (!url) return false;
-    // Regex simple pour valider que la chaîne ressemble à une URL
-    const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocole
-      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // nom de domaine
-      '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OU adresse IP
-      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port et chemin
-      '(\\?[;&a-z\\d%_.~+=-]*)?'+ // paramètres de requête
-      '(\\#[-a-z\\d_]*)?$','i'); // fragment
-    return urlPattern.test(url);
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -195,7 +192,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
               <FormLabel>Catégorie</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -350,21 +347,29 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, initialData, onCanc
         {imagePreview && (
           <div className="mt-2">
             <p className="text-xs text-gray-500 mb-1">Aperçu de l'image:</p>
-            <div className="relative h-32 border rounded p-1 flex items-center justify-center">
+            <div className="relative h-32 border rounded p-1 flex items-center justify-center bg-white">
               <img 
                 src={imagePreview} 
                 alt="Aperçu du produit" 
                 className="h-full max-h-32 object-contain" 
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  document.getElementById('image-error')?.classList.remove('hidden');
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  const errorDiv = target.parentElement?.querySelector('.image-error');
+                  if (errorDiv) {
+                    errorDiv.classList.remove('hidden');
+                  }
                 }}
                 onLoad={(e) => {
-                  e.currentTarget.style.display = 'block';
-                  document.getElementById('image-error')?.classList.add('hidden');
+                  const target = e.currentTarget;
+                  target.style.display = 'block';
+                  const errorDiv = target.parentElement?.querySelector('.image-error');
+                  if (errorDiv) {
+                    errorDiv.classList.add('hidden');
+                  }
                 }}
               />
-              <div id="image-error" className="hidden text-center text-gray-400">
+              <div className="image-error hidden text-center text-gray-400">
                 <ImageIcon size={32} className="mx-auto mb-2" />
                 <p className="text-xs">Impossible de charger l'image</p>
               </div>
