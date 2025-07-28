@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
-import { ShoppingCart, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase } from 'lucide-react';
+import { ShoppingCart, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -77,6 +77,14 @@ export const Header = () => {
                     }`}
                   >
                     Affaires
+                  </Link>
+                  <Link 
+                    to="/admin/catalogue" 
+                    className={`text-sm font-medium transition-colors ${
+                      location.pathname === '/admin/catalogue' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
+                    }`}
+                  >
+                    Catalogue
                   </Link>
                 </>
               )}
@@ -156,6 +164,12 @@ export const Header = () => {
                         <Link to="/admin/projects" className="flex cursor-pointer items-center">
                           <Briefcase className="mr-2 h-4 w-4" />
                           <span>Affaires</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/catalogue" className="flex cursor-pointer items-center">
+                          <Package className="mr-2 h-4 w-4" />
+                          <span>Catalogue</span>
                         </Link>
                       </DropdownMenuItem>
                     </>
