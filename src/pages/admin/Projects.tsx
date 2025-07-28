@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Project } from '@/types';
-import ProjectCSVImport from '@/components/admin/ProjectCSVImport';
 import ProjectTable from '@/components/admin/projects/ProjectTable';
 import ProjectSearch from '@/components/admin/projects/ProjectSearch';
 import AddProjectForm from '@/components/admin/projects/AddProjectForm';
@@ -48,7 +47,7 @@ const AdminProjects = () => {
     }
 
     const projectToAdd: Project = {
-      id: `temp-${Date.now()}`,
+      id: '', // Supabase will generate the ID
       code: newProject.code,
       name: newProject.name,
     };
@@ -56,10 +55,6 @@ const AdminProjects = () => {
     await addProject(projectToAdd);
     setNewProject({ code: '', name: '' });
     setShowAddForm(false);
-    toast({
-      title: "Affaire ajoutée",
-      description: "L'affaire a été ajoutée avec succès",
-    });
   }, [newProject, addProject]);
 
   const handleDeleteProject = useCallback(async (projectId: string) => {
@@ -95,46 +90,41 @@ const AdminProjects = () => {
       <Header />
       <main className="flex-1 container px-4 py-6">
         <h1 className="text-2xl font-bold mb-6">Gestion des affaires</h1>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-xl">Liste des affaires</CardTitle>
-                  <Button 
-                    onClick={handleToggleAddForm}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Plus className="mr-2" size={18} />
-                    {showAddForm ? 'Annuler' : 'Ajouter une affaire'}
-                  </Button>
-                </div>
-                <ProjectSearch 
-                  searchTerm={searchTerm}
-                  onSearchChange={handleSearchChange}
+        <div className="w-full">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-xl">Liste des affaires</CardTitle>
+                <Button 
+                  onClick={handleToggleAddForm}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="mr-2" size={18} />
+                  {showAddForm ? 'Annuler' : 'Ajouter une affaire'}
+                </Button>
+              </div>
+              <ProjectSearch 
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+              />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {showAddForm && (
+                <AddProjectForm
+                  newProject={newProject}
+                  onProjectChange={handleProjectChange}
+                  onSubmit={handleAddProject}
+                  onCancel={handleToggleAddForm}
                 />
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {showAddForm && (
-                  <AddProjectForm
-                    newProject={newProject}
-                    onProjectChange={handleProjectChange}
-                    onSubmit={handleAddProject}
-                    onCancel={handleToggleAddForm}
-                  />
-                )}
-                <ProjectTable 
-                  projects={filteredProjects}
-                  onEditProject={handleEditProject}
-                  onDeleteProject={handleDeleteProject}
-                  isLoading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="col-span-1">
-            <ProjectCSVImport />
-          </div>
+              )}
+              <ProjectTable 
+                projects={filteredProjects}
+                onEditProject={handleEditProject}
+                onDeleteProject={handleDeleteProject}
+                isLoading={isLoading}
+              />
+            </CardContent>
+          </Card>
         </div>
 
         <ProjectEditDialog

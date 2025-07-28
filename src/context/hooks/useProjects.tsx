@@ -74,30 +74,35 @@ export const useProjects = (initialProjects: Project[] = []) => {
 
   const addProject = useCallback(async (project: Project) => {
     try {
-      // Insert project into Supabase if it does not exist
+      // Insert project into Supabase without specifying ID (let Supabase generate it)
       const { data, error } = await supabase
         .from('affaires')
-        .upsert({ id: project.id, code: project.code, name: project.name }, { onConflict: 'code' })
+        .insert({ code: project.code, name: project.name })
         .select();
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Use returned project id if different (e.g. new insert)
         const returnedProject = data[0];
         const newProject = {
           id: returnedProject.id,
           code: returnedProject.code,
           name: returnedProject.name,
+          created_at: returnedProject.created_at,
         };
 
         setProjects(prev => {
-          // Avoid duplicates by code or id
-          const exists = prev.some((p) => p.id === newProject.id || p.code === newProject.code);
+          // Avoid duplicates by code
+          const exists = prev.some((p) => p.code === newProject.code);
           if (exists) {
-            return prev.map((p) => (p.id === newProject.id || p.code === newProject.code ? newProject : p));
+            return prev.map((p) => (p.code === newProject.code ? newProject : p));
           }
           return [...prev, newProject];
+        });
+        
+        toast({
+          title: "Affaire ajoutée",
+          description: "L'affaire a été ajoutée avec succès",
         });
       }
     } catch (error) {
