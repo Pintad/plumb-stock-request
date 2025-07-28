@@ -9,8 +9,25 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+interface CatalogueVariant {
+  id: string;
+  variante?: string;
+  reference?: string;
+  unite?: string;
+}
+
+interface GroupedCatalogueItem {
+  id: string;
+  designation: string;
+  categorie?: string;
+  sur_categorie?: string;
+  image_url?: string;
+  keywords?: string;
+  variants: CatalogueVariant[];
+}
+
 interface CatalogueEditPanelProps {
-  item: any;
+  item: GroupedCatalogueItem;
   onSave: (data: any) => void;
   onCancel: () => void;
 }
@@ -24,13 +41,11 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
     designation: '',
     categorie: '',
     sur_categorie: '',
-    variante: '',
-    reference: '',
-    unite: '',
     image_url: '',
     keywords: ''
   });
 
+  const [variants, setVariants] = useState<CatalogueVariant[]>([]);
   const [keywordsList, setKeywordsList] = useState<string[]>([]);
   const [newKeyword, setNewKeyword] = useState('');
 
@@ -40,12 +55,11 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
         designation: item.designation || '',
         categorie: item.categorie || '',
         sur_categorie: item.sur_categorie || '',
-        variante: item.variante || '',
-        reference: item.reference || '',
-        unite: item.unite || '',
         image_url: item.image_url || '',
         keywords: item.keywords || ''
       });
+
+      setVariants(item.variants || []);
 
       if (item.keywords) {
         setKeywordsList(item.keywords.split(',').map((k: string) => k.trim()).filter(Boolean));
@@ -71,10 +85,33 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
     setKeywordsList(prev => prev.filter(k => k !== keyword));
   };
 
+  const addVariant = () => {
+    const newVariant = {
+      id: `temp-${Date.now()}`,
+      variante: '',
+      reference: '',
+      unite: 'U'
+    };
+    setVariants(prev => [...prev, newVariant]);
+  };
+
+  const updateVariant = (index: number, field: keyof CatalogueVariant, value: string) => {
+    setVariants(prev => prev.map((variant, i) => 
+      i === index ? { ...variant, [field]: value } : variant
+    ));
+  };
+
+  const removeVariant = (index: number) => {
+    if (variants.length > 1) {
+      setVariants(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleSave = () => {
     const finalData = {
       ...formData,
-      keywords: keywordsList.join(', ')
+      keywords: keywordsList.join(', '),
+      variants: variants
     };
     onSave(finalData);
   };
@@ -116,12 +153,12 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
             </CardContent>
           </Card>
 
-          {/* Informations principales */}
+           {/* Informations principales */}
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Informations principales</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="designation">Désignation *</Label>
                 <Input
@@ -131,45 +168,76 @@ export const CatalogueEditPanel: React.FC<CatalogueEditPanelProps> = ({
                   placeholder="Nom du produit"
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div>
-                <Label htmlFor="variante">Variante</Label>
-                <Input
-                  id="variante"
-                  value={formData.variante}
-                  onChange={(e) => handleInputChange('variante', e.target.value)}
-                  placeholder="Couleur, taille..."
-                />
+          {/* Variantes */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Variantes</CardTitle>
+                <Button onClick={addVariant} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Ajouter une variante
+                </Button>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {variants.map((variant, index) => (
+                <div key={variant.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Variante {index + 1}</span>
+                    {variants.length > 1 && (
+                      <Button
+                        onClick={() => removeVariant(index)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Nom de la variante</Label>
+                      <Input
+                        value={variant.variante || ''}
+                        onChange={(e) => updateVariant(index, 'variante', e.target.value)}
+                        placeholder="Couleur, taille..."
+                      />
+                    </div>
 
-              <div>
-                <Label htmlFor="reference">Référence</Label>
-                <Input
-                  id="reference"
-                  value={formData.reference}
-                  onChange={(e) => handleInputChange('reference', e.target.value)}
-                  placeholder="REF-001"
-                />
-              </div>
+                    <div>
+                      <Label>Référence</Label>
+                      <Input
+                        value={variant.reference || ''}
+                        onChange={(e) => updateVariant(index, 'reference', e.target.value)}
+                        placeholder="REF-001"
+                      />
+                    </div>
 
-              <div>
-                <Label htmlFor="unite">Unité</Label>
-                <Select
-                  value={formData.unite}
-                  onValueChange={(value) => handleInputChange('unite', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une unité" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unites.map((unite) => (
-                      <SelectItem key={unite} value={unite}>
-                        {unite}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    <div>
+                      <Label>Unité</Label>
+                      <Select
+                        value={variant.unite || 'U'}
+                        onValueChange={(value) => updateVariant(index, 'unite', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Unité" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {unites.map((unite) => (
+                            <SelectItem key={unite} value={unite}>
+                              {unite}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 

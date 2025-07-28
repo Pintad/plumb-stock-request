@@ -14,6 +14,23 @@ interface CatalogueItem {
   keywords?: string;
 }
 
+interface CatalogueVariant {
+  id: string;
+  variante?: string;
+  reference?: string;
+  unite?: string;
+}
+
+interface GroupedCatalogueItem {
+  id: string; // ID du premier item du groupe
+  designation: string;
+  categorie?: string;
+  sur_categorie?: string;
+  image_url?: string;
+  keywords?: string;
+  variants: CatalogueVariant[];
+}
+
 interface CatalogueFilters {
   search: string;
   categorie: string;
@@ -23,8 +40,43 @@ interface CatalogueFilters {
 
 const ITEMS_PER_PAGE = 20;
 
+// Fonction pour grouper les articles par designation, keywords et image_url
+const groupCatalogueItems = (items: CatalogueItem[]): GroupedCatalogueItem[] => {
+  const groupMap = new Map<string, GroupedCatalogueItem>();
+  
+  items.forEach(item => {
+    // Créer une clé de groupement basée sur designation, keywords et image_url
+    const groupKey = `${item.designation}|${item.keywords || ''}|${item.image_url || ''}`;
+    
+    if (!groupMap.has(groupKey)) {
+      // Créer un nouveau groupe
+      groupMap.set(groupKey, {
+        id: item.id,
+        designation: item.designation,
+        categorie: item.categorie,
+        sur_categorie: item.sur_categorie,
+        image_url: item.image_url,
+        keywords: item.keywords,
+        variants: []
+      });
+    }
+    
+    // Ajouter la variante au groupe
+    const group = groupMap.get(groupKey)!;
+    group.variants.push({
+      id: item.id,
+      variante: item.variante,
+      reference: item.reference,
+      unite: item.unite
+    });
+  });
+  
+  return Array.from(groupMap.values()).sort((a, b) => a.designation.localeCompare(b.designation));
+};
+
 export const useCatalogueManagement = () => {
   const [catalogueItems, setCatalogueItems] = useState<CatalogueItem[]>([]);
+  const [groupedItems, setGroupedItems] = useState<GroupedCatalogueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<CatalogueFilters>({
@@ -44,6 +96,10 @@ export const useCatalogueManagement = () => {
 
       if (error) throw error;
       setCatalogueItems(data || []);
+      
+      // Grouper les articles par designation, keywords et image_url
+      const grouped = groupCatalogueItems(data || []);
+      setGroupedItems(grouped);
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
       toast.error('Erreur lors du chargement des articles');
@@ -103,11 +159,13 @@ export const useCatalogueManagement = () => {
   };
 
   const filteredItems = useMemo(() => {
-    return catalogueItems.filter(item => {
+    return groupedItems.filter(item => {
       const matchesSearch = !filters.search || 
         item.designation?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.reference?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.variante?.toLowerCase().includes(filters.search.toLowerCase());
+        item.variants.some(v => 
+          v.reference?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          v.variante?.toLowerCase().includes(filters.search.toLowerCase())
+        );
 
       const matchesCategorie = !filters.categorie || item.categorie === filters.categorie;
       const matchesSurCategorie = !filters.sur_categorie || item.sur_categorie === filters.sur_categorie;
@@ -116,7 +174,7 @@ export const useCatalogueManagement = () => {
 
       return matchesSearch && matchesCategorie && matchesSurCategorie && matchesKeywords;
     });
-  }, [catalogueItems, filters]);
+  }, [groupedItems, filters]);
 
   // Pagination
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);

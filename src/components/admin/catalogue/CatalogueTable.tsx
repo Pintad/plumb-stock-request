@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Package } from 'lucide-react';
+import { Edit2, Trash2, Package, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,22 +23,27 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-interface CatalogueItem {
+interface CatalogueVariant {
+  id: string;
+  variante?: string;
+  reference?: string;
+  unite?: string;
+}
+
+interface GroupedCatalogueItem {
   id: string;
   designation: string;
   categorie?: string;
   sur_categorie?: string;
-  variante?: string;
-  reference?: string;
-  unite?: string;
   image_url?: string;
   keywords?: string;
+  variants: CatalogueVariant[];
 }
 
 interface CatalogueTableProps {
-  items: CatalogueItem[];
+  items: GroupedCatalogueItem[];
   loading: boolean;
-  onEdit: (item: CatalogueItem) => void;
+  onEdit: (item: GroupedCatalogueItem) => void;
   onDelete: (id: string) => void;
 }
 
@@ -48,6 +53,17 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
   onEdit,
   onDelete
 }) => {
+  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+
+  const toggleExpanded = (itemId: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId);
+    } else {
+      newExpanded.add(itemId);
+    }
+    setExpandedItems(newExpanded);
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -104,86 +120,174 @@ export const CatalogueTable: React.FC<CatalogueTableProps> = ({
         </TableHeader>
         <TableBody>
           {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={item.image_url} alt={item.designation} />
-                  <AvatarFallback>
-                    <Package className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="font-medium">{item.designation}</div>
-                  {item.variante && (
-                    <div className="text-sm text-muted-foreground">
-                      Variante: {item.variante}
+            <React.Fragment key={item.id}>
+              <TableRow>
+                <TableCell>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={item.image_url} alt={item.designation} />
+                    <AvatarFallback>
+                      <Package className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleExpanded(item.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {expandedItems.has(item.id) ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        }
+                      </button>
+                      <div className="font-medium">{item.designation}</div>
                     </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  {item.sur_categorie && (
-                    <Badge variant="outline" className="text-xs">
-                      {item.sur_categorie}
+                    <div className="text-sm text-muted-foreground ml-6">
+                      {item.variants.length} variante{item.variants.length > 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {item.sur_categorie && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.sur_categorie}
+                      </Badge>
+                    )}
+                    {item.categorie && (
+                      <div className="text-sm text-muted-foreground">
+                        {item.categorie}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {item.variants.slice(0, 2).map((variant, index) => (
+                      <code key={index} className="text-sm bg-muted px-2 py-1 rounded block">
+                        {variant.reference || 'N/A'}
+                      </code>
+                    ))}
+                    {item.variants.length > 2 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{item.variants.length - 2} autres...
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {[...new Set(item.variants.map(v => v.unite || 'U'))].map((unite, index) => (
+                      <Badge key={index} variant="secondary">
+                        {unite}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {renderKeywords(item.keywords)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(item)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer "{item.designation}" et toutes ses variantes ?
+                            Cette action est irréversible.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDelete(item.id)}>
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+              
+              {/* Lignes des variantes si développé */}
+              {expandedItems.has(item.id) && item.variants.map((variant) => (
+                <TableRow key={variant.id} className="bg-muted/50">
+                  <TableCell className="pl-8">
+                    <div className="w-6 h-6 rounded bg-muted flex items-center justify-center">
+                      <Package className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="pl-8">
+                    <div className="text-sm">
+                      {variant.variante || 'Variante standard'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground">—</div>
+                  </TableCell>
+                  <TableCell>
+                    <code className="text-sm bg-background px-2 py-1 rounded">
+                      {variant.reference || 'N/A'}
+                    </code>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {variant.unite || 'U'}
                     </Badge>
-                  )}
-                  {item.categorie && (
-                    <div className="text-sm text-muted-foreground">
-                      {item.categorie}
-                    </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <code className="text-sm bg-muted px-2 py-1 rounded">
-                  {item.reference || 'N/A'}
-                </code>
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">
-                  {item.unite || 'U'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {renderKeywords(item.keywords)}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(item)}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground">—</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit({...item, variants: [variant]})}
+                      >
+                        <Edit2 className="h-4 w-4" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Supprimer l'article</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous sûr de vouloir supprimer "{item.designation}" ?
-                          Cette action est irréversible.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(item.id)}>
-                          Supprimer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </TableCell>
-            </TableRow>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer la variante</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Êtes-vous sûr de vouloir supprimer cette variante ?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(variant.id)}>
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>
