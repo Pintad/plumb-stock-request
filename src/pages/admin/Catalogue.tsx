@@ -9,6 +9,7 @@ import { CataloguePagination } from '@/components/admin/catalogue/CataloguePagin
 
 import { CatalogueEditPanel } from '@/components/admin/catalogue/CatalogueEditPanel';
 import { useCatalogueManagement } from '@/hooks/useCatalogueManagement';
+import { useCatalogueOperations } from '@/hooks/useCatalogueOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Catalogue: React.FC = () => {
@@ -24,11 +25,15 @@ const Catalogue: React.FC = () => {
     currentPage,
     totalPages,
     handlePageChange,
-    addItem,
-    updateItem,
-    deleteItem,
     refreshItems
   } = useCatalogueManagement();
+  
+  const { 
+    addCatalogueItem, 
+    updateCatalogueItem, 
+    deleteCatalogueItem,
+    deleteVariant 
+  } = useCatalogueOperations();
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -40,17 +45,21 @@ const Catalogue: React.FC = () => {
 
   const handleSave = async (data: any) => {
     if (editingItem) {
-      await updateItem(editingItem.id, data);
+      await updateCatalogueItem(editingItem, data);
       setEditingItem(null);
     } else {
-      await addItem(data);
+      await addCatalogueItem(data);
       setShowAddForm(false);
     }
     refreshItems();
   };
 
   const handleDelete = async (id: string) => {
-    await deleteItem(id);
+    // Trouver l'item complet pour la suppression
+    const itemToDelete = catalogueItems.find(item => item.id === id);
+    if (itemToDelete) {
+      await deleteCatalogueItem(itemToDelete);
+    }
     refreshItems();
   };
 
