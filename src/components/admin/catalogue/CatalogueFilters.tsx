@@ -63,14 +63,14 @@ export const CatalogueFilters: React.FC<CatalogueFiltersProps> = ({
           </div>
 
           <Select
-            value={filters.categorie}
-            onValueChange={(value) => updateFilter('categorie', value)}
+            value={filters.categorie || 'all'}
+            onValueChange={(value) => updateFilter('categorie', value === 'all' ? '' : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Catégorie" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toutes les catégories</SelectItem>
+              <SelectItem value="all">Toutes les catégories</SelectItem>
               {categories.map((categorie) => (
                 <SelectItem key={categorie} value={categorie}>
                   {categorie}
@@ -80,14 +80,14 @@ export const CatalogueFilters: React.FC<CatalogueFiltersProps> = ({
           </Select>
 
           <Select
-            value={filters.sur_categorie}
-            onValueChange={(value) => updateFilter('sur_categorie', value)}
+            value={filters.sur_categorie || 'all'}
+            onValueChange={(value) => updateFilter('sur_categorie', value === 'all' ? '' : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Sur-catégorie" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toutes les sur-catégories</SelectItem>
+              <SelectItem value="all">Toutes les sur-catégories</SelectItem>
               {surCategories.map((surCategorie) => (
                 <SelectItem key={surCategorie} value={surCategorie}>
                   {surCategorie}
