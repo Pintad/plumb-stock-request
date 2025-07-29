@@ -1,0 +1,251 @@
+import React, { useRef } from 'react';
+import { Download, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { exportDataToExcel } from '@/lib/utils/excelUtils';
+import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
+
+interface CatalogueImportExportProps {
+  onImportComplete: () => void;
+}
+
+export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ onImportComplete }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportCSV = async () => {
+    try {
+      // Récupérer toutes les données du catalogue
+      const { data: catalogueData, error } = await supabase
+        .from('catalogue')
+        .select('*')
+        .order('designation');
+
+      if (error) throw error;
+
+      if (!catalogueData || catalogueData.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Aucune donnée",
+          description: "Aucun article trouvé dans le catalogue"
+        });
+        return;
+      }
+
+      // Configuration des colonnes pour l'export
+      const columns = [
+        { header: 'ID', key: 'id', width: 20 },
+        { header: 'Désignation', key: 'designation', width: 30 },
+        { header: 'Catégorie', key: 'categorie', width: 20 },
+        { header: 'Sur Catégorie', key: 'sur_categorie', width: 20 },
+        { header: 'Variante', key: 'variante', width: 20 },
+        { header: 'Référence', key: 'reference', width: 20 },
+        { header: 'Unité', key: 'unite', width: 15 },
+        { header: 'URL Image', key: 'image_url', width: 30 },
+        { header: 'Mots-clés', key: 'keywords', width: 25 }
+      ];
+
+      // Exporter vers Excel
+      await exportDataToExcel(
+        catalogueData,
+        columns,
+        `catalogue_export_${new Date().toISOString().split('T')[0]}`,
+        'Catalogue'
+      );
+
+      toast({
+        title: "Export réussi",
+        description: `${catalogueData.length} articles exportés avec succès`
+      });
+
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'export",
+        description: "Une erreur est survenue lors de l'export"
+      });
+    }
+  };
+
+  const handleImportCSV = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    readCSVFile(file, (content) => {
+      processCSVImport(content);
+    });
+
+    // Reset input
+    event.target.value = '';
+  };
+
+  const processCSVImport = async (csvContent: string) => {
+    try {
+      const { headers, lines } = parseCSV(csvContent);
+      
+      if (lines.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Fichier vide",
+          description: "Le fichier CSV ne contient aucune donnée"
+        });
+        return;
+      }
+
+      // Vérifier si la colonne ID est présente
+      const hasIdColumn = headers.includes('id');
+      const processedItems = [];
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const values = line.split(',').map(value => value.trim().replace(/^"|"$/g, ''));
+        const item: any = {};
+
+        // Mapper les colonnes
+        headers.forEach((header, index) => {
+          if (values[index] !== undefined) {
+            item[header] = values[index] || null;
+          }
+        });
+
+        // Validation des champs obligatoires
+        if (!item.designation) {
+          console.warn('Ligne ignorée: désignation manquante', item);
+          continue;
+        }
+
+        processedItems.push(item);
+      }
+
+      if (processedItems.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Aucun article valide",
+          description: "Aucun article valide trouvé dans le fichier CSV"
+        });
+        return;
+      }
+
+      // Traitement selon la présence de l'ID
+      if (hasIdColumn) {
+        await updateExistingItems(processedItems);
+      } else {
+        await createNewItems(processedItems);
+      }
+
+      onImportComplete();
+
+    } catch (error) {
+      showImportError(error);
+    }
+  };
+
+  const updateExistingItems = async (items: any[]) => {
+    try {
+      let updatedCount = 0;
+      let errorCount = 0;
+
+      for (const item of items) {
+        if (!item.id) continue;
+
+        const { error } = await supabase
+          .from('catalogue')
+          .update({
+            designation: item.designation,
+            categorie: item.categorie || null,
+            sur_categorie: item.sur_categorie || 'RACCORD',
+            variante: item.variante || null,
+            reference: item.reference || null,
+            unite: item.unite || null,
+            image_url: item.image_url || null,
+            keywords: item.keywords || null
+          })
+          .eq('id', item.id);
+
+        if (error) {
+          console.error('Erreur mise à jour article:', error);
+          errorCount++;
+        } else {
+          updatedCount++;
+        }
+      }
+
+      if (updatedCount > 0) {
+        showImportSuccess(updatedCount, 'articles mis à jour');
+      }
+
+      if (errorCount > 0) {
+        toast({
+          variant: "destructive",
+          title: "Import partiellement réussi",
+          description: `${updatedCount} articles mis à jour, ${errorCount} erreurs`
+        });
+      }
+
+    } catch (error) {
+      showImportError(error);
+    }
+  };
+
+  const createNewItems = async (items: any[]) => {
+    try {
+      const itemsToInsert = items.map(item => ({
+        designation: item.designation,
+        categorie: item.categorie || null,
+        sur_categorie: item.sur_categorie || 'RACCORD',
+        variante: item.variante || null,
+        reference: item.reference || null,
+        unite: item.unite || null,
+        image_url: item.image_url || null,
+        keywords: item.keywords || null
+      }));
+
+      const { error } = await supabase
+        .from('catalogue')
+        .insert(itemsToInsert);
+
+      if (error) throw error;
+
+      showImportSuccess(itemsToInsert.length, 'nouveaux articles créés');
+
+    } catch (error) {
+      showImportError(error);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Button 
+        variant="outline" 
+        onClick={handleExportCSV}
+        className="flex items-center gap-2"
+      >
+        <Download className="h-4 w-4" />
+        Exporter CSV
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        onClick={handleImportCSV}
+        className="flex items-center gap-2"
+      >
+        <Upload className="h-4 w-4" />
+        Importer CSV
+      </Button>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+    </div>
+  );
+};

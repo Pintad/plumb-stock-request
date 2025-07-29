@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CatalogueTable } from '@/components/admin/catalogue/CatalogueTable';
 import { CatalogueFilters } from '@/components/admin/catalogue/CatalogueFilters';
 import { CataloguePagination } from '@/components/admin/catalogue/CataloguePagination';
-
+import { CatalogueImportExport } from '@/components/admin/catalogue/CatalogueImportExport';
 import { CatalogueEditPanel } from '@/components/admin/catalogue/CatalogueEditPanel';
 import { useCatalogueManagement } from '@/hooks/useCatalogueManagement';
 import { useCatalogueOperations } from '@/hooks/useCatalogueOperations';
@@ -77,10 +77,13 @@ const Catalogue: React.FC = () => {
               Gérez vos articles, catégories et références
             </p>
           </div>
-          <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            {isMobile ? 'Ajouter' : 'Nouvel Article'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <CatalogueImportExport onImportComplete={refreshItems} />
+            <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              {isMobile ? 'Ajouter' : 'Nouvel Article'}
+            </Button>
+          </div>
         </div>
 
         <CatalogueFilters filters={filters} onFiltersChange={setFilters} />
