@@ -16,6 +16,7 @@ const OrderDetailsPrintExport = ({ order, isMobile }: OrderDetailsPrintExportPro
       categorie: article.category || '',
       sur_categorie: article.superCategory || '',
       designation: article.name || '',
+      reference: article.reference || '',
       unite: article.unit || '',
       quantite: article.quantity || 0
     }));
@@ -24,11 +25,13 @@ const OrderDetailsPrintExport = ({ order, isMobile }: OrderDetailsPrintExportPro
       { header: 'Catégorie', key: 'categorie', width: 20 },
       { header: 'Sur Catégorie', key: 'sur_categorie', width: 20 },
       { header: 'Désignation', key: 'designation', width: 30 },
+      { header: 'Référence', key: 'reference', width: 20 },
       { header: 'Unité', key: 'unite', width: 15 },
       { header: 'Quantité', key: 'quantite', width: 15 }
     ];
 
-    const filename = `commande_${order.commandeid}_${new Date().toISOString().split('T')[0]}`;
+    // Construire le nom du fichier avec le format demandé
+    const filename = order.titre_affichage || `commande_${order.commandeid}`;
     
     try {
       await exportDataToExcel(data, columns, filename, 'Articles');
