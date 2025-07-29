@@ -9,13 +9,53 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Users, Plus, Edit, Trash2, Database, Shield } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Settings, 
+  Users, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Database, 
+  Shield, 
+  Mail, 
+  Activity, 
+  Key, 
+  Eye, 
+  EyeOff, 
+  RefreshCw, 
+  Check, 
+  X, 
+  Clock,
+  AlertTriangle,
+  Filter,
+  Download,
+  Upload,
+  Lock
+} from 'lucide-react';
 
 interface DatabaseUser {
   id: string;
   email: string;
   nom: string;
   role: string;
+  last_sign_in_at?: string;
+}
+
+interface TableStats {
+  name: string;
+  count: number;
+  lastModified: string;
+}
+
+interface ActivityLog {
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+  details: string;
 }
 
 const SuperAdmin: React.FC = () => {
@@ -23,7 +63,22 @@ const SuperAdmin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<DatabaseUser | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [showSupabaseCredentials, setShowSupabaseCredentials] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [tableStats, setTableStats] = useState<TableStats[]>([]);
+  const [emailConfig, setEmailConfig] = useState({
+    senderEmail: 'magasinier@example.com',
+    enabled: true
+  });
+  const [securitySettings, setSecuritySettings] = useState({
+    sessionDuration: 24,
+    confirmDeletion: true,
+    advancedSecurity: false
+  });
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     nom: '',
@@ -34,7 +89,107 @@ const SuperAdmin: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
+    loadTableStats();
+    loadActivityLogs();
   }, []);
+
+  const loadTableStats = async () => {
+    try {
+      const tables = ['utilisateurs', 'commandes', 'catalogue', 'affaires'] as const;
+      const stats: TableStats[] = [];
+      
+      for (const table of tables) {
+        const { count, error } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true });
+        
+        if (!error) {
+          stats.push({
+            name: table,
+            count: count || 0,
+            lastModified: new Date().toLocaleDateString()
+          });
+        }
+      }
+      
+      setTableStats(stats);
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+    }
+  };
+
+  const loadActivityLogs = async () => {
+    // Simulation des logs d'activité - à remplacer par une vraie table de logs
+    const mockLogs: ActivityLog[] = [
+      {
+        id: '1',
+        user: 'Admin',
+        action: 'Création utilisateur',
+        timestamp: new Date().toLocaleString(),
+        details: 'Nouvel utilisateur ouvrier créé'
+      },
+      {
+        id: '2',
+        user: 'Admin',
+        action: 'Modification commande',
+        timestamp: new Date(Date.now() - 3600000).toLocaleString(),
+        details: 'Statut commande mis à jour'
+      }
+    ];
+    setActivityLogs(mockLogs);
+  };
+
+  const testConnection = async () => {
+    setConnectionStatus('testing');
+    try {
+      const { data, error } = await supabase.from('utilisateurs').select('count').limit(1);
+      if (error) throw error;
+      setConnectionStatus('success');
+      toast({
+        title: "Connexion réussie",
+        description: "La connexion à Supabase fonctionne correctement"
+      });
+    } catch (error) {
+      setConnectionStatus('error');
+      toast({
+        variant: "destructive",
+        title: "Erreur de connexion",
+        description: "Impossible de se connecter à Supabase"
+      });
+    }
+    setTimeout(() => setConnectionStatus('idle'), 3000);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(
+        selectedUser.id,
+        { password: formData.password }
+      );
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Mot de passe réinitialisé avec succès"
+      });
+
+      setIsResetPasswordDialogOpen(false);
+      setFormData({ email: '', nom: '', role: 'ouvrier', password: '' });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error.message || "Impossible de réinitialiser le mot de passe"
+      });
+    }
+  };
+
+  const filteredUsers = users.filter(user => 
+    roleFilter === 'all' || user.role === roleFilter
+  );
 
   const loadUsers = async () => {
     try {
@@ -218,132 +373,458 @@ const SuperAdmin: React.FC = () => {
         <h1 className="text-3xl font-bold">Administration Système</h1>
       </div>
 
-      {/* Carte de gestion des utilisateurs */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            <CardTitle>Gestion des Utilisateurs</CardTitle>
-          </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Nouvel Utilisateur
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
-                <DialogDescription>
-                  Remplissez les informations pour créer un nouveau compte utilisateur.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="email@exemple.com"
-                  />
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Utilisateurs
+          </TabsTrigger>
+          <TabsTrigger value="database" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            Base de données
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Paramètres
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Sécurité
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Onglet 1: Gestion des utilisateurs */}
+        <TabsContent value="users" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  <CardTitle>🔹 Gestion des utilisateurs</CardTitle>
                 </div>
-                <div>
-                  <Label htmlFor="nom">Nom</Label>
-                  <Input
-                    id="nom"
-                    value={formData.nom}
-                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    placeholder="Nom complet"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Mot de passe temporaire"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Rôle</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
+                <div className="flex items-center gap-4">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-48">
+                      <Filter className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Filtrer par rôle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ouvrier">Ouvrier</SelectItem>
-                      <SelectItem value="magasinier">Magasinier</SelectItem>
-                      <SelectItem value="administrateur">Administrateur</SelectItem>
+                      <SelectItem value="all">Tous les rôles</SelectItem>
+                      <SelectItem value="ouvrier">Ouvriers</SelectItem>
+                      <SelectItem value="magasinier">Magasiniers</SelectItem>
+                      <SelectItem value="administrateur">Administrateurs</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Nouvel Utilisateur
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
+                        <DialogDescription>
+                          Remplissez les informations pour créer un nouveau compte utilisateur.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="email@exemple.com"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="nom">Nom</Label>
+                          <Input
+                            id="nom"
+                            value={formData.nom}
+                            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                            placeholder="Nom complet"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="password">Mot de passe</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="Mot de passe temporaire"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="role">Rôle</Label>
+                          <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ouvrier">Ouvrier</SelectItem>
+                              <SelectItem value="magasinier">Magasinier</SelectItem>
+                              <SelectItem value="administrateur">Administrateur</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                          Annuler
+                        </Button>
+                        <Button onClick={handleCreateUser}>
+                          Créer
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={handleCreateUser}>
-                  Créer
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-4">Chargement...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nom}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {getRoleLabel(user.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(user)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-4">Chargement...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nom</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Dernière connexion</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.nom}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Jamais'}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setFormData({ ...formData, password: '' });
+                                setIsResetPasswordDialogOpen(true);
+                              }}
+                              title="Réinitialiser le mot de passe"
+                            >
+                              <Key className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(user)}
+                              title="Modifier l'utilisateur"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                              title="Supprimer l'utilisateur"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Dialog d'édition */}
+        {/* Onglet 2: Connexion et données Supabase */}
+        <TabsContent value="database" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                🔹 Connexion et données Supabase
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Paramètres de connexion</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label>URL Supabase</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type={showSupabaseCredentials ? "text" : "password"}
+                        value="https://rmwojbenogfywrwanhpk.supabase.co"
+                        disabled
+                        className="bg-muted"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowSupabaseCredentials(!showSupabaseCredentials)}
+                      >
+                        {showSupabaseCredentials ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Clé API</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type={showSupabaseCredentials ? "text" : "password"}
+                        value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        disabled
+                        className="bg-muted"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowSupabaseCredentials(!showSupabaseCredentials)}
+                      >
+                        {showSupabaseCredentials ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={testConnection}
+                      disabled={connectionStatus === 'testing'}
+                      className="flex items-center gap-2"
+                    >
+                      {connectionStatus === 'testing' ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : connectionStatus === 'success' ? (
+                        <Check className="w-4 h-4" />
+                      ) : connectionStatus === 'error' ? (
+                        <X className="w-4 h-4" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                      Test de connexion
+                    </Button>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Modifier les paramètres
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-4">Statut des tables</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tableStats.map((table) => (
+                    <Card key={table.name}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium capitalize">{table.name}</h4>
+                            <p className="text-sm text-muted-foreground">{table.count} entrées</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Dernière modification</p>
+                            <p className="text-sm font-medium">{table.lastModified}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Onglet 3: Paramètres de l'application */}
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                🔹 Paramètres de l'application
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Configuration des emails</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="sender-email">Email d'envoi automatique du magasinier</Label>
+                    <Input
+                      id="sender-email"
+                      type="email"
+                      value={emailConfig.senderEmail}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, senderEmail: e.target.value })}
+                      placeholder="magasinier@exemple.com"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="email-enabled">Activer l'envoi automatique d'emails</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Les emails seront envoyés automatiquement lors de certaines actions
+                      </p>
+                    </div>
+                    <Switch
+                      id="email-enabled"
+                      checked={emailConfig.enabled}
+                      onCheckedChange={(checked) => setEmailConfig({ ...emailConfig, enabled: checked })}
+                    />
+                  </div>
+                  <Button className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Sauvegarder la configuration
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Onglet 4: Sécurité & activité */}
+        <TabsContent value="security" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  🔹 Journal d'activité
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                      <Activity className="w-4 h-4 mt-1 text-muted-foreground" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{log.action}</span>
+                          <span className="text-xs text-muted-foreground">{log.timestamp}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{log.details}</p>
+                        <p className="text-xs text-muted-foreground">Par: {log.user}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" className="w-full mt-4">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exporter le journal
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  🔹 Paramètres de sécurité
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label htmlFor="session-duration">Durée de session (heures)</Label>
+                  <Input
+                    id="session-duration"
+                    type="number"
+                    value={securitySettings.sessionDuration}
+                    onChange={(e) => setSecuritySettings({ 
+                      ...securitySettings, 
+                      sessionDuration: parseInt(e.target.value) || 24 
+                    })}
+                    min="1"
+                    max="168"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="confirm-deletion">Confirmation de suppression</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Demander une confirmation avant toute suppression
+                    </p>
+                  </div>
+                  <Switch
+                    id="confirm-deletion"
+                    checked={securitySettings.confirmDeletion}
+                    onCheckedChange={(checked) => setSecuritySettings({ 
+                      ...securitySettings, 
+                      confirmDeletion: checked 
+                    })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="advanced-security">Sécurité avancée</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Activer les contrôles de sécurité renforcés
+                    </p>
+                  </div>
+                  <Switch
+                    id="advanced-security"
+                    checked={securitySettings.advancedSecurity}
+                    onCheckedChange={(checked) => setSecuritySettings({ 
+                      ...securitySettings, 
+                      advancedSecurity: checked 
+                    })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium mb-2">Rôles et permissions</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm">Ouvrier</span>
+                      <Badge variant="secondary">Lecture catalogue, Créer commandes</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm">Magasinier</span>
+                      <Badge variant="default">Gestion commandes, Catalogue</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm">Administrateur</span>
+                      <Badge variant="destructive">Accès complet</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <Button className="w-full flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Sauvegarder les paramètres
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -397,44 +878,36 @@ const SuperAdmin: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Autres cartes d'administration */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="w-5 h-5" />
-              Base de Données
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Configuration et gestion de la base de données Supabase.
-            </p>
-            <Button variant="outline" className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Paramètres de Base
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
+            <DialogDescription>
+              Définissez un nouveau mot de passe pour {selectedUser?.nom}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-password">Nouveau mot de passe</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Nouveau mot de passe"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsResetPasswordDialogOpen(false)}>
+              Annuler
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Sécurité
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Gestion des permissions et de la sécurité système.
-            </p>
-            <Button variant="outline" className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Configurer
+            <Button onClick={handleResetPassword}>
+              Réinitialiser
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
