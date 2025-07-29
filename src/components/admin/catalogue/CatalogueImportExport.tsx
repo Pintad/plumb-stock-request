@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
 import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
+import * as ExcelJS from 'exceljs';
 
 interface CatalogueImportExportProps {
   onImportComplete: () => void;
@@ -76,12 +77,79 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
     const file = event.target.files?.[0];
     if (!file) return;
 
-    readCSVFile(file, (content) => {
-      processCSVImport(content);
-    });
+    // Vérifier l'extension du fichier
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+    if (!isCSV && !isExcel) {
+      toast({
+        variant: "destructive",
+        title: "Format de fichier incorrect",
+        description: "Veuillez charger un fichier CSV ou Excel (.xlsx)"
+      });
+      return;
+    }
+
+    if (isCSV) {
+      readCSVFile(file, (content) => {
+        processCSVImport(content);
+      });
+    } else if (isExcel) {
+      readExcelFile(file);
+    }
 
     // Reset input
     event.target.value = '';
+  };
+
+  const readExcelFile = async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      
+      const worksheet = workbook.getWorksheet(1); // Premier onglet
+      if (!worksheet) {
+        toast({
+          variant: "destructive",
+          title: "Fichier invalide",
+          description: "Le fichier Excel ne contient aucune feuille de calcul"
+        });
+        return;
+      }
+
+      // Convertir en format CSV pour réutiliser la logique existante
+      const csvContent = convertWorksheetToCSV(worksheet);
+      processCSVImport(csvContent);
+
+    } catch (error) {
+      console.error('Erreur lecture Excel:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de lecture",
+        description: "Impossible de lire le fichier Excel"
+      });
+    }
+  };
+
+  const convertWorksheetToCSV = (worksheet: ExcelJS.Worksheet): string => {
+    const csvLines: string[] = [];
+    
+    worksheet.eachRow((row, rowNumber) => {
+      const values: string[] = [];
+      row.eachCell((cell, colNumber) => {
+        const value = cell.value?.toString() || '';
+        // Échapper les virgules et guillemets
+        const escapedValue = value.includes(',') || value.includes('"') 
+          ? `"${value.replace(/"/g, '""')}"` 
+          : value;
+        values[colNumber - 1] = escapedValue;
+      });
+      csvLines.push(values.join(','));
+    });
+    
+    return csvLines.join('\n');
   };
 
   const processCSVImport = async (csvContent: string) => {
@@ -227,7 +295,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         className="flex items-center gap-2"
       >
         <Download className="h-4 w-4" />
-        Exporter CSV
+        Exporter Excel
       </Button>
       
       <Button 
@@ -236,13 +304,13 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         className="flex items-center gap-2"
       >
         <Upload className="h-4 w-4" />
-        Importer CSV
+        Importer Excel/CSV
       </Button>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv"
+        accept=".csv,.xlsx,.xls"
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
