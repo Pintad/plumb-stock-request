@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
-import { Download, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Download, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
@@ -13,6 +14,9 @@ interface CatalogueImportExportProps {
 
 export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ onImportComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
 
   const handleExportCSV = async () => {
     try {
@@ -73,7 +77,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -91,12 +95,27 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       return;
     }
 
-    if (isCSV) {
-      readCSVFile(file, (content) => {
-        processCSVImport(content);
+    // Démarrer l'import avec indicateur de progression
+    setIsImporting(true);
+    setImportProgress(0);
+    setCurrentStep('Lecture du fichier...');
+
+    try {
+      if (isCSV) {
+        readCSVFile(file, (content) => {
+          processCSVImport(content);
+        });
+      } else if (isExcel) {
+        await readExcelFile(file);
+      }
+    } catch (error) {
+      console.error('Erreur lors du traitement du fichier:', error);
+      setIsImporting(false);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors du traitement du fichier"
       });
-    } else if (isExcel) {
-      readExcelFile(file);
     }
 
     // Reset input
@@ -163,9 +182,13 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
   const processCSVImport = async (csvContent: string) => {
     try {
+      setCurrentStep('Analyse du fichier...');
+      setImportProgress(10);
+      
       const { headers, lines } = parseCSV(csvContent);
       
       if (lines.length === 0) {
+        setIsImporting(false);
         toast({
           variant: "destructive",
           title: "Fichier vide",
@@ -173,6 +196,9 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         });
         return;
       }
+
+      setCurrentStep('Traitement des données...');
+      setImportProgress(20);
 
       // Normaliser les en-têtes pour qu'ils correspondent aux colonnes DB
       const normalizedHeaders = headers.map(header => {
@@ -194,7 +220,10 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       const hasIdColumn = normalizedHeaders.includes('id');
       const processedItems = [];
 
-      for (const line of lines) {
+      setCurrentStep(`Validation de ${lines.length} lignes...`);
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         if (!line.trim()) continue;
 
         // Parser la ligne CSV correctement en gérant les guillemets
@@ -216,9 +245,16 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         }
 
         processedItems.push(item);
+        
+        // Mettre à jour le progrès de validation
+        if (i % 10 === 0) {
+          const progress = 20 + ((i / lines.length) * 30);
+          setImportProgress(progress);
+        }
       }
 
       if (processedItems.length === 0) {
+        setIsImporting(false);
         toast({
           variant: "destructive",
           title: "Aucun article valide",
@@ -227,6 +263,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         return;
       }
 
+      setImportProgress(50);
       console.log('Articles traités pour import:', processedItems);
       console.log('Colonne ID présente:', hasIdColumn);
 
@@ -239,19 +276,30 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         console.log(`Articles avec ID: ${itemsWithId.length}, Articles sans ID: ${itemsWithoutId.length}`);
         
         if (itemsWithId.length > 0) {
-          await updateExistingItems(itemsWithId);
+          setCurrentStep(`Mise à jour de ${itemsWithId.length} articles...`);
+          await updateExistingItems(itemsWithId, processedItems.length);
         }
         if (itemsWithoutId.length > 0) {
-          await createNewItems(itemsWithoutId);
+          setCurrentStep(`Création de ${itemsWithoutId.length} nouveaux articles...`);
+          await createNewItems(itemsWithoutId, processedItems.length);
         }
       } else {
-        await createNewItems(processedItems);
+        setCurrentStep(`Création de ${processedItems.length} nouveaux articles...`);
+        await createNewItems(processedItems, processedItems.length);
       }
 
-      onImportComplete();
+      setImportProgress(100);
+      setCurrentStep('Import terminé !');
+      
+      // Délai pour montrer le succès avant de masquer
+      setTimeout(() => {
+        setIsImporting(false);
+        onImportComplete();
+      }, 1000);
 
     } catch (error) {
       console.error('Erreur processCSVImport:', error);
+      setIsImporting(false);
       showImportError(error);
     }
   };
@@ -290,12 +338,13 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
     return result;
   };
 
-  const updateExistingItems = async (items: any[]) => {
+  const updateExistingItems = async (items: any[], totalItems?: number) => {
     try {
       let updatedCount = 0;
       let errorCount = 0;
 
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         if (!item.id) continue;
 
         const { error } = await supabase
@@ -318,6 +367,12 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         } else {
           updatedCount++;
         }
+
+        // Mettre à jour le progrès
+        if (i % 5 === 0) {
+          const progress = 50 + ((i / items.length) * 25);
+          setImportProgress(progress);
+        }
       }
 
       if (updatedCount > 0) {
@@ -337,7 +392,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
     }
   };
 
-  const createNewItems = async (items: any[]) => {
+  const createNewItems = async (items: any[], totalItems?: number) => {
     try {
       const itemsToInsert = items.map(item => ({
         designation: item.designation,
@@ -350,11 +405,26 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         keywords: item.keywords || null
       }));
 
-      const { error } = await supabase
-        .from('catalogue')
-        .insert(itemsToInsert);
+      // Traiter par batch pour les gros imports
+      const batchSize = 50;
+      let insertedCount = 0;
+      
+      for (let i = 0; i < itemsToInsert.length; i += batchSize) {
+        const batch = itemsToInsert.slice(i, i + batchSize);
+        
+        const { error } = await supabase
+          .from('catalogue')
+          .insert(batch);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        insertedCount += batch.length;
+        
+        // Mettre à jour le progrès
+        const progress = 50 + ((insertedCount / itemsToInsert.length) * 40);
+        setImportProgress(progress);
+        setCurrentStep(`Création en cours... ${insertedCount}/${itemsToInsert.length}`);
+      }
 
       showImportSuccess(itemsToInsert.length, 'nouveaux articles créés');
 
@@ -364,24 +434,42 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
   };
 
   return (
-    <div className="flex gap-2">
-      <Button 
-        variant="outline" 
-        onClick={handleExportCSV}
-        className="flex items-center gap-2"
-      >
-        <Download className="h-4 w-4" />
-        Exporter Excel
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        onClick={handleImportCSV}
-        className="flex items-center gap-2"
-      >
-        <Upload className="h-4 w-4" />
-        Importer Excel
-      </Button>
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          onClick={handleExportCSV}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Exporter Excel
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={handleImportCSV}
+          className="flex items-center gap-2"
+          disabled={isImporting}
+        >
+          {isImporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          Importer Excel
+        </Button>
+      </div>
+
+      {/* Indicateur de progression */}
+      {isImporting && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span>{currentStep}</span>
+            <span>{Math.round(importProgress)}%</span>
+          </div>
+          <Progress value={importProgress} className="w-full" />
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
