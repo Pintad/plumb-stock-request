@@ -228,10 +228,22 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       }
 
       console.log('Articles traités pour import:', processedItems);
+      console.log('Colonne ID présente:', hasIdColumn);
 
       // Traitement selon la présence de l'ID
       if (hasIdColumn) {
-        await updateExistingItems(processedItems);
+        // Séparer les articles avec et sans ID
+        const itemsWithId = processedItems.filter(item => item.id && item.id.trim() !== '');
+        const itemsWithoutId = processedItems.filter(item => !item.id || item.id.trim() === '');
+        
+        console.log(`Articles avec ID: ${itemsWithId.length}, Articles sans ID: ${itemsWithoutId.length}`);
+        
+        if (itemsWithId.length > 0) {
+          await updateExistingItems(itemsWithId);
+        }
+        if (itemsWithoutId.length > 0) {
+          await createNewItems(itemsWithoutId);
+        }
       } else {
         await createNewItems(processedItems);
       }
