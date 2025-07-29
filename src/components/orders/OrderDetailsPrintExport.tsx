@@ -3,6 +3,7 @@ import React from 'react';
 import { Order, CartItem } from '@/types';
 import { FileDown, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { exportDataToExcel } from '@/lib/utils/excelUtils';
 
 interface OrderDetailsPrintExportProps {
   order: Order;
@@ -10,33 +11,30 @@ interface OrderDetailsPrintExportProps {
 }
 
 const OrderDetailsPrintExport = ({ order, isMobile }: OrderDetailsPrintExportProps) => {
-  const exportToCSV = () => {
-    const header = ['ID', 'Utilisateur', 'Date', 'Affaire', 'Statut', 'Produit', 'Référence', 'Quantité', 'Complété'];
-    let csvContent = header.join(',') + '\n';
+  const exportToExcel = async () => {
+    const data = order.articles.map(article => ({
+      categorie: article.category || '',
+      sur_categorie: article.superCategory || '',
+      designation: article.name || '',
+      unite: article.unit || '',
+      quantite: article.quantity || 0
+    }));
+
+    const columns = [
+      { header: 'Catégorie', key: 'categorie', width: 20 },
+      { header: 'Sur Catégorie', key: 'sur_categorie', width: 20 },
+      { header: 'Désignation', key: 'designation', width: 30 },
+      { header: 'Unité', key: 'unite', width: 15 },
+      { header: 'Quantité', key: 'quantite', width: 15 }
+    ];
+
+    const filename = `commande_${order.commandeid}_${new Date().toISOString().split('T')[0]}`;
     
-    order.articles.forEach(article => {
-      const row = [
-        order.commandeid,
-        order.clientname || '',
-        order.datecommande || '',
-        order.projectCode || '', 
-        order.termine || '',
-        article.name || '',
-        article.reference || '',
-        article.quantity || '0',
-        article.completed ? 'Oui' : 'Non'
-      ].map(value => `"${value}"`).join(',');
-      csvContent += row + '\n';
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `commande_${order.commandeid}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await exportDataToExcel(data, columns, filename, 'Articles');
+    } catch (error) {
+      console.error('Erreur lors de l\'export Excel:', error);
+    }
   };
 
   const printOrder = () => {
@@ -121,10 +119,10 @@ const OrderDetailsPrintExport = ({ order, isMobile }: OrderDetailsPrintExportPro
       <Button 
         variant="outline" 
         className="flex items-center justify-center gap-2 w-full md:w-auto"
-        onClick={exportToCSV}
+        onClick={exportToExcel}
       >
         <FileDown className="h-4 w-4" />
-        {isMobile ? 'CSV' : 'Exporter CSV'}
+        {isMobile ? 'Excel' : 'Exporter Excel'}
       </Button>
       
       <Button 
