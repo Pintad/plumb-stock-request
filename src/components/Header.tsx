@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '@/context/AppContext';
-import { ShoppingCart, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase, Package } from 'lucide-react';
+import { ShoppingCart, ClipboardList, ListChecks, LayoutDashboard, LogOut, Tag, Briefcase, Package, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export const Header = () => {
-  const { user, logout, cart, isAdmin } = useAppContext();
+  const { user, logout, cart, isAdmin, isSuperAdmin } = useAppContext();
   const location = useLocation();
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
 
@@ -83,11 +83,21 @@ export const Header = () => {
                     className={`text-sm font-medium transition-colors ${
                       location.pathname === '/admin/catalogue' ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500'
                     }`}
-                  >
-                    Gestion
-                  </Link>
-                </>
-              )}
+                   >
+                     Gestion
+                   </Link>
+                   {isSuperAdmin && (
+                     <Link 
+                       to="/admin/super-admin" 
+                       className={`text-sm font-medium transition-colors ${
+                         location.pathname === '/admin/super-admin' ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
+                       }`}
+                     >
+                       Super Admin
+                     </Link>
+                   )}
+                 </>
+               )}
             </nav>
           )}
         </div>
@@ -121,9 +131,9 @@ export const Header = () => {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.role === 'admin' ? 'Administrateur' : 'Ouvrier'}
-                    </p>
+                     <p className="text-xs leading-none text-muted-foreground">
+                       {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Administrateur' : 'Ouvrier'}
+                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -171,10 +181,18 @@ export const Header = () => {
                           <Package className="mr-2 h-4 w-4" />
                           <span>Gestion</span>
                         </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
+                       </DropdownMenuItem>
+                       {isSuperAdmin && (
+                         <DropdownMenuItem asChild>
+                           <Link to="/admin/super-admin" className="flex cursor-pointer items-center">
+                             <Shield className="mr-2 h-4 w-4" />
+                             <span>Super Admin</span>
+                           </Link>
+                         </DropdownMenuItem>
+                       )}
+                     </>
+                   )}
+                   <DropdownMenuSeparator />
                 </div>
                 
                 <DropdownMenuItem onClick={logout} className="text-red-600">

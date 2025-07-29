@@ -9,6 +9,7 @@ export interface AppContextType {
   logout: () => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<boolean>;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   products: Product[];
   setProducts: (products: Product[]) => void;
   categories: string[];

@@ -11,7 +11,7 @@ import { AppContextType } from './types';
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, session, login, logout, signup, isAdmin, loading: isLoading } = useAuth();
+  const { user, session, login, logout, signup, isAdmin, isSuperAdmin, loading: isLoading } = useAuth();
   const { products, setProducts, categories, addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, loadProductsFromCSV } = useProducts();
   const { projects, addProject, updateProject, deleteProject, loadProjects, isLoading: projectsLoading, error: projectsError } = useProjects();
   const { 
@@ -61,7 +61,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         logout,
         signup,
-        isAdmin,
+      isAdmin,
+      isSuperAdmin,
         products,
         setProducts,
         categories,

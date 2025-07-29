@@ -68,7 +68,7 @@ export const useAuth = () => {
         username: data.email ?? '',
         password: '', // Ne pas stocker le mot de passe côté frontend
         name: data.nom ?? '',
-        role: data.role === 'magasinier' ? 'admin' : 'worker', // mapping roles table -> frontend
+        role: data.role === 'magasinier' ? 'admin' : data.role === 'administrateur' ? 'superadmin' : 'worker', // mapping roles table -> frontend
       });
     } else {
       setProfile(null);
@@ -170,6 +170,7 @@ export const useAuth = () => {
   };
 
   const isAdmin = profile?.role === 'admin';
+  const isSuperAdmin = profile?.role === 'superadmin';
 
   return {
     user: profile,
@@ -178,6 +179,7 @@ export const useAuth = () => {
     logout,
     signup,
     isAdmin,
+    isSuperAdmin,
     loading,
   };
 };

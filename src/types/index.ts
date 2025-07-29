@@ -55,7 +55,7 @@ export interface User {
   username: string;
   password: string;
   name: string;
-  role: 'worker' | 'admin';
+  role: 'worker' | 'admin' | 'superadmin';
 }
 
 export interface Project {

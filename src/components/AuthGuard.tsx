@@ -6,10 +6,11 @@ import { useAppContext } from '@/context/AppContext';
 interface AuthGuardProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireSuperAdmin?: boolean;
 }
 
-const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAdmin = false }) => {
-  const { user, isAdmin, session, isLoading } = useAppContext();
+const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAdmin = false, requireSuperAdmin = false }) => {
+  const { user, isAdmin, isSuperAdmin, session, isLoading } = useAppContext();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -23,11 +24,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAdmin = false })
     }
     
     // Rediriger si un administrateur est requis mais que l'utilisateur n'en est pas un
-    if (requireAdmin && !isAdmin) {
+    if (requireAdmin && !isAdmin && !isSuperAdmin) {
       navigate('/');
       return;
     }
-  }, [user, isAdmin, session, navigate, requireAdmin, isLoading]);
+    
+    // Rediriger si un super-administrateur est requis mais que l'utilisateur n'en est pas un
+    if (requireSuperAdmin && !isSuperAdmin) {
+      navigate('/');
+      return;
+    }
+  }, [user, isAdmin, isSuperAdmin, session, navigate, requireAdmin, requireSuperAdmin, isLoading]);
   
   // Ne rien afficher pendant le chargement
   if (isLoading) return null;
@@ -36,7 +43,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAdmin = false })
   if (!user || !session) return null;
   
   // Ne rien afficher si un administrateur est requis mais que l'utilisateur n'en est pas un
-  if (requireAdmin && !isAdmin) return null;
+  if (requireAdmin && !isAdmin && !isSuperAdmin) return null;
+  
+  // Ne rien afficher si un super-administrateur est requis mais que l'utilisateur n'en est pas un
+  if (requireSuperAdmin && !isSuperAdmin) return null;
   
   return <>{children}</>;
 };
