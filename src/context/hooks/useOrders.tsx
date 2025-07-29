@@ -6,7 +6,8 @@ import {
   fetchOrders, 
   createOrderInDb, 
   updateOrderStatusInDb, 
-  updateOrderInDb 
+  updateOrderInDb,
+  deleteOrderInDb 
 } from './orders';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserActivity } from '@/hooks/useUserActivity';
@@ -194,6 +195,31 @@ export const useOrders = () => {
     }
   };
 
+  // Delete an order
+  const deleteOrder = async (orderId: string): Promise<boolean> => {
+    try {
+      await deleteOrderInDb(orderId);
+      
+      // Remove the order from local state
+      setOrders(orders.filter(order => order.commandeid !== orderId));
+      
+      toast({
+        title: "Commande supprimée",
+        description: "La commande a été supprimée avec succès",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la commande",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     orders,
     isLoading,
@@ -201,6 +227,7 @@ export const useOrders = () => {
     createOrder,
     updateOrderStatus,
     updateOrder,
+    deleteOrder,
     isUserActive: isActive
   };
 };

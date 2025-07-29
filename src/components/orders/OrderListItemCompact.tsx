@@ -2,20 +2,23 @@
 import React from 'react';
 import { Order } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Trash2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OrderListItemCompactProps {
   order: Order;
   onClick: () => void;
+  onDelete?: (order: Order) => void;
+  showDeleteButton?: boolean;
 }
 
-const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => {
+const OrderListItemCompact = ({ order, onClick, onDelete, showDeleteButton = false }: OrderListItemCompactProps) => {
   const isMobile = useIsMobile();
   
   // Always use the display title from the titre_affichage field without any fallbacks
@@ -35,6 +38,11 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
         year: 'numeric'
       }) 
     : '';
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(order);
+  };
 
   return (
     <Card 
@@ -76,6 +84,16 @@ const OrderListItemCompact = ({ order, onClick }: OrderListItemCompactProps) => 
           >
             {order.termine === 'Non' ? 'En attente' : order.termine === 'En cours' ? 'En cours' : 'Terminée'}
           </Badge>
+          {showDeleteButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteClick}
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <ChevronRight className="h-4 w-4 text-gray-400" />
         </div>
       </CardHeader>

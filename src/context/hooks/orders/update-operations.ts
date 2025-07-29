@@ -57,3 +57,20 @@ export const updateOrderInDb = async (order: Order): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Delete an order from Supabase
+ */
+export const deleteOrderInDb = async (orderId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('commandes')
+      .delete()
+      .eq('commandeid', orderId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la commande:", error);
+    throw error;
+  }
+};

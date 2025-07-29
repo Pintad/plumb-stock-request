@@ -26,7 +26,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateCustomItemQuantity,
     totalItems
   } = useCart();
-  const { orders, createOrder, updateOrderStatus, updateOrder, loadOrders } = useOrders();
+  const { orders, createOrder, updateOrderStatus, updateOrder, deleteOrder, loadOrders } = useOrders();
   const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<Date | undefined>(undefined);
 
   // Wrapper to pass affaireId (projectCode) to createOrder in useOrders hook
@@ -87,6 +87,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOrder: createOrderWrapper,
         updateOrderStatus,
         updateOrder,
+        deleteOrder,
         loadProductsFromCSV,
         loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
         isLoading: isLoading || projectsLoading,

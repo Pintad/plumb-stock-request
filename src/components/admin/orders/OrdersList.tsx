@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import OrderListItemCompact from '@/components/orders/OrderListItemCompact';
+import { PasswordConfirmationDialog } from '@/components/ui/password-confirmation-dialog';
 import { Order } from '@/types';
+import { useAppContext } from '@/context/AppContext';
 
 interface OrdersListProps {
   orders: Order[];
@@ -10,6 +12,20 @@ interface OrdersListProps {
 }
 
 const OrdersList = ({ orders, isLoading, onOrderClick }: OrdersListProps) => {
+  const { deleteOrder } = useAppContext();
+  const [deleteOrderItem, setDeleteOrderItem] = useState<Order | null>(null);
+
+  const handleDeleteOrder = (order: Order) => {
+    setDeleteOrderItem(order);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteOrderItem) {
+      await deleteOrder(deleteOrderItem.commandeid);
+      setDeleteOrderItem(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -27,15 +43,32 @@ const OrdersList = ({ orders, isLoading, onOrderClick }: OrdersListProps) => {
   }
 
   return (
-    <div className="space-y-4 mb-6">
-      {orders.map(order => (
-        <OrderListItemCompact
-          key={order.commandeid}
-          order={order}
-          onClick={() => onOrderClick(order.commandeid)}
-        />
-      ))}
-    </div>
+    <>
+      <div className="space-y-4 mb-6">
+        {orders.map(order => (
+          <OrderListItemCompact
+            key={order.commandeid}
+            order={order}
+            onClick={() => onOrderClick(order.commandeid)}
+            onDelete={handleDeleteOrder}
+            showDeleteButton={true}
+          />
+        ))}
+      </div>
+      
+      <PasswordConfirmationDialog
+        open={!!deleteOrderItem}
+        onOpenChange={(open) => !open && setDeleteOrderItem(null)}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer la commande"
+        description="Cette action supprimera définitivement cette commande. Cette action est irréversible."
+        itemName={deleteOrderItem ? 
+          (deleteOrderItem.titre_affichage?.match(/D\d{5}/) 
+            ? deleteOrderItem.titre_affichage.match(/D\d{5}/)![0]
+            : deleteOrderItem.commandeid
+          ) : undefined}
+      />
+    </>
   );
 };
 
