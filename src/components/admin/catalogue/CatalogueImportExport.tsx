@@ -20,15 +20,35 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
   const handleExportCSV = async () => {
     try {
-      // Récupérer toutes les données du catalogue
-      const { data: catalogueData, error } = await supabase
-        .from('catalogue')
-        .select('*')
-        .order('designation');
+      // Récupérer toutes les données du catalogue sans limite
+      let allData: any[] = [];
+      let start = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: batchData, error } = await supabase
+          .from('catalogue')
+          .select('*')
+          .order('designation')
+          .range(start, start + batchSize - 1);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (!catalogueData || catalogueData.length === 0) {
+        if (!batchData || batchData.length === 0) {
+          break;
+        }
+
+        allData = [...allData, ...batchData];
+        
+        // Si on récupère moins que batchSize, on a atteint la fin
+        if (batchData.length < batchSize) {
+          break;
+        }
+        
+        start += batchSize;
+      }
+
+      if (allData.length === 0) {
         toast({
           variant: "destructive",
           title: "Aucune donnée",
@@ -52,7 +72,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       // Exporter vers Excel
       await exportDataToExcel(
-        catalogueData,
+        allData,
         columns,
         `catalogue_export_${new Date().toISOString().split('T')[0]}`,
         'Catalogue'
@@ -60,7 +80,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       toast({
         title: "Export réussi",
-        description: `${catalogueData.length} articles exportés avec succès`
+        description: `${allData.length} articles exportés avec succès`
       });
 
     } catch (error) {
