@@ -51,7 +51,7 @@ export const Header = () => {
               >
                 Mes demandes
               </Link>
-              {isAdmin && (
+              {(isAdmin || isSuperAdmin) && (
                 <>
                   <Link 
                     to="/admin" 
@@ -103,7 +103,7 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          {user && !isAdmin && (
+          {user && !isAdmin && !isSuperAdmin && (
             <Link to="/cart" className="relative">
               <Button variant="outline" size="icon" className="rounded-full border-amber-300 hover:bg-amber-50">
                 <ShoppingCart className="h-5 w-5 text-amber-600" />
@@ -156,7 +156,7 @@ export const Header = () => {
                       <span>Mes demandes</span>
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
+                  {(isAdmin || isSuperAdmin) && (
                     <>
                       <DropdownMenuItem asChild>
                         <Link to="/admin" className="flex cursor-pointer items-center">
