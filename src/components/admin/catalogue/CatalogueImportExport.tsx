@@ -138,14 +138,23 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
     
     worksheet.eachRow((row, rowNumber) => {
       const values: string[] = [];
-      row.eachCell((cell, colNumber) => {
-        const value = cell.value?.toString() || '';
+      const maxCol = row.cellCount;
+      
+      // S'assurer qu'on a toutes les colonnes même si elles sont vides
+      for (let colNumber = 1; colNumber <= maxCol; colNumber++) {
+        const cell = row.getCell(colNumber);
+        let value = '';
+        
+        if (cell.value !== null && cell.value !== undefined) {
+          value = cell.value.toString();
+        }
+        
         // Échapper les virgules et guillemets
-        const escapedValue = value.includes(',') || value.includes('"') 
+        const escapedValue = value.includes(',') || value.includes('"') || value.includes('\n')
           ? `"${value.replace(/"/g, '""')}"` 
           : value;
-        values[colNumber - 1] = escapedValue;
-      });
+        values.push(escapedValue);
+      }
       csvLines.push(values.join(','));
     });
     
@@ -165,20 +174,38 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         return;
       }
 
+      // Normaliser les en-têtes pour qu'ils correspondent aux colonnes DB
+      const normalizedHeaders = headers.map(header => {
+        const cleanHeader = header.trim().toLowerCase();
+        // Mapper les en-têtes français vers les noms de colonnes DB
+        const headerMapping: Record<string, string> = {
+          'désignation': 'designation',
+          'catégorie': 'categorie',
+          'sur catégorie': 'sur_categorie',
+          'url image': 'image_url',
+          'mots-clés': 'keywords',
+          'référence': 'reference',
+          'unité': 'unite'
+        };
+        return headerMapping[cleanHeader] || cleanHeader;
+      });
+
       // Vérifier si la colonne ID est présente
-      const hasIdColumn = headers.includes('id');
+      const hasIdColumn = normalizedHeaders.includes('id');
       const processedItems = [];
 
       for (const line of lines) {
         if (!line.trim()) continue;
 
-        const values = line.split(',').map(value => value.trim().replace(/^"|"$/g, ''));
+        // Parser la ligne CSV correctement en gérant les guillemets
+        const values = parseCSVLine(line);
         const item: any = {};
 
         // Mapper les colonnes
-        headers.forEach((header, index) => {
+        normalizedHeaders.forEach((header, index) => {
           if (values[index] !== undefined) {
-            item[header] = values[index] || null;
+            const value = values[index].trim();
+            item[header] = value === '' || value === 'null' ? null : value;
           }
         });
 
@@ -195,10 +222,12 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         toast({
           variant: "destructive",
           title: "Aucun article valide",
-          description: "Aucun article valide trouvé dans le fichier CSV"
+          description: "Aucun article valide trouvé dans le fichier"
         });
         return;
       }
+
+      console.log('Articles traités pour import:', processedItems);
 
       // Traitement selon la présence de l'ID
       if (hasIdColumn) {
@@ -210,8 +239,43 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       onImportComplete();
 
     } catch (error) {
+      console.error('Erreur processCSVImport:', error);
       showImportError(error);
     }
+  };
+
+  // Fonction pour parser correctement une ligne CSV avec guillemets
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Double quote escaped
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    // Add last field
+    result.push(current);
+    
+    return result;
   };
 
   const updateExistingItems = async (items: any[]) => {
