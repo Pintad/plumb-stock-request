@@ -57,37 +57,8 @@ export const useOrders = () => {
   }, [isActive]);
 
   const setupRealtimeSubscription = () => {
-    // S'assurer qu'on ne crée qu'une seule souscription
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-    
-    // Créer une nouvelle souscription avec un identifiant unique
-    channelRef.current = supabase
-      .channel(`orders-changes-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Écouter tous les événements (insert, update, delete)
-          schema: 'public',
-          table: 'commandes'
-        },
-        (payload) => {
-          console.log('Real-time order change detected:', payload.eventType);
-          // Éviter de recharger si on est déjà en train de charger
-          if (!loadingRef.current) {
-            loadOrders();
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Real-time subscription established');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Real-time subscription error');
-          // Ne pas tenter de se reconnecter immédiatement pour éviter les boucles
-        }
-      });
+    // Réplication désactivée - pas de souscription temps réel
+    console.log('Real-time subscription disabled - manual refresh required');
   };
 
   // Load orders from the database avec protection contre les appels multiples

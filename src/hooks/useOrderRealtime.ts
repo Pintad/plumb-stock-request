@@ -28,35 +28,8 @@ export const useOrderRealtime = (orderId: string | undefined, onUpdate: () => vo
   }, [orderId, isActive]);
 
   const setupSubscription = () => {
-    if (!orderId) return;
-    
-    // Nettoyer toute souscription précédente
-    cleanupSubscription();
-
-    // Créer une nouvelle souscription avec identifiant unique
-    channelRef.current = supabase
-      .channel(`order-detail-${orderId}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'commandes',
-          filter: `commandeid=eq.${orderId}`
-        },
-        (payload) => {
-          console.log('Order detail real-time update:', payload.eventType);
-          // Utiliser la référence pour éviter les dépendances stale
-          onUpdateRef.current();
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Order detail subscription established for ${orderId}`);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error(`Order detail subscription error for ${orderId}`);
-        }
-      });
+    // Réplication désactivée - pas de souscription temps réel
+    console.log('Real-time subscription disabled for order details');
   };
 
   const cleanupSubscription = () => {

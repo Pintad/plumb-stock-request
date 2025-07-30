@@ -29,36 +29,8 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
   }, [initialOrder]);
 
   useEffect(() => {
-    // Nettoyer toute souscription précédente
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    // S'abonner aux mises à jour en temps réel de cette commande spécifique
-    channelRef.current = supabase
-      .channel(`order-${order.commandeid}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'commandes',
-          filter: `commandeid=eq.${order.commandeid}`
-        },
-        () => {
-          // Recharger toutes les commandes quand celle-ci est mise à jour
-          loadOrders();
-        }
-      )
-      .subscribe();
-
-    // Se désabonner quand le composant est démonté ou quand l'ID de commande change
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
+    // Réplication désactivée - pas de souscription temps réel
+    console.log('Real-time subscription disabled for OrderManager');
   }, [order.commandeid, loadOrders]);
 
   // Gestion des cases cochées des articles (etat local)
