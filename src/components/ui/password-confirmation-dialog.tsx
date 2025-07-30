@@ -31,22 +31,24 @@ export const PasswordConfirmationDialog = ({
   description,
   itemName,
 }: PasswordConfirmationDialogProps) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handleClose = () => {
+    setEmail('');
     setPassword('');
     setShowPassword(false);
     onOpenChange(false);
   };
 
   const handleConfirm = async () => {
-    if (!password) {
+    if (!email || !password) {
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Veuillez saisir votre mot de passe',
+        description: 'Veuillez saisir votre email et votre mot de passe',
       });
       return;
     }
@@ -54,31 +56,19 @@ export const PasswordConfirmationDialog = ({
     setIsVerifying(true);
 
     try {
-      // Obtenir l'email de l'utilisateur actuel
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user?.email) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: 'Impossible de récupérer les informations utilisateur',
-        });
-        setIsVerifying(false);
-        return;
-      }
-
-      // Vérifier le mot de passe en tentant une connexion
+      // Vérifier les identifiants en tentant une connexion
       const { error } = await supabase.auth.signInWithPassword({
-        email: user.email,
+        email: email,
         password: password,
       });
 
       if (error) {
         toast({
           variant: 'destructive',
-          title: 'Mot de passe incorrect',
-          description: 'Le mot de passe saisi est incorrect',
+          title: 'Identifiants incorrects',
+          description: 'L\'email ou le mot de passe saisi est incorrect',
         });
+        setEmail('');
         setPassword('');
         setIsVerifying(false);
         return;
@@ -123,8 +113,21 @@ export const PasswordConfirmationDialog = ({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
+            <Label htmlFor="email">
+              Confirmez votre email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Saisissez votre email"
+              disabled={isVerifying}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="password">
-              Confirmez avec votre mot de passe
+              Confirmez votre mot de passe
             </Label>
             <div className="relative">
               <Input
@@ -170,7 +173,7 @@ export const PasswordConfirmationDialog = ({
           <Button
             variant="destructive"
             onClick={handleConfirm}
-            disabled={isVerifying || !password}
+            disabled={isVerifying || !email || !password}
           >
             {isVerifying ? 'Vérification...' : 'Confirmer la suppression'}
           </Button>
