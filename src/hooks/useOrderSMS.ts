@@ -32,10 +32,10 @@ export const useOrderSMS = () => {
 
       const message = `Bonjour, votre commande ${order.titre_affichage} est prête à être retirée !`;
 
-      // Appeler l'edge function send-sms
+      // Appeler l'edge function send-sms avec la clé 'numero' (pas 'to')
       const { error: smsError } = await supabase.functions.invoke('send-sms', {
         body: {
-          to: userData.numero,
+          numero: userData.numero,
           message: message
         }
       });
