@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Mail } from 'lucide-react';
+import { ChevronLeft, Mail, MessageSquare } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import OrderInfoSection from '@/components/orders/OrderInfoSection';
@@ -11,6 +11,7 @@ import OrderArticlesSection from '@/components/orders/OrderArticlesSection';
 import MessageSection from '@/components/orders/MessageSection';
 import OrderDetailsPrintExport from '@/components/orders/OrderDetailsPrintExport';
 import OrderEmailConfirmDialog from '@/components/orders/OrderEmailConfirmDialog';
+import OrderSMSConfirmDialog from '@/components/orders/OrderSMSConfirmDialog';
 import OrderDetailsHeader from '@/components/orders/OrderDetailsHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
@@ -30,11 +31,15 @@ const OrderDetails = () => {
     showEmailConfirm,
     sendingEmail,
     setShowEmailConfirm,
+    showSMSConfirm,
+    sendingSMS,
+    setShowSMSConfirm,
     handleItemCompletionToggle,
     handleManualStatusChange,
     handleMessageChange,
     handleSaveMessage,
-    handleSendEmail
+    handleSendEmail,
+    handleSendSMS
   } = useOrderManagement(initialOrder);
   
   // Subscribe to real-time updates for the current order
@@ -80,7 +85,7 @@ const OrderDetails = () => {
               <OrderInfoSection order={order} />
               
               {isAdmin && order.termine === 'Oui' && (
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
                   <Button
                     variant="outline"
                     className="flex items-center gap-2"
@@ -90,6 +95,16 @@ const OrderDetails = () => {
                   >
                     <Mail className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                     {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => setShowSMSConfirm(true)}
+                    disabled={sendingSMS}
+                    size={isMobile ? "sm" : "default"}
+                  >
+                    <MessageSquare className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                    {sendingSMS ? "Envoi en cours..." : "Envoyer un SMS"}
                   </Button>
                 </div>
               )}
@@ -118,6 +133,15 @@ const OrderDetails = () => {
                 onConfirm={() => {
                   handleSendEmail();
                   setShowEmailConfirm(false);
+                }}
+              />
+              
+              <OrderSMSConfirmDialog
+                isOpen={showSMSConfirm}
+                onOpenChange={setShowSMSConfirm}
+                onConfirm={() => {
+                  handleSendSMS();
+                  setShowSMSConfirm(false);
                 }}
               />
             </div>

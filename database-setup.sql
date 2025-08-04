@@ -15,6 +15,7 @@ CREATE TABLE public.utilisateurs (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     nom text,
     email text,
+    numero text, -- Numéro de téléphone
     role text DEFAULT 'ouvrier'::text,
     PRIMARY KEY (id)
 );

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Order } from '@/types';
 import { useOrderStatus } from './useOrderStatus';
 import { useOrderEmail } from './useOrderEmail';
+import { useOrderSMS } from './useOrderSMS';
 import { useOrderRealtime } from './useOrderRealtime';
 import { useAppContext } from '@/context/AppContext';
 
@@ -38,9 +39,22 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     handleSendEmail
   } = useOrderEmail();
 
+  // Import SMS functionality
+  const {
+    showSMSConfirm,
+    sendingSMS,
+    setShowSMSConfirm,
+    handleSendSMS
+  } = useOrderSMS();
+
   // Wrap email sending to pass the current order
   const sendEmail = () => {
     handleSendEmail(order);
+  };
+
+  // Wrap SMS sending to pass the current order
+  const sendSMS = () => {
+    handleSendSMS(order);
   };
 
   return {
@@ -50,10 +64,14 @@ export const useOrderManagement = (initialOrder: Order | undefined) => {
     showEmailConfirm,
     sendingEmail,
     setShowEmailConfirm,
+    showSMSConfirm,
+    sendingSMS,
+    setShowSMSConfirm,
     handleItemCompletionToggle,
     handleManualStatusChange,
     handleMessageChange,
     handleSaveMessage,
-    handleSendEmail: sendEmail
+    handleSendEmail: sendEmail,
+    handleSendSMS: sendSMS
   };
 };
