@@ -153,18 +153,21 @@ export type Database = {
           email: string | null
           id: string
           nom: string | null
+          numero: string | null
           role: string | null
         }
         Insert: {
           email?: string | null
           id?: string
           nom?: string | null
+          numero?: string | null
           role?: string | null
         }
         Update: {
           email?: string | null
           id?: string
           nom?: string | null
+          numero?: string | null
           role?: string | null
         }
         Relationships: []
