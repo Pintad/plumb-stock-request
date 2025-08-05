@@ -5,11 +5,23 @@ interface AppSettingsContextType {
   smsButtonEnabled: boolean;
   emailNotificationsEnabled: boolean;
   senderEmail: string;
+  warehouseNotificationEmailEnabled: boolean;
+  warehouseNotificationSmsEnabled: boolean;
+  warehouseEmail: string;
+  warehousePhone: string;
   loading: boolean;
   updateSmsButtonSetting: (enabled: boolean) => Promise<void>;
   updateEmailNotificationsSetting: (enabled: boolean) => Promise<void>;
   updateSenderEmailSetting: (email: string) => Promise<void>;
-  saveAllSettings: (settings: { smsEnabled: boolean; emailEnabled: boolean; senderEmail: string }) => Promise<void>;
+  saveAllSettings: (settings: { 
+    smsEnabled: boolean; 
+    emailEnabled: boolean; 
+    senderEmail: string;
+    warehouseNotificationEmailEnabled: boolean;
+    warehouseNotificationSmsEnabled: boolean;
+    warehouseEmail: string;
+    warehousePhone: string;
+  }) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 

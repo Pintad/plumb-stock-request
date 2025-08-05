@@ -100,6 +100,63 @@ export const createOrderInDb = async (
     
     if (updateError) throw updateError;
     
+    // Après création réussie de la commande, envoyer les notifications au magasinier
+    try {
+      // Récupérer les paramètres de notification
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', [
+          'warehouse_notification_email_enabled',
+          'warehouse_notification_sms_enabled',
+          'warehouse_email',
+          'warehouse_phone'
+        ]);
+
+      if (settingsData) {
+        const settings = settingsData.reduce((acc, setting) => {
+          acc[setting.setting_key] = setting.setting_value;
+          return acc;
+        }, {} as Record<string, string>);
+
+        // Notification par email si activée
+        if (settings.warehouse_notification_email_enabled === 'true' && settings.warehouse_email) {
+          try {
+            await supabase.functions.invoke('notify-warehouse', {
+              body: {
+                warehouseEmail: settings.warehouse_email,
+                orderDisplayTitle: displayTitle,
+                clientName: user.name,
+                orderNumber: orderNumber
+              }
+            });
+            console.log('Notification email envoyée au magasinier');
+          } catch (emailError) {
+            console.error('Erreur lors de l\'envoi de la notification email au magasinier:', emailError);
+          }
+        }
+
+        // Notification par SMS si activée
+        if (settings.warehouse_notification_sms_enabled === 'true' && settings.warehouse_phone) {
+          try {
+            const smsMessage = `Nouvelle commande reçue: ${displayTitle} de ${user.name}`;
+            await supabase.functions.invoke('send-sms', {
+              body: {
+                numero: settings.warehouse_phone,
+                message: smsMessage
+              }
+            });
+            console.log('Notification SMS envoyée au magasinier');
+          } catch (smsError) {
+            console.error('Erreur lors de l\'envoi de la notification SMS au magasinier:', smsError);
+          }
+        }
+      }
+    } catch (notificationError) {
+      // Les erreurs de notification ne doivent pas empêcher la création de la commande
+      console.error('Erreur lors des notifications au magasinier:', notificationError);
+    }
+    
     return true;
   } catch (error) {
     console.error("Erreur lors de la création de la commande:", error);

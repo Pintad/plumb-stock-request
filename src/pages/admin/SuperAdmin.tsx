@@ -35,7 +35,8 @@ import {
   Download,
   Upload,
   Lock,
-  MessageSquare
+  MessageSquare,
+  Bell
 } from 'lucide-react';
 
 interface DatabaseUser {
@@ -65,6 +66,10 @@ const SuperAdmin: React.FC = () => {
     smsButtonEnabled, 
     emailNotificationsEnabled, 
     senderEmail,
+    warehouseNotificationEmailEnabled,
+    warehouseNotificationSmsEnabled,
+    warehouseEmail,
+    warehousePhone,
     saveAllSettings 
   } = useAppSettings();
   const [users, setUsers] = useState<DatabaseUser[]>([]);
@@ -80,7 +85,11 @@ const SuperAdmin: React.FC = () => {
   const [localSettings, setLocalSettings] = useState({
     smsEnabled: true,
     emailEnabled: true,
-    senderEmail: 'magasinier@example.com'
+    senderEmail: 'magasinier@example.com',
+    warehouseNotificationEmailEnabled: false,
+    warehouseNotificationSmsEnabled: false,
+    warehouseEmail: '',
+    warehousePhone: ''
   });
   const [securitySettings, setSecuritySettings] = useState({
     sessionDuration: 24,
@@ -106,9 +115,13 @@ const SuperAdmin: React.FC = () => {
     setLocalSettings({
       smsEnabled: smsButtonEnabled,
       emailEnabled: emailNotificationsEnabled,
-      senderEmail: senderEmail
+      senderEmail: senderEmail,
+      warehouseNotificationEmailEnabled: warehouseNotificationEmailEnabled,
+      warehouseNotificationSmsEnabled: warehouseNotificationSmsEnabled,
+      warehouseEmail: warehouseEmail,
+      warehousePhone: warehousePhone
     });
-  }, [smsButtonEnabled, emailNotificationsEnabled, senderEmail]);
+  }, [smsButtonEnabled, emailNotificationsEnabled, senderEmail, warehouseNotificationEmailEnabled, warehouseNotificationSmsEnabled, warehouseEmail, warehousePhone]);
 
   const loadTableStats = async () => {
     try {
@@ -734,6 +747,67 @@ const SuperAdmin: React.FC = () => {
                       <span>
                         {localSettings.smsEnabled ? 'Les utilisateurs peuvent envoyer des SMS' : 'Les notifications SMS sont désactivées'}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Configuration des notifications pour nouvelles commandes */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Bell className="w-4 h-4" />
+                      Notifications de nouvelles commandes au magasinier
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="warehouse-email">Email du magasinier</Label>
+                        <Input
+                          id="warehouse-email"
+                          type="email"
+                          value={localSettings.warehouseEmail}
+                          onChange={(e) => setLocalSettings({ ...localSettings, warehouseEmail: e.target.value })}
+                          placeholder="magasinier@exemple.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="warehouse-phone">Téléphone du magasinier</Label>
+                        <Input
+                          id="warehouse-phone"
+                          type="tel"
+                          value={localSettings.warehousePhone}
+                          onChange={(e) => setLocalSettings({ ...localSettings, warehousePhone: e.target.value })}
+                          placeholder="+33123456789"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <Label htmlFor="warehouse-email-enabled">Notification par email</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Envoyer un email lors de nouvelles commandes
+                          </p>
+                        </div>
+                        <Switch
+                          id="warehouse-email-enabled"
+                          checked={localSettings.warehouseNotificationEmailEnabled}
+                          onCheckedChange={(checked) => setLocalSettings({ ...localSettings, warehouseNotificationEmailEnabled: checked })}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <Label htmlFor="warehouse-sms-enabled">Notification par SMS</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Envoyer un SMS lors de nouvelles commandes
+                          </p>
+                        </div>
+                        <Switch
+                          id="warehouse-sms-enabled"
+                          checked={localSettings.warehouseNotificationSmsEnabled}
+                          onCheckedChange={(checked) => setLocalSettings({ ...localSettings, warehouseNotificationSmsEnabled: checked })}
+                        />
+                      </div>
                     </div>
                   </div>
 

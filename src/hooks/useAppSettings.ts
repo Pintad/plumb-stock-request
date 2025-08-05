@@ -6,6 +6,11 @@ export const useAppSettings = () => {
   const [smsButtonEnabled, setSmsButtonEnabled] = useState<boolean>(true);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState<boolean>(true);
   const [senderEmail, setSenderEmail] = useState<string>('magasinier@example.com');
+  // Nouveaux paramètres pour les notifications de nouvelles commandes
+  const [warehouseNotificationEmailEnabled, setWarehouseNotificationEmailEnabled] = useState<boolean>(false);
+  const [warehouseNotificationSmsEnabled, setWarehouseNotificationSmsEnabled] = useState<boolean>(false);
+  const [warehouseEmail, setWarehouseEmail] = useState<string>('');
+  const [warehousePhone, setWarehousePhone] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSettings = async () => {
@@ -13,7 +18,15 @@ export const useAppSettings = () => {
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['sms_button_enabled', 'email_notifications_enabled', 'sender_email']);
+        .in('setting_key', [
+          'sms_button_enabled', 
+          'email_notifications_enabled', 
+          'sender_email',
+          'warehouse_notification_email_enabled',
+          'warehouse_notification_sms_enabled',
+          'warehouse_email',
+          'warehouse_phone'
+        ]);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading app settings:', error);
@@ -31,6 +44,18 @@ export const useAppSettings = () => {
               break;
             case 'sender_email':
               setSenderEmail(setting.setting_value);
+              break;
+            case 'warehouse_notification_email_enabled':
+              setWarehouseNotificationEmailEnabled(setting.setting_value === 'true');
+              break;
+            case 'warehouse_notification_sms_enabled':
+              setWarehouseNotificationSmsEnabled(setting.setting_value === 'true');
+              break;
+            case 'warehouse_email':
+              setWarehouseEmail(setting.setting_value);
+              break;
+            case 'warehouse_phone':
+              setWarehousePhone(setting.setting_value);
               break;
           }
         });
@@ -112,6 +137,10 @@ export const useAppSettings = () => {
     smsEnabled: boolean;
     emailEnabled: boolean;
     senderEmail: string;
+    warehouseNotificationEmailEnabled: boolean;
+    warehouseNotificationSmsEnabled: boolean;
+    warehouseEmail: string;
+    warehousePhone: string;
   }) => {
     try {
       // Sauvegarder chaque paramètre individuellement pour éviter les conflits de clé unique
@@ -133,6 +162,30 @@ export const useAppSettings = () => {
           setting_value: settings.senderEmail 
         }, { 
           onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'warehouse_notification_email_enabled', 
+          setting_value: settings.warehouseNotificationEmailEnabled.toString() 
+        }, { 
+          onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'warehouse_notification_sms_enabled', 
+          setting_value: settings.warehouseNotificationSmsEnabled.toString() 
+        }, { 
+          onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'warehouse_email', 
+          setting_value: settings.warehouseEmail 
+        }, { 
+          onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'warehouse_phone', 
+          setting_value: settings.warehousePhone 
+        }, { 
+          onConflict: 'setting_key' 
         })
       ];
 
@@ -148,6 +201,10 @@ export const useAppSettings = () => {
       setSmsButtonEnabled(settings.smsEnabled);
       setEmailNotificationsEnabled(settings.emailEnabled);
       setSenderEmail(settings.senderEmail);
+      setWarehouseNotificationEmailEnabled(settings.warehouseNotificationEmailEnabled);
+      setWarehouseNotificationSmsEnabled(settings.warehouseNotificationSmsEnabled);
+      setWarehouseEmail(settings.warehouseEmail);
+      setWarehousePhone(settings.warehousePhone);
       toast.success('Configuration sauvegardée avec succès');
     } catch (error) {
       console.error('Error saving all settings:', error);
@@ -163,6 +220,10 @@ export const useAppSettings = () => {
     smsButtonEnabled,
     emailNotificationsEnabled,
     senderEmail,
+    warehouseNotificationEmailEnabled,
+    warehouseNotificationSmsEnabled,
+    warehouseEmail,
+    warehousePhone,
     loading,
     updateSmsButtonSetting,
     updateEmailNotificationsSetting,
