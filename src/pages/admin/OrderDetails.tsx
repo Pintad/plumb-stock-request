@@ -22,7 +22,7 @@ const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { orders, isAdmin, loadOrders } = useAppContext();
-  const { smsButtonEnabled } = useAppSettingsContext();
+  const { smsButtonEnabled, emailNotificationsEnabled } = useAppSettingsContext();
   const isMobile = useIsMobile();
   
   const initialOrder = orderId ? orders.find(o => o.commandeid === orderId) : undefined;
@@ -88,16 +88,18 @@ const OrderDetails = () => {
               
               {isAdmin && order.termine === 'Oui' && (
                 <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={() => setShowEmailConfirm(true)}
-                    disabled={sendingEmail}
-                    size={isMobile ? "sm" : "default"}
-                  >
-                    <Mail className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                    {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
-                  </Button>
+                  {emailNotificationsEnabled && (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => setShowEmailConfirm(true)}
+                      disabled={sendingEmail}
+                      size={isMobile ? "sm" : "default"}
+                    >
+                      <Mail className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                      {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
+                    </Button>
+                  )}
                   {smsButtonEnabled && (
                     <Button
                       variant="outline"

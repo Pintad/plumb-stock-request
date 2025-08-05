@@ -693,22 +693,11 @@ const SuperAdmin: React.FC = () => {
                 <div className="space-y-6">
                   {/* Configuration email */}
                   <div className="space-y-4 p-4 border rounded-lg">
-                    <div>
-                      <Label htmlFor="sender-email">Email d'envoi automatique du magasinier</Label>
-                      <Input
-                        id="sender-email"
-                        type="email"
-                        value={localSettings.senderEmail}
-                        onChange={(e) => setLocalSettings({ ...localSettings, senderEmail: e.target.value })}
-                        placeholder="magasinier@exemple.com"
-                        className="mt-2"
-                      />
-                    </div>
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="email-enabled">Activer les notifications par email</Label>
                         <p className="text-sm text-muted-foreground">
-                          Les emails seront envoyés automatiquement lors de certaines actions
+                          Afficher le bouton d'envoi d'email dans les détails des commandes
                         </p>
                       </div>
                       <Switch
@@ -720,7 +709,7 @@ const SuperAdmin: React.FC = () => {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Mail className="w-4 h-4" />
                       <span>
-                        {localSettings.emailEnabled ? 'Les notifications par email sont activées' : 'Les notifications par email sont désactivées'}
+                        {localSettings.emailEnabled ? 'Les utilisateurs peuvent envoyer des emails' : 'Les notifications email sont désactivées'}
                       </span>
                     </div>
                   </div>
