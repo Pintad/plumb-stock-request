@@ -114,18 +114,35 @@ export const useAppSettings = () => {
     senderEmail: string;
   }) => {
     try {
-      const { error } = await supabase
-        .from('app_settings')
-        .upsert([
-          { setting_key: 'sms_button_enabled', setting_value: settings.smsEnabled.toString() },
-          { setting_key: 'email_notifications_enabled', setting_value: settings.emailEnabled.toString() },
-          { setting_key: 'sender_email', setting_value: settings.senderEmail }
-        ]);
+      // Sauvegarder chaque paramètre individuellement pour éviter les conflits de clé unique
+      const promises = [
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'sms_button_enabled', 
+          setting_value: settings.smsEnabled.toString() 
+        }, { 
+          onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'email_notifications_enabled', 
+          setting_value: settings.emailEnabled.toString() 
+        }, { 
+          onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'sender_email', 
+          setting_value: settings.senderEmail 
+        }, { 
+          onConflict: 'setting_key' 
+        })
+      ];
 
-      if (error) {
-        console.error('Error saving all settings:', error);
-        toast.error('Erreur lors de la sauvegarde des paramètres');
-        return;
+      const results = await Promise.all(promises);
+      
+      // Vérifier si une des opérations a échoué
+      for (const result of results) {
+        if (result.error) {
+          throw result.error;
+        }
       }
 
       setSmsButtonEnabled(settings.smsEnabled);
