@@ -30,7 +30,7 @@ export const useOrderSMS = () => {
         return;
       }
 
-      const message = `Bonjour, votre commande ${order.titre_affichage} est prete au magasin ! vous pouvez passer la chercher ou prendre contact avec votre conducteur de travaux pour qu'il vous la dépose à son prochain passage.`;
+      const message = `Bonjour, votre commande ${order.titre_affichage} est prete au magasin`;
 
       // Appeler l'edge function send-sms avec la clé 'numero' (pas 'to')
       const { error: smsError } = await supabase.functions.invoke('send-sms', {
