@@ -3,8 +3,13 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface AppSettingsContextType {
   smsButtonEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  senderEmail: string;
   loading: boolean;
   updateSmsButtonSetting: (enabled: boolean) => Promise<void>;
+  updateEmailNotificationsSetting: (enabled: boolean) => Promise<void>;
+  updateSenderEmailSetting: (email: string) => Promise<void>;
+  saveAllSettings: (settings: { smsEnabled: boolean; emailEnabled: boolean; senderEmail: string }) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 

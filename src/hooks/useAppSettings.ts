@@ -4,15 +4,16 @@ import { toast } from 'sonner';
 
 export const useAppSettings = () => {
   const [smsButtonEnabled, setSmsButtonEnabled] = useState<boolean>(true);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState<boolean>(true);
+  const [senderEmail, setSenderEmail] = useState<string>('magasinier@example.com');
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSettings = async () => {
     try {
       const { data, error } = await supabase
         .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'sms_button_enabled')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['sms_button_enabled', 'email_notifications_enabled', 'sender_email']);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading app settings:', error);
@@ -20,7 +21,19 @@ export const useAppSettings = () => {
       }
 
       if (data) {
-        setSmsButtonEnabled(data.setting_value === 'true');
+        data.forEach((setting) => {
+          switch (setting.setting_key) {
+            case 'sms_button_enabled':
+              setSmsButtonEnabled(setting.setting_value === 'true');
+              break;
+            case 'email_notifications_enabled':
+              setEmailNotificationsEnabled(setting.setting_value === 'true');
+              break;
+            case 'sender_email':
+              setSenderEmail(setting.setting_value);
+              break;
+          }
+        });
       }
     } catch (error) {
       console.error('Error loading app settings:', error);
@@ -45,10 +58,83 @@ export const useAppSettings = () => {
       }
 
       setSmsButtonEnabled(enabled);
-      toast.success(`Bouton SMS ${enabled ? 'activé' : 'désactivé'}`);
     } catch (error) {
       console.error('Error updating SMS button setting:', error);
       toast.error('Erreur lors de la mise à jour du paramètre SMS');
+    }
+  };
+
+  const updateEmailNotificationsSetting = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'email_notifications_enabled',
+          setting_value: enabled.toString()
+        });
+
+      if (error) {
+        console.error('Error updating email notifications setting:', error);
+        toast.error('Erreur lors de la mise à jour du paramètre email');
+        return;
+      }
+
+      setEmailNotificationsEnabled(enabled);
+    } catch (error) {
+      console.error('Error updating email notifications setting:', error);
+      toast.error('Erreur lors de la mise à jour du paramètre email');
+    }
+  };
+
+  const updateSenderEmailSetting = async (email: string) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'sender_email',
+          setting_value: email
+        });
+
+      if (error) {
+        console.error('Error updating sender email setting:', error);
+        toast.error('Erreur lors de la mise à jour de l\'email d\'envoi');
+        return;
+      }
+
+      setSenderEmail(email);
+    } catch (error) {
+      console.error('Error updating sender email setting:', error);
+      toast.error('Erreur lors de la mise à jour de l\'email d\'envoi');
+    }
+  };
+
+  const saveAllSettings = async (settings: {
+    smsEnabled: boolean;
+    emailEnabled: boolean;
+    senderEmail: string;
+  }) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert([
+          { setting_key: 'sms_button_enabled', setting_value: settings.smsEnabled.toString() },
+          { setting_key: 'email_notifications_enabled', setting_value: settings.emailEnabled.toString() },
+          { setting_key: 'sender_email', setting_value: settings.senderEmail }
+        ]);
+
+      if (error) {
+        console.error('Error saving all settings:', error);
+        toast.error('Erreur lors de la sauvegarde des paramètres');
+        return;
+      }
+
+      setSmsButtonEnabled(settings.smsEnabled);
+      setEmailNotificationsEnabled(settings.emailEnabled);
+      setSenderEmail(settings.senderEmail);
+      toast.success('Configuration sauvegardée avec succès');
+    } catch (error) {
+      console.error('Error saving all settings:', error);
+      toast.error('Erreur lors de la sauvegarde des paramètres');
     }
   };
 
@@ -58,8 +144,13 @@ export const useAppSettings = () => {
 
   return {
     smsButtonEnabled,
+    emailNotificationsEnabled,
+    senderEmail,
     loading,
     updateSmsButtonSetting,
+    updateEmailNotificationsSetting,
+    updateSenderEmailSetting,
+    saveAllSettings,
     loadSettings
   };
 };

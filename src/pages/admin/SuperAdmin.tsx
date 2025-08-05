@@ -61,7 +61,12 @@ interface ActivityLog {
 }
 
 const SuperAdmin: React.FC = () => {
-  const { smsButtonEnabled, updateSmsButtonSetting } = useAppSettings();
+  const { 
+    smsButtonEnabled, 
+    emailNotificationsEnabled, 
+    senderEmail,
+    saveAllSettings 
+  } = useAppSettings();
   const [users, setUsers] = useState<DatabaseUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -72,9 +77,10 @@ const SuperAdmin: React.FC = () => {
   const [showSupabaseCredentials, setShowSupabaseCredentials] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [tableStats, setTableStats] = useState<TableStats[]>([]);
-  const [emailConfig, setEmailConfig] = useState({
-    senderEmail: 'magasinier@example.com',
-    enabled: true
+  const [localSettings, setLocalSettings] = useState({
+    smsEnabled: true,
+    emailEnabled: true,
+    senderEmail: 'magasinier@example.com'
   });
   const [securitySettings, setSecuritySettings] = useState({
     sessionDuration: 24,
@@ -95,6 +101,14 @@ const SuperAdmin: React.FC = () => {
     loadTableStats();
     loadActivityLogs();
   }, []);
+
+  useEffect(() => {
+    setLocalSettings({
+      smsEnabled: smsButtonEnabled,
+      emailEnabled: emailNotificationsEnabled,
+      senderEmail: senderEmail
+    });
+  }, [smsButtonEnabled, emailNotificationsEnabled, senderEmail]);
 
   const loadTableStats = async () => {
     try {
@@ -666,67 +680,83 @@ const SuperAdmin: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="w-5 h-5" />
+                <Settings className="w-5 h-5" />
                 🔹 Paramètres de l'application
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="font-semibold mb-4">Configuration des emails</h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="sender-email">Email d'envoi automatique du magasinier</Label>
-                    <Input
-                      id="sender-email"
-                      type="email"
-                      value={emailConfig.senderEmail}
-                      onChange={(e) => setEmailConfig({ ...emailConfig, senderEmail: e.target.value })}
-                      placeholder="magasinier@exemple.com"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Configuration des notifications
+                </h3>
+                <div className="space-y-6">
+                  {/* Configuration email */}
+                  <div className="space-y-4 p-4 border rounded-lg">
                     <div>
-                      <Label htmlFor="email-enabled">Activer l'envoi automatique d'emails</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Les emails seront envoyés automatiquement lors de certaines actions
-                      </p>
+                      <Label htmlFor="sender-email">Email d'envoi automatique du magasinier</Label>
+                      <Input
+                        id="sender-email"
+                        type="email"
+                        value={localSettings.senderEmail}
+                        onChange={(e) => setLocalSettings({ ...localSettings, senderEmail: e.target.value })}
+                        placeholder="magasinier@exemple.com"
+                        className="mt-2"
+                      />
                     </div>
-                    <Switch
-                      id="email-enabled"
-                      checked={emailConfig.enabled}
-                      onCheckedChange={(checked) => setEmailConfig({ ...emailConfig, enabled: checked })}
-                    />
-                  </div>
-                  <Button className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Sauvegarder la configuration
-                  </Button>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-semibold mb-4">Configuration des notifications SMS</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="sms-enabled">Activer les notifications SMS</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Afficher le bouton d'envoi de SMS dans les détails des commandes
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="email-enabled">Activer les notifications par email</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Les emails seront envoyés automatiquement lors de certaines actions
+                        </p>
+                      </div>
+                      <Switch
+                        id="email-enabled"
+                        checked={localSettings.emailEnabled}
+                        onCheckedChange={(checked) => setLocalSettings({ ...localSettings, emailEnabled: checked })}
+                      />
                     </div>
-                    <Switch
-                      id="sms-enabled"
-                      checked={smsButtonEnabled}
-                      onCheckedChange={updateSmsButtonSetting}
-                    />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="w-4 h-4" />
+                      <span>
+                        {localSettings.emailEnabled ? 'Les notifications par email sont activées' : 'Les notifications par email sont désactivées'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MessageSquare className="w-4 h-4" />
-                    <span>
-                      {smsButtonEnabled ? 'Les utilisateurs peuvent envoyer des SMS' : 'Les notifications SMS sont désactivées'}
-                    </span>
+
+                  {/* Configuration SMS */}
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="sms-enabled">Activer les notifications par SMS</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Afficher le bouton d'envoi de SMS dans les détails des commandes
+                        </p>
+                      </div>
+                      <Switch
+                        id="sms-enabled"
+                        checked={localSettings.smsEnabled}
+                        onCheckedChange={(checked) => setLocalSettings({ ...localSettings, smsEnabled: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MessageSquare className="w-4 h-4" />
+                      <span>
+                        {localSettings.smsEnabled ? 'Les utilisateurs peuvent envoyer des SMS' : 'Les notifications SMS sont désactivées'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bouton de sauvegarde centralisé */}
+                  <div className="pt-4 border-t">
+                    <Button 
+                      onClick={() => saveAllSettings(localSettings)}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Sauvegarder la configuration
+                    </Button>
                   </div>
                 </div>
               </div>
