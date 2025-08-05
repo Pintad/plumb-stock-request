@@ -1,6 +1,6 @@
 
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Order } from '@/types';
 import { useAppContext } from '@/context/AppContext';
 
@@ -13,6 +13,19 @@ export const useOrderStatus = (initialOrder: Order | undefined) => {
     })) || []
   );
   const [messageText, setMessageText] = useState<string>(initialOrder?.messagefournisseur || "");
+
+  // Synchroniser l'état local lorsque initialOrder change
+  useEffect(() => {
+    if (initialOrder) {
+      setArticles(
+        initialOrder.articles.map(article => ({
+          ...article,
+          completed: article.completed || false
+        }))
+      );
+      setMessageText(initialOrder.messagefournisseur || "");
+    }
+  }, [initialOrder]);
 
   const handleItemCompletionToggle = (index: number) => {
     if (!initialOrder) return;
