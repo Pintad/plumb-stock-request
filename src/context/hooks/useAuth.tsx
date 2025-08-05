@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
 export const useAuth = () => {
@@ -52,11 +52,7 @@ export const useAuth = () => {
 
     if (error) {
       console.error('Erreur lors du chargement du profil:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de charger le profil utilisateur.',
-      });
+      toast.error('Impossible de charger le profil utilisateur.');
       setProfile(null);
       setLoading(false);
       return;
@@ -86,11 +82,7 @@ export const useAuth = () => {
 
     if (error || !data.session) {
       setLoading(false);
-      toast({
-        variant: 'destructive',
-        title: "Erreur d'authentification",
-        description: error?.message ?? 'Échec de la connexion.',
-      });
+      toast.error(error?.message ?? 'Échec de la connexion.');
       return false;
     }
 
@@ -111,11 +103,7 @@ export const useAuth = () => {
     });
 
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: "Erreur d'inscription",
-        description: error.message,
-      });
+      toast.error(error.message);
       setLoading(false);
       return false;
     }
@@ -132,19 +120,12 @@ export const useAuth = () => {
         });
 
       if (profileError) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur de création du profil',
-          description: profileError.message,
-        });
+        toast.error(profileError.message);
         setLoading(false);
         return false;
       }
 
-      toast({
-        title: 'Inscription réussie',
-        description: 'Vous pouvez désormais vous connecter.',
-      });
+      toast.success('Inscription réussie. Vous pouvez désormais vous connecter.');
       
       // fetchProfile sera déclenché par l'écouteur onAuthStateChange
       return true;
@@ -158,11 +139,7 @@ export const useAuth = () => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: "Impossible de se déconnecter pour le moment.",
-      });
+      toast.error("Impossible de se déconnecter pour le moment.");
     }
     setProfile(null);
     setSession(null);
