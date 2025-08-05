@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,8 @@ import {
   Filter,
   Download,
   Upload,
-  Lock
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 
 interface DatabaseUser {
@@ -59,6 +61,7 @@ interface ActivityLog {
 }
 
 const SuperAdmin: React.FC = () => {
+  const { smsButtonEnabled, updateSmsButtonSetting } = useAppSettings();
   const [users, setUsers] = useState<DatabaseUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -698,6 +701,33 @@ const SuperAdmin: React.FC = () => {
                     <Mail className="w-4 h-4" />
                     Sauvegarder la configuration
                   </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-4">Configuration des notifications SMS</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="sms-enabled">Activer les notifications SMS</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Afficher le bouton d'envoi de SMS dans les détails des commandes
+                      </p>
+                    </div>
+                    <Switch
+                      id="sms-enabled"
+                      checked={smsButtonEnabled}
+                      onCheckedChange={updateSmsButtonSetting}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>
+                      {smsButtonEnabled ? 'Les utilisateurs peuvent envoyer des SMS' : 'Les notifications SMS sont désactivées'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>

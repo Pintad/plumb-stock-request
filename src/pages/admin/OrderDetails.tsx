@@ -16,11 +16,13 @@ import OrderDetailsHeader from '@/components/orders/OrderDetailsHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { useOrderRealtime } from '@/hooks/useOrderRealtime';
+import { useAppSettingsContext } from '@/context/AppSettingsContext';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { orders, isAdmin, loadOrders } = useAppContext();
+  const { smsButtonEnabled } = useAppSettingsContext();
   const isMobile = useIsMobile();
   
   const initialOrder = orderId ? orders.find(o => o.commandeid === orderId) : undefined;
@@ -96,16 +98,18 @@ const OrderDetails = () => {
                     <Mail className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                     {sendingEmail ? "Envoi en cours..." : "Envoyer un mail"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={() => setShowSMSConfirm(true)}
-                    disabled={sendingSMS}
-                    size={isMobile ? "sm" : "default"}
-                  >
-                    <MessageSquare className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                    {sendingSMS ? "Envoi en cours..." : "Envoyer un SMS"}
-                  </Button>
+                  {smsButtonEnabled && (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => setShowSMSConfirm(true)}
+                      disabled={sendingSMS}
+                      size={isMobile ? "sm" : "default"}
+                    >
+                      <MessageSquare className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                      {sendingSMS ? "Envoi en cours..." : "Envoyer un SMS"}
+                    </Button>
+                  )}
                 </div>
               )}
 

@@ -7,6 +7,7 @@ import { useCart } from './hooks/useCart';
 import { useOrders } from './hooks/useOrders';
 import { loadProjectsFromCSV } from './imports';
 import { AppContextType } from './types';
+import { AppSettingsProvider } from './AppSettingsContext';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -54,53 +55,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [projects.length, projectsError, loadProjects]);
 
   return (
-    <AppContext.Provider
-      value={{
-        user,
-        session,
-        login,
-        logout,
-        signup,
-      isAdmin,
-      isSuperAdmin,
-        products,
-        setProducts,
-        categories,
-        addCategory,
-        deleteCategory,
-        projects,
-        addProject,
-        updateProject,
-        deleteProject,
-        loadProjects,
-        cart,
-        customItems,
-        addToCart,
-        removeFromCart,
-        updateCartItemQuantity,
-        clearCart,
-        addCustomItem,
-        removeCustomItem,
-        updateCustomItemQuantity,
-        totalItems,
-        orders,
-        loadOrders,
-        createOrder: createOrderWrapper,
-        updateOrderStatus,
-        updateOrder,
-        deleteOrder,
-        loadProductsFromCSV,
-        loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
-        isLoading: isLoading || projectsLoading,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        selectedDeliveryDate,
-        setSelectedDeliveryDate
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppSettingsProvider>
+      <AppContext.Provider
+        value={{
+          user,
+          session,
+          login,
+          logout,
+          signup,
+        isAdmin,
+        isSuperAdmin,
+          products,
+          setProducts,
+          categories,
+          addCategory,
+          deleteCategory,
+          projects,
+          addProject,
+          updateProject,
+          deleteProject,
+          loadProjects,
+          cart,
+          customItems,
+          addToCart,
+          removeFromCart,
+          updateCartItemQuantity,
+          clearCart,
+          addCustomItem,
+          removeCustomItem,
+          updateCustomItemQuantity,
+          totalItems,
+          orders,
+          loadOrders,
+          createOrder: createOrderWrapper,
+          updateOrderStatus,
+          updateOrder,
+          deleteOrder,
+          loadProductsFromCSV,
+          loadProjectsFromCSV: (csvContent) => loadProjectsFromCSV(csvContent, addProject),
+          isLoading: isLoading || projectsLoading,
+          addProduct,
+          updateProduct,
+          deleteProduct,
+          selectedDeliveryDate,
+          setSelectedDeliveryDate
+        }}
+      >
+        {children}
+      </AppContext.Provider>
+    </AppSettingsProvider>
   );
 };
 
