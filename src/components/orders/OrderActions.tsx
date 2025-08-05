@@ -22,6 +22,7 @@ import {
 interface OrderActionsProps {
   order: Order;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   onManageOrder?: (order: Order) => void;
   onExportCSV: (order: Order) => void;
   onPrintOrder: (order: Order) => void;
@@ -30,6 +31,7 @@ interface OrderActionsProps {
 const OrderActions = ({ 
   order, 
   isAdmin = false, 
+  isSuperAdmin = false,
   onManageOrder, 
   onExportCSV,
   onPrintOrder
@@ -39,7 +41,7 @@ const OrderActions = ({
   if (isMobile) {
     return (
       <div className="flex items-center justify-end w-full">
-        {isAdmin ? (
+        {(isAdmin || isSuperAdmin) ? (
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="px-2">
@@ -115,7 +117,7 @@ const OrderActions = ({
 
   return (
     <div className="flex items-center gap-2">
-      {isAdmin && (
+      {(isAdmin || isSuperAdmin) && (
         <>
           <Button 
             variant="outline" 
@@ -138,7 +140,7 @@ const OrderActions = ({
         </>
       )}
       
-      {isAdmin && onManageOrder && (
+      {(isAdmin || isSuperAdmin) && onManageOrder && (
         <Button 
           variant={order.termine === 'Non' ? "default" : "outline"} 
           size="sm" 

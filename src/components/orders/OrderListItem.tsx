@@ -18,6 +18,7 @@ interface OrderListItemProps {
   order: Order;
   showUser?: boolean;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   projectName?: string | null;
   onManageOrder?: (order: Order) => void;
   onExportCSV: (order: Order) => void;
@@ -52,6 +53,7 @@ const OrderListItem = ({
   order, 
   showUser = false, 
   isAdmin = false,
+  isSuperAdmin = false,
   projectName,
   onManageOrder,
   onExportCSV,
@@ -102,7 +104,7 @@ const OrderListItem = ({
             )}
           </div>
           <div className={`flex items-center gap-2 ${isMobile ? 'mt-2 justify-between w-full' : ''}`}>
-            {order.messagefournisseur && !isAdmin && (
+            {order.messagefournisseur && !(isAdmin || isSuperAdmin) && (
               <div className={`flex items-center text-sm text-gray-600 ${isMobile ? 'text-xs' : 'mr-2'}`}>
                 <MessageSquare className="h-4 w-4 mr-1" />
                 <span className={isMobile ? 'truncate max-w-[150px]' : ''}>
@@ -135,6 +137,7 @@ const OrderListItem = ({
           <OrderActions 
             order={order}
             isAdmin={isAdmin}
+            isSuperAdmin={isSuperAdmin}
             onManageOrder={onManageOrder}
             onExportCSV={onExportCSV}
             onPrintOrder={onPrintOrder}

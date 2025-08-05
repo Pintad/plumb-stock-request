@@ -11,6 +11,7 @@ interface OrderListProps {
   showFullDetails?: boolean;
   onManageOrder?: (order: Order) => void;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 const OrderList = ({ 
@@ -18,7 +19,8 @@ const OrderList = ({
   showUser = false, 
   showFullDetails = false,
   onManageOrder,
-  isAdmin = false
+  isAdmin = false,
+  isSuperAdmin = false
 }: OrderListProps) => {
   const { projects } = useAppContext();
   
@@ -136,6 +138,7 @@ const OrderList = ({
             order={order}
             showUser={showUser}
             isAdmin={isAdmin}
+            isSuperAdmin={isSuperAdmin}
             projectName={order.projectName || getProjectName(order.projectCode)}
             onManageOrder={onManageOrder}
             onExportCSV={exportToCSV}

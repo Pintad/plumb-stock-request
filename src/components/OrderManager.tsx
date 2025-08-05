@@ -16,7 +16,7 @@ interface OrderManagerProps {
 }
 
 const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderManagerProps) => {
-  const { updateOrderStatus, isAdmin, loadOrders } = useAppContext();
+  const { updateOrderStatus, isAdmin, isSuperAdmin, loadOrders } = useAppContext();
   const [order, setOrder] = useState(initialOrder);
   const [message, setMessage] = useState(initialOrder.messagefournisseur || '');
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -71,7 +71,7 @@ const OrderManager = ({ order: initialOrder, onClose, isOpen = true }: OrderMana
 
           <div>
             <p className="text-sm font-medium mb-1">Articles</p>
-            {isAdmin ? (
+            {(isAdmin || isSuperAdmin) ? (
               // Affichage checklist pour magasinier
               <ul className="space-y-2">
                 {order.articles && order.articles.length > 0 ? (

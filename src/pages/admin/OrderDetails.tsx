@@ -21,7 +21,7 @@ import { useAppSettingsContext } from '@/context/AppSettingsContext';
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { orders, isAdmin, loadOrders } = useAppContext();
+  const { orders, isAdmin, isSuperAdmin, loadOrders } = useAppContext();
   const { smsButtonEnabled, emailNotificationsEnabled } = useAppSettingsContext();
   const isMobile = useIsMobile();
   
@@ -76,7 +76,7 @@ const OrderDetails = () => {
           <CardHeader className={isMobile ? 'px-3 py-3' : ''}>
             <OrderDetailsHeader
               order={order}
-              isAdmin={isAdmin}
+              isAdmin={isAdmin || isSuperAdmin}
               isMobile={isMobile}
               onNavigateBack={() => navigate('/admin/orders')}
               onStatusChange={handleManualStatusChange}
@@ -86,7 +86,7 @@ const OrderDetails = () => {
             <div className="space-y-4">
               <OrderInfoSection order={order} />
               
-              {isAdmin && order.termine === 'Oui' && (
+              {(isAdmin || isSuperAdmin) && order.termine === 'Oui' && (
                 <div className="flex justify-end gap-2">
                   {emailNotificationsEnabled && (
                     <Button
@@ -117,12 +117,12 @@ const OrderDetails = () => {
 
               <OrderArticlesSection 
                 articles={articles}
-                isAdmin={isAdmin}
+                isAdmin={isAdmin || isSuperAdmin}
                 onItemCompletionToggle={handleItemCompletionToggle}
                 isMobile={isMobile}
               />
 
-              {isAdmin && (
+              {(isAdmin || isSuperAdmin) && (
                 <MessageSection 
                   message={messageText}
                   onChange={handleMessageChange}
