@@ -139,7 +139,7 @@ export const createOrderInDb = async (
         // Notification par SMS si activée
         if (settings.warehouse_notification_sms_enabled === 'true' && settings.warehouse_phone) {
           try {
-            const smsMessage = `Nouvelle commande reçue: ${displayTitle} de ${user.name}`;
+            const smsMessage = `Nouvelle commande à traiter: ${displayTitle} de ${user.name}`;
             await supabase.functions.invoke('send-sms', {
               body: {
                 numero: settings.warehouse_phone,
