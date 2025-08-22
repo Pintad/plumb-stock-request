@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
@@ -12,7 +13,7 @@ export const useBarcodeScanner = () => {
       const { data, error } = await supabase
         .from('catalogue')
         .select('*')
-        .eq('barcode', barcode.trim())
+        .eq('reference', barcode.trim())
         .maybeSingle();
 
       if (error) {
@@ -22,7 +23,7 @@ export const useBarcodeScanner = () => {
       }
 
       if (!data) {
-        toast.error('Article inconnu - Code-barres non trouvé');
+        toast.error('Article inconnu - Référence non trouvée');
         return null;
       }
 
