@@ -1,18 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Header } from '@/components/Header';
 import { useProductFiltering } from '@/hooks/useProductFiltering';
 import { useProductPagination } from '@/hooks/useProductPagination';
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 
 // Import refactored components
 import HierarchicalCategorySidebar from '@/components/catalog/HierarchicalCategorySidebar';
 import CatalogHeader from '@/components/catalog/CatalogHeader';
 import MobileCategoryBadge from '@/components/catalog/MobileCategoryBadge';
 import ProductGrid from '@/components/catalog/ProductGrid';
+import BarcodeScanner from '@/components/scanner/BarcodeScanner';
+import ScannedProductForm from '@/components/scanner/ScannedProductForm';
+import { Product } from '@/types';
 
 const Catalog = () => {
   const { products, cart, categories } = useAppContext();
+  const { searchProductByBarcode } = useBarcodeScanner();
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   
   const {
     searchTerm,
@@ -33,6 +40,26 @@ const Catalog = () => {
   } = useProductPagination({ filteredProducts });
 
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  const handleScanSuccess = async (barcode: string) => {
+    setShowScanner(false);
+    const product = await searchProductByBarcode(barcode);
+    if (product) {
+      setScannedProduct(product);
+    }
+  };
+
+  const handleScannerClose = () => {
+    setShowScanner(false);
+  };
+
+  const handleProductFormClose = () => {
+    setScannedProduct(null);
+  };
+
+  const handleAddToCart = () => {
+    setScannedProduct(null);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -59,6 +86,7 @@ const Catalog = () => {
             activeSuperCategory={activeSuperCategory}
             setCategory={setCategory}
             setSuperCategory={setSuperCategory}
+            onScannerOpen={() => setShowScanner(true)}
           />
           
           {/* Mobile category display */}
@@ -77,6 +105,23 @@ const Catalog = () => {
           />
         </div>
       </main>
+      
+      {/* Scanner de code-barres */}
+      {showScanner && (
+        <BarcodeScanner
+          onScanSuccess={handleScanSuccess}
+          onClose={handleScannerClose}
+        />
+      )}
+      
+      {/* Formulaire d'article scanné */}
+      {scannedProduct && (
+        <ScannedProductForm
+          product={scannedProduct}
+          onClose={handleProductFormClose}
+          onAddToCart={handleAddToCart}
+        />
+      )}
     </div>
   );
 };

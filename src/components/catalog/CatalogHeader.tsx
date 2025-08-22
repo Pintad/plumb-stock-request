@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductSearch from '@/components/ProductSearch';
 import HierarchicalMobileCategoryFilter from './HierarchicalMobileCategoryFilter';
+import { useAppContext } from '@/context/AppContext';
 
 interface CatalogHeaderProps {
   searchTerm: string;
@@ -16,6 +17,7 @@ interface CatalogHeaderProps {
   activeSuperCategory?: string;
   setCategory: (category: string | 'all') => void;
   setSuperCategory?: (superCategory: string | undefined) => void;
+  onScannerOpen?: () => void;
 }
 
 const CatalogHeader: React.FC<CatalogHeaderProps> = ({
@@ -27,8 +29,10 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   activeCategory,
   activeSuperCategory,
   setCategory,
-  setSuperCategory
+  setSuperCategory,
+  onScannerOpen
 }) => {
+  const { user } = useAppContext();
   return (
     <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
       <div className="flex-1 max-w-md">
@@ -43,6 +47,18 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
           setCategory={setCategory}
           setSuperCategory={setSuperCategory}
         />
+        
+        {/* Bouton Scanner pour les magasiniers */}
+        {user?.role === 'worker' && onScannerOpen && (
+          <Button 
+            variant="outline" 
+            onClick={onScannerOpen}
+            className="flex items-center gap-2"
+          >
+            <Scan className="h-4 w-4" />
+            Scanner
+          </Button>
+        )}
         
         {cartItemsCount > 0 && (
           <Link to="/cart">
