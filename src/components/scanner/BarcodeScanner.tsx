@@ -21,15 +21,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
       qrbox: { width: 250, height: 250 },
       aspectRatio: 1.0,
       supportedScanTypes: [
-        // Support des codes-barres 1D et QR codes
         1, // QR Code
-        2, // Data Matrix
-        16, // Code 128
-        32, // Code 39
-        64, // EAN-13
-        128, // EAN-8
-        256, // UPC-A
-        512, // UPC-E
+        16 // Code 128 (most common barcode format)
       ]
     };
 
