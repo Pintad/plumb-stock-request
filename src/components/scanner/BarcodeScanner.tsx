@@ -18,27 +18,57 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    console.log('🔄 BarcodeScanner useEffect - Début');
     let mounted = true;
     let isQuaggaStarted = false;
 
     const initCamera = async () => {
-      if (!mounted) return;
+      console.log('📹 initCamera - Début');
+      if (!mounted) {
+        console.log('❌ initCamera - Component non monté');
+        return;
+      }
 
       try {
+        console.log('⏳ Mise à jour états - isLoading: true, error: null');
         setIsLoading(true);
         setError(null);
 
-        // Test permissions caméra d'abord
+        console.log('🔍 Vérification navigator.mediaDevices...');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('navigator.mediaDevices non supporté');
+        }
+        console.log('✅ navigator.mediaDevices disponible');
+
+        console.log('🎥 Test permissions caméra...');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' }
         });
-        stream.getTracks().forEach(track => track.stop());
+        console.log('✅ Permissions caméra accordées, stream obtenu:', stream);
+        
+        stream.getTracks().forEach(track => {
+          console.log('🛑 Arrêt track:', track);
+          track.stop();
+        });
+        console.log('✅ Stream fermé');
 
-        // Attendre que le DOM soit prêt
+        console.log('⏰ Attente 100ms pour DOM...');
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        if (!mounted || !scannerRef.current) return;
+        console.log('🔍 Vérification mounted et scannerRef...');
+        if (!mounted) {
+          console.log('❌ Component non monté après timeout');
+          return;
+        }
+        if (!scannerRef.current) {
+          console.log('❌ scannerRef.current null');
+          setError('Élément scanner non trouvé');
+          setIsLoading(false);
+          return;
+        }
+        console.log('✅ scannerRef.current disponible:', scannerRef.current);
 
+        console.log('⚙️ Configuration QuaggaJS...');
         const config = {
           inputStream: {
             name: "Live",
@@ -61,26 +91,40 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
           locate: true,
           frequency: 10
         };
+        console.log('✅ Config QuaggaJS créée:', config);
 
+        console.log('🚀 Quagga.init...');
         Quagga.init(config, (err: any) => {
-          if (!mounted) return;
+          console.log('📥 Quagga.init callback appelé');
+          if (!mounted) {
+            console.log('❌ Component non monté dans callback');
+            return;
+          }
 
           if (err) {
-            console.error('Erreur QuaggaJS:', err);
-            setError('Impossible d\'initialiser le scanner');
+            console.error('❌ Erreur QuaggaJS init:', err);
+            setError('Impossible d\'initialiser le scanner: ' + (err.message || err));
             setIsLoading(false);
             return;
           }
 
-          if (!mounted) return;
+          console.log('✅ QuaggaJS initialisé avec succès');
 
+          if (!mounted) {
+            console.log('❌ Component non monté avant onDetected');
+            return;
+          }
+
+          console.log('🎯 Configuration onDetected...');
           // Handler de détection
           Quagga.onDetected((result: any) => {
             if (!mounted) return;
             
             const code = result.codeResult.code;
+            console.log('🔍 Code détecté:', code);
+            
             if (code && code.length >= 8) {
-              console.log('Code détecté:', code);
+              console.log('✅ Code valide, longueur:', code.length);
               
               // Vibration si supportée
               if ('vibrate' in navigator) {
@@ -89,25 +133,34 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
               
               cleanup();
               onScanSuccess(code);
+            } else {
+              console.log('❌ Code invalide ou trop court');
             }
           });
 
+          console.log('🚀 Quagga.start...');
           Quagga.start();
           isQuaggaStarted = true;
           setIsScanning(true);
           setIsLoading(false);
+          console.log('✅ Scanner démarré avec succès');
         });
 
       } catch (error: any) {
-        if (!mounted) return;
+        if (!mounted) {
+          console.log('❌ Erreur mais component non monté');
+          return;
+        }
         
-        console.error('Erreur caméra:', error);
+        console.error('❌ Erreur caméra:', error);
         let errorMessage = 'Erreur d\'accès à la caméra';
         
         if (error.name === 'NotAllowedError') {
           errorMessage = 'Autorisation caméra refusée';
         } else if (error.name === 'NotFoundError') {
           errorMessage = 'Aucune caméra trouvée';
+        } else if (error.message) {
+          errorMessage = error.message;
         }
         
         setError(errorMessage);
@@ -116,19 +169,24 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
     };
 
     const cleanup = () => {
+      console.log('🧹 Cleanup appelé');
       if (isQuaggaStarted) {
         try {
+          console.log('🛑 Arrêt Quagga...');
           Quagga.stop();
           isQuaggaStarted = false;
+          console.log('✅ Quagga arrêté');
         } catch (e) {
-          console.log('Erreur lors de l\'arrêt:', e);
+          console.log('❌ Erreur lors de l\'arrêt:', e);
         }
       }
     };
 
+    console.log('🚀 Lancement initCamera...');
     initCamera();
 
     return () => {
+      console.log('🧹 Cleanup useEffect');
       mounted = false;
       cleanup();
     };
