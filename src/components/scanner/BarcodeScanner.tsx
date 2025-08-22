@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Quagga from 'quagga';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Camera, Zap, Target, Loader2 } from 'lucide-react';
+import { X, Camera, Zap, Target, Loader2, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface BarcodeScannerProps {
@@ -14,134 +14,209 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
   const scannerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<'fast' | 'precise'>('fast');
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const initScanner = async () => {
+  const stopScanner = useCallback(() => {
+    try {
+      if (typeof Quagga !== 'undefined' && Quagga.initialized) {
+        Quagga.stop();
+        console.log('Scanner arrêté');
+      }
+    } catch (error) {
+      console.log('Erreur lors de l\'arrêt du scanner:', error);
+    }
+  }, []);
+
+  const initScanner = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Vérifier le support des médias
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Votre navigateur ne supporte pas l\'accès à la caméra');
+      }
+
+      // Vérifier que l'élément DOM existe
+      if (!scannerRef.current) {
+        throw new Error('Element DOM scanner non disponible');
+      }
+
+      // Vérifier les permissions caméra de façon plus robuste
       try {
-        setIsLoading(true);
-
-        // Vérifier que l'élément DOM existe
-        if (!scannerRef.current) {
-          console.error('Element DOM scanner non disponible');
-          setIsLoading(false);
-          return;
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { ideal: "environment" },
+            width: { ideal: isMobile ? 640 : 800 },
+            height: { ideal: isMobile ? 480 : 600 }
+          } 
+        });
+        
+        // Vérifier que le stream a des tracks vidéo
+        const videoTracks = stream.getVideoTracks();
+        if (videoTracks.length === 0) {
+          throw new Error('Aucune caméra disponible');
         }
 
-        // Demander explicitement l'accès à la caméra
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
-          });
-          // Fermer le stream temporaire - QuaggaJS va gérer sa propre connexion
-          stream.getTracks().forEach(track => track.stop());
-          console.log('Permissions caméra accordées');
-        } catch (permissionError) {
-          console.error('Permissions caméra refusées:', permissionError);
-          setIsLoading(false);
-          return;
+        // Fermer le stream temporaire
+        stream.getTracks().forEach(track => track.stop());
+        console.log('Permissions caméra accordées');
+        
+      } catch (permissionError: any) {
+        console.error('Erreur permissions caméra:', permissionError);
+        
+        let errorMessage = 'Impossible d\'accéder à la caméra';
+        if (permissionError.name === 'NotAllowedError') {
+          errorMessage = 'Permission caméra refusée. Veuillez autoriser l\'accès dans votre navigateur.';
+        } else if (permissionError.name === 'NotFoundError') {
+          errorMessage = 'Aucune caméra trouvée sur cet appareil.';
+        } else if (permissionError.name === 'NotReadableError') {
+          errorMessage = 'Caméra occupée par une autre application.';
         }
+        
+        throw new Error(errorMessage);
+      }
 
-        // Configuration QuaggaJS simplifiée
-        const config = {
-          inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: scannerRef.current, // Utiliser directement la référence
-            constraints: {
-              width: isMobile ? 640 : 800,
-              height: isMobile ? 480 : 600,
-              facingMode: "environment"
+      // Configuration QuaggaJS améliorée
+      const config = {
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: scannerRef.current,
+          constraints: {
+            width: { min: 320, ideal: isMobile ? 640 : 800, max: 1920 },
+            height: { min: 240, ideal: isMobile ? 480 : 600, max: 1080 },
+            facingMode: "environment",
+            aspectRatio: { ideal: 4/3 }
+          },
+          area: { // Zone de scan définie
+            top: "20%",
+            right: "20%", 
+            left: "20%",
+            bottom: "20%"
+          }
+        },
+        decoder: {
+          readers: scanMode === 'fast' ? [
+            "code_128_reader",
+            "ean_reader",
+            "code_39_reader"
+          ] : [
+            "code_128_reader",
+            "ean_reader", 
+            "ean_8_reader",
+            "code_39_reader",
+            "code_39_vin_reader",
+            "codabar_reader",
+            "upc_reader",
+            "upc_e_reader"
+          ],
+          debug: {
+            showCanvas: false,
+            showPatches: false,
+            showFoundPatches: false,
+            showSkeleton: false,
+            showLabels: false,
+            showPatchLabels: false,
+            showRemainingPatchLabels: false,
+            boxFromPatches: {
+              showTransformed: false,
+              showTransformedBox: false,
+              showBB: false
             }
-          },
-          decoder: {
-            readers: scanMode === 'fast' ? [
-              "code_128_reader",
-              "ean_reader",
-              "code_39_reader"
-            ] : [
-              "code_128_reader",
-              "ean_reader", 
-              "ean_8_reader",
-              "code_39_reader",
-              "code_39_vin_reader",
-              "codabar_reader",
-              "upc_reader",
-              "upc_e_reader"
-            ]
-          },
-          locate: true,
-          frequency: 10
-        };
+          }
+        },
+        locator: {
+          patchSize: "medium",
+          halfSample: true
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 2,
+        frequency: 10,
+        locate: true
+      };
 
-        console.log('Initialisation QuaggaJS avec config:', config);
+      console.log('Initialisation QuaggaJS avec config:', config);
 
-        // Initialiser QuaggaJS
+      // Arrêter tout scanner existant avant d'en créer un nouveau
+      stopScanner();
+
+      // Initialiser QuaggaJS avec une promesse pour meilleur contrôle d'erreur
+      await new Promise<void>((resolve, reject) => {
         Quagga.init(config, (err: any) => {
           if (err) {
             console.error('Erreur QuaggaJS init:', err);
-            setIsLoading(false);
+            reject(new Error(`Erreur d'initialisation du scanner: ${err.message || err}`));
             return;
           }
           
           console.log('QuaggaJS initialisé avec succès');
-          
-          // Handler de détection
-          Quagga.onDetected((result: any) => {
-            const code = result.codeResult.code;
-            console.log('Code détecté:', code);
-            
-            // Vibration tactile
-            if ('vibrate' in navigator) {
-              navigator.vibrate(100);
-            }
-            
-            // Arrêter et nettoyer
-            Quagga.stop();
-            onScanSuccess(code);
-          });
-
-          Quagga.start();
-          setIsScanning(true);
-          setIsLoading(false);
+          resolve();
         });
+      });
+      
+      // Handler de détection avec debouncing
+      let lastScan = 0;
+      const scanCooldown = 1000; // 1 seconde entre les scans
+      
+      Quagga.onDetected((result: any) => {
+        const now = Date.now();
+        if (now - lastScan < scanCooldown) {
+          return; // Ignorer si trop récent
+        }
+        lastScan = now;
+        
+        const code = result.codeResult.code;
+        console.log('Code détecté:', code);
+        
+        // Validation du code (longueur minimale)
+        if (code && code.length >= 8) {
+          // Vibration tactile
+          if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+          }
+          
+          // Arrêter et nettoyer
+          stopScanner();
+          onScanSuccess(code);
+        }
+      });
 
-      } catch (error) {
-        console.error('Erreur initialisation scanner:', error);
-        setIsLoading(false);
-      }
-    };
+      Quagga.start();
+      setIsScanning(true);
+      setIsLoading(false);
 
-    // Initialiser après un court délai pour s'assurer que le DOM est prêt
-    const timer = setTimeout(initScanner, 200);
+    } catch (error: any) {
+      console.error('Erreur initialisation scanner:', error);
+      setError(error.message || 'Erreur inconnue lors de l\'initialisation');
+      setIsLoading(false);
+      setIsScanning(false);
+    }
+  }, [scanMode, isMobile, onScanSuccess, stopScanner]);
+
+  useEffect(() => {
+    // Délai pour s'assurer que le DOM est prêt
+    const timer = setTimeout(initScanner, 300);
 
     return () => {
       clearTimeout(timer);
-      // Nettoyage sécurisé
-      try {
-        if (typeof Quagga !== 'undefined' && Quagga.stop) {
-          Quagga.stop();
-        }
-      } catch (error) {
-        console.log('Nettoyage scanner (normal):', error);
-      }
+      stopScanner();
     };
-  }, [onScanSuccess, scanMode, isMobile]);
+  }, [initScanner, stopScanner]);
 
   const handleClose = () => {
-    try {
-      if (typeof Quagga !== 'undefined' && Quagga.stop) {
-        Quagga.stop();
-      }
-    } catch (error) {
-      console.log('Fermeture scanner (normal):', error);
-    }
+    stopScanner();
     onClose();
   };
 
   const toggleScanMode = () => {
     setScanMode(prev => prev === 'fast' ? 'precise' : 'fast');
+  };
+
+  const retry = () => {
+    setError(null);
+    initScanner();
   };
 
   return (
@@ -165,10 +240,31 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {isLoading ? (
+            {error ? (
+              <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
+                <AlertTriangle className="h-12 w-12 text-destructive" />
+                <div className="space-y-2">
+                  <p className="font-medium text-destructive">Erreur d'accès caméra</p>
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                </div>
+                <div className="space-y-2">
+                  <Button onClick={retry} variant="outline">
+                    Réessayer
+                  </Button>
+                  {error.includes('Permission') && (
+                    <p className="text-xs text-muted-foreground">
+                      💡 Astuce: Actualisez la page et autorisez l'accès caméra
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : isLoading ? (
               <div className="flex flex-col items-center justify-center h-64 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Initialisation du scanner...</p>
+                <p className="text-xs text-muted-foreground">
+                  Autorisation caméra requise
+                </p>
               </div>
             ) : (
               <>
@@ -205,7 +301,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
                     variant={scanMode === 'precise' ? 'default' : 'outline'}
                     className="flex-1" 
                     onClick={toggleScanMode}
-                    disabled={isLoading}
+                    disabled={isLoading || !isScanning}
                   >
                     {scanMode === 'fast' ? <Target className="h-4 w-4 mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                     {scanMode === 'precise' ? 'Précision ON' : 'Mode Rapide'}
