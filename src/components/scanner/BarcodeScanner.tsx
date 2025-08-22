@@ -16,11 +16,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<'fast' | 'precise'>('fast');
+  const [domReady, setDomReady] = useState(false);
   const isMobile = useIsMobile();
+
+  // État pour forcer le re-render si nécessaire
+  const [renderKey, setRenderKey] = useState(0);
 
   const stopScanner = useCallback(() => {
     try {
-      if (typeof Quagga !== 'undefined' && Quagga.initialized) {
+      if (typeof Quagga !== 'undefined') {
         Quagga.stop();
         console.log('Scanner arrêté');
       }
@@ -29,7 +33,55 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
     }
   }, []);
 
+  // Vérification DOM avec observer
+  useEffect(() => {
+    const checkDomReady = () => {
+      if (scannerRef.current) {
+        console.log('Element DOM trouvé:', scannerRef.current);
+        setDomReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Vérification immédiate
+    if (checkDomReady()) return;
+
+    // Observer pour détecter quand l'élément est ajouté
+    const observer = new MutationObserver(() => {
+      if (checkDomReady()) {
+        observer.disconnect();
+      }
+    });
+
+    // Observer le document pour les changements
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Timeout de sécurité
+    const timeout = setTimeout(() => {
+      observer.disconnect();
+      if (!domReady) {
+        console.error('DOM non prêt après timeout');
+        setError('Interface non initialisée correctement');
+        setIsLoading(false);
+      }
+    }, 3000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeout);
+    };
+  }, [domReady, renderKey]);
+
   const initScanner = useCallback(async () => {
+    if (!domReady || !scannerRef.current) {
+      console.log('DOM pas prêt, attente...');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -39,19 +91,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         throw new Error('Votre navigateur ne supporte pas l\'accès à la caméra');
       }
 
-      // Attendre que l'élément DOM soit disponible avec retry
-      let retries = 0;
-      const maxRetries = 10;
-      while (!scannerRef.current && retries < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retries++;
-      }
+      console.log('Element DOM confirmé:', scannerRef.current);
 
-      if (!scannerRef.current) {
-        throw new Error('Element DOM scanner non disponible après tentatives');
-      }
-
-      // Vérifier les permissions caméra de façon plus robuste
+      // Test des permissions caméra
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
@@ -61,7 +103,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
           } 
         });
         
-        // Vérifier que le stream a des tracks vidéo
         const videoTracks = stream.getVideoTracks();
         if (videoTracks.length === 0) {
           throw new Error('Aucune caméra disponible');
@@ -86,7 +127,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         throw new Error(errorMessage);
       }
 
-      // Configuration QuaggaJS améliorée
+      // Arrêter tout scanner existant
+      stopScanner();
+
+      // Configuration QuaggaJS
       const config = {
         inputStream: {
           name: "Live",
@@ -95,14 +139,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
           constraints: {
             width: { min: 320, ideal: isMobile ? 640 : 800, max: 1920 },
             height: { min: 240, ideal: isMobile ? 480 : 600, max: 1080 },
-            facingMode: "environment",
-            aspectRatio: { ideal: 4/3 }
-          },
-          area: { // Zone de scan définie
-            top: "20%",
-            right: "20%", 
-            left: "20%",
-            bottom: "20%"
+            facingMode: "environment"
           }
         },
         decoder: {
@@ -119,42 +156,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
             "codabar_reader",
             "upc_reader",
             "upc_e_reader"
-          ],
-          debug: {
-            showCanvas: false,
-            showPatches: false,
-            showFoundPatches: false,
-            showSkeleton: false,
-            showLabels: false,
-            showPatchLabels: false,
-            showRemainingPatchLabels: false,
-            boxFromPatches: {
-              showTransformed: false,
-              showTransformedBox: false,
-              showBB: false
-            }
-          }
+          ]
         },
-        locator: {
-          patchSize: "medium",
-          halfSample: true
-        },
-        numOfWorkers: navigator.hardwareConcurrency || 2,
-        frequency: 10,
-        locate: true
+        locate: true,
+        frequency: 10
       };
 
-      console.log('Initialisation QuaggaJS avec config:', config);
+      console.log('Initialisation QuaggaJS...');
 
-      // Arrêter tout scanner existant avant d'en créer un nouveau
-      stopScanner();
-
-      // Initialiser QuaggaJS avec une promesse pour meilleur contrôle d'erreur
+      // Promisifier l'initialisation
       await new Promise<void>((resolve, reject) => {
         Quagga.init(config, (err: any) => {
           if (err) {
             console.error('Erreur QuaggaJS init:', err);
-            reject(new Error(`Erreur d'initialisation du scanner: ${err.message || err}`));
+            reject(new Error(`Erreur d'initialisation: ${err.message || err}`));
             return;
           }
           
@@ -163,28 +178,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         });
       });
       
-      // Handler de détection avec debouncing
+      // Handler de détection
       let lastScan = 0;
-      const scanCooldown = 1000; // 1 seconde entre les scans
+      const scanCooldown = 1000;
       
       Quagga.onDetected((result: any) => {
         const now = Date.now();
-        if (now - lastScan < scanCooldown) {
-          return; // Ignorer si trop récent
-        }
+        if (now - lastScan < scanCooldown) return;
         lastScan = now;
         
         const code = result.codeResult.code;
         console.log('Code détecté:', code);
         
-        // Validation du code (longueur minimale)
         if (code && code.length >= 8) {
-          // Vibration tactile
           if ('vibrate' in navigator) {
             navigator.vibrate(100);
           }
           
-          // Arrêter et nettoyer
           stopScanner();
           onScanSuccess(code);
         }
@@ -200,24 +210,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
       setIsLoading(false);
       setIsScanning(false);
     }
-  }, [scanMode, isMobile, onScanSuccess, stopScanner]);
+  }, [domReady, scanMode, isMobile, onScanSuccess, stopScanner]);
 
+  // Initialisation quand DOM est prêt
   useEffect(() => {
-    // Attendre que le composant soit monté et le DOM prêt
-    const timer = setTimeout(() => {
-      if (scannerRef.current) {
-        initScanner();
-      } else {
-        // Si l'élément n'est toujours pas prêt, attendre un peu plus
-        setTimeout(initScanner, 500);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      stopScanner();
-    };
-  }, [initScanner, stopScanner]);
+    if (domReady) {
+      initScanner();
+    }
+  }, [domReady, initScanner]);
 
   const handleClose = () => {
     stopScanner();
@@ -231,15 +231,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
   const retry = () => {
     setError(null);
     setIsLoading(true);
-    // Attendre un peu avant de réessayer pour s'assurer que l'état est réinitialisé
-    setTimeout(() => {
-      if (scannerRef.current) {
-        initScanner();
-      } else {
-        setError('Element DOM scanner non disponible. Veuillez actualiser la page.');
-        setIsLoading(false);
-      }
-    }, 100);
+    setDomReady(false);
+    // Forcer un re-render complet
+    setRenderKey(prev => prev + 1);
+  };
+
+  const forceRefresh = () => {
+    window.location.reload();
   };
 
   return (
@@ -267,37 +265,41 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
               <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
                 <AlertTriangle className="h-12 w-12 text-destructive" />
                 <div className="space-y-2">
-                  <p className="font-medium text-destructive">Erreur d'accès caméra</p>
+                  <p className="font-medium text-destructive">Erreur d'initialisation</p>
                   <p className="text-sm text-muted-foreground">{error}</p>
                 </div>
-                <div className="space-y-2">
-                  <Button onClick={retry} variant="outline">
+                <div className="flex gap-2">
+                  <Button onClick={retry} variant="outline" size="sm">
                     Réessayer
                   </Button>
-                  {error.includes('Permission') && (
-                    <p className="text-xs text-muted-foreground">
-                      💡 Astuce: Actualisez la page et autorisez l'accès caméra
-                    </p>
-                  )}
+                  <Button onClick={forceRefresh} variant="destructive" size="sm">
+                    Actualiser
+                  </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 En cas de problème persistant, actualisez la page complète
+                </p>
               </div>
-            ) : isLoading ? (
+            ) : isLoading || !domReady ? (
               <div className="flex flex-col items-center justify-center h-64 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Initialisation du scanner...</p>
+                <p className="text-sm text-muted-foreground">
+                  {!domReady ? 'Préparation de l\'interface...' : 'Initialisation du scanner...'}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Autorisation caméra requise
+                  {!domReady ? 'Chargement des composants' : 'Autorisation caméra requise'}
                 </p>
               </div>
             ) : (
               <>
                 <div className="relative">
                   <div 
+                    key={renderKey} // Force re-render si nécessaire
                     ref={scannerRef}
                     className={`${isMobile ? 'w-full h-48' : 'w-96 h-64'} mx-auto rounded-lg overflow-hidden bg-black relative`}
+                    style={{ minHeight: isMobile ? '192px' : '256px' }} // Assurer la taille
                   />
                   
-                  {/* Zone de scan overlay */}
                   {isScanning && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="border-2 border-primary border-dashed rounded-lg w-4/5 h-16 animate-pulse bg-primary/10" />
