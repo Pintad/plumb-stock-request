@@ -49,7 +49,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
         />
         
         {/* Bouton Scanner pour les magasiniers */}
-        {user?.role === 'worker' && onScannerOpen && (
+        {user?.role === 'admin' && onScannerOpen && (
           <Button 
             variant="outline" 
             onClick={onScannerOpen}
