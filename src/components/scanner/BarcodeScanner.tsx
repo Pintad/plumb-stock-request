@@ -17,8 +17,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
 
   useEffect(() => {
     const config = {
-      fps: 10,
-      qrbox: { width: 300, height: 120 },
+      fps: 15,
+      qrbox: isMobile ? { width: 250, height: 100 } : { width: 300, height: 120 },
       aspectRatio: 2.5,
       formatsToSupport: [
         Html5QrcodeSupportedFormats.CODE_39,
@@ -30,6 +30,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         useBarCodeDetectorIfSupported: true
       },
       showTorchButtonIfSupported: true,
+      videoConstraints: {
+        width: isMobile ? 320 : 640,
+        height: isMobile ? 240 : 480,
+        facingMode: "environment"
+      },
     };
 
     const onScanSuccessCallback = (decodedText: string) => {
