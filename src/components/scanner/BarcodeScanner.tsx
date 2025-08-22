@@ -39,9 +39,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         throw new Error('Votre navigateur ne supporte pas l\'accès à la caméra');
       }
 
-      // Vérifier que l'élément DOM existe
+      // Attendre que l'élément DOM soit disponible avec retry
+      let retries = 0;
+      const maxRetries = 10;
+      while (!scannerRef.current && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+
       if (!scannerRef.current) {
-        throw new Error('Element DOM scanner non disponible');
+        throw new Error('Element DOM scanner non disponible après tentatives');
       }
 
       // Vérifier les permissions caméra de façon plus robuste
@@ -196,8 +203,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
   }, [scanMode, isMobile, onScanSuccess, stopScanner]);
 
   useEffect(() => {
-    // Délai pour s'assurer que le DOM est prêt
-    const timer = setTimeout(initScanner, 300);
+    // Attendre que le composant soit monté et le DOM prêt
+    const timer = setTimeout(() => {
+      if (scannerRef.current) {
+        initScanner();
+      } else {
+        // Si l'élément n'est toujours pas prêt, attendre un peu plus
+        setTimeout(initScanner, 500);
+      }
+    }, 100);
 
     return () => {
       clearTimeout(timer);
@@ -216,7 +230,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
 
   const retry = () => {
     setError(null);
-    initScanner();
+    setIsLoading(true);
+    // Attendre un peu avant de réessayer pour s'assurer que l'état est réinitialisé
+    setTimeout(() => {
+      if (scannerRef.current) {
+        initScanner();
+      } else {
+        setError('Element DOM scanner non disponible. Veuillez actualiser la page.');
+        setIsLoading(false);
+      }
+    }, 100);
   };
 
   return (
