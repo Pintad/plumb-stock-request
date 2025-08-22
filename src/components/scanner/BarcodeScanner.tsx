@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Camera } from 'lucide-react';
@@ -20,10 +20,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
       fps: 10,
       qrbox: { width: 250, height: 250 },
       aspectRatio: 1.0,
-      supportedScanTypes: [
-        1, // QR Code
-        16 // Code 128 (most common barcode format)
-      ]
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_39,
+      ],
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     };
 
     const onScanSuccessCallback = (decodedText: string) => {
