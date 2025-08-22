@@ -10,10 +10,18 @@ export const useBarcodeScanner = () => {
   const searchProductByBarcode = async (barcode: string): Promise<Product | null> => {
     setLoading(true);
     try {
+      // Nettoyer le code scanné de tout caractère parasite
+      const cleanedBarcode = barcode.trim().replace(/[^\w-]/g, '');
+      
+      console.log('Code scanné brut:', `"${barcode}"`);
+      console.log('Code nettoyé pour recherche:', `"${cleanedBarcode}"`);
+      console.log('Longueur code brut:', barcode.length);
+      console.log('Longueur code nettoyé:', cleanedBarcode.length);
+      
       const { data, error } = await supabase
         .from('catalogue')
         .select('*')
-        .eq('reference', barcode.trim())
+        .eq('reference', cleanedBarcode)
         .maybeSingle();
 
       if (error) {
