@@ -22,36 +22,44 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
       try {
         setIsLoading(true);
 
-        // Attendre que l'élément DOM soit disponible
+        // Vérifier que l'élément DOM existe
         if (!scannerRef.current) {
           console.error('Element DOM scanner non disponible');
           setIsLoading(false);
           return;
         }
 
-        // Configuration QuaggaJS optimisée
+        // Demander explicitement l'accès à la caméra
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+          });
+          // Fermer le stream temporaire - QuaggaJS va gérer sa propre connexion
+          stream.getTracks().forEach(track => track.stop());
+          console.log('Permissions caméra accordées');
+        } catch (permissionError) {
+          console.error('Permissions caméra refusées:', permissionError);
+          setIsLoading(false);
+          return;
+        }
+
+        // Configuration QuaggaJS simplifiée
         const config = {
           inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: "scanner-container", // Utiliser l'ID au lieu de la ref
+            target: scannerRef.current, // Utiliser directement la référence
             constraints: {
-              width: isMobile ? 480 : 640,
-              height: isMobile ? 320 : 480,
-              facingMode: "environment",
-              aspectRatio: isMobile ? 1.5 : 1.33
-            },
-            area: { // Zone de scan optimisée pour codes-barres
-              top: "25%",
-              right: "10%", 
-              left: "10%",
-              bottom: "25%"
+              width: isMobile ? 640 : 800,
+              height: isMobile ? 480 : 600,
+              facingMode: "environment"
             }
           },
           decoder: {
             readers: scanMode === 'fast' ? [
-              "code_128_reader", // Le plus commun
-              "ean_reader"       // Codes produits
+              "code_128_reader",
+              "ean_reader",
+              "code_39_reader"
             ] : [
               "code_128_reader",
               "ean_reader", 
@@ -60,54 +68,44 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
               "code_39_vin_reader",
               "codabar_reader",
               "upc_reader",
-              "upc_e_reader",
-              "i2of5_reader"
+              "upc_e_reader"
             ]
           },
-          locator: {
-            patchSize: scanMode === 'precise' ? "large" : "medium",
-            halfSample: scanMode === 'fast'
-          },
-          frequency: scanMode === 'precise' ? 5 : 10,
-          debug: false
+          locate: true,
+          frequency: 10
         };
 
-        // Initialiser QuaggaJS avec gestion d'erreur robuste
-        await new Promise((resolve, reject) => {
-          Quagga.init(config, (err: any) => {
-            if (err) {
-              console.error('Erreur QuaggaJS:', err);
-              reject(err);
-              return;
+        console.log('Initialisation QuaggaJS avec config:', config);
+
+        // Initialiser QuaggaJS
+        Quagga.init(config, (err: any) => {
+          if (err) {
+            console.error('Erreur QuaggaJS init:', err);
+            setIsLoading(false);
+            return;
+          }
+          
+          console.log('QuaggaJS initialisé avec succès');
+          
+          // Handler de détection
+          Quagga.onDetected((result: any) => {
+            const code = result.codeResult.code;
+            console.log('Code détecté:', code);
+            
+            // Vibration tactile
+            if ('vibrate' in navigator) {
+              navigator.vibrate(100);
             }
-            resolve(null);
-          });
-        });
-
-        // Handler de succès
-        const onDetected = (result: any) => {
-          const code = result.codeResult.code;
-          console.log('Code détecté:', code);
-          
-          // Vibration tactile sur mobile
-          if ('vibrate' in navigator) {
-            navigator.vibrate(100);
-          }
-          
-          // Arrêter le scanner de manière sécurisée
-          try {
+            
+            // Arrêter et nettoyer
             Quagga.stop();
-          } catch (stopError) {
-            console.error('Erreur arrêt scanner:', stopError);
-          }
-          
-          onScanSuccess(code);
-        };
+            onScanSuccess(code);
+          });
 
-        Quagga.onDetected(onDetected);
-        Quagga.start();
-        setIsScanning(true);
-        setIsLoading(false);
+          Quagga.start();
+          setIsScanning(true);
+          setIsLoading(false);
+        });
 
       } catch (error) {
         console.error('Erreur initialisation scanner:', error);
@@ -115,35 +113,29 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
       }
     };
 
-    // Petite temporisation pour s'assurer que le DOM est prêt
-    const timer = setTimeout(initScanner, 100);
+    // Initialiser après un court délai pour s'assurer que le DOM est prêt
+    const timer = setTimeout(initScanner, 200);
 
     return () => {
       clearTimeout(timer);
       // Nettoyage sécurisé
       try {
-        if (Quagga && typeof Quagga.stop === 'function') {
+        if (typeof Quagga !== 'undefined' && Quagga.stop) {
           Quagga.stop();
         }
-        if (Quagga && typeof Quagga.offDetected === 'function') {
-          Quagga.offDetected();
-        }
       } catch (error) {
-        console.error('Erreur nettoyage scanner:', error);
+        console.log('Nettoyage scanner (normal):', error);
       }
     };
   }, [onScanSuccess, scanMode, isMobile]);
 
   const handleClose = () => {
     try {
-      if (Quagga && typeof Quagga.stop === 'function') {
+      if (typeof Quagga !== 'undefined' && Quagga.stop) {
         Quagga.stop();
       }
-      if (Quagga && typeof Quagga.offDetected === 'function') {
-        Quagga.offDetected();
-      }
     } catch (error) {
-      console.error('Erreur fermeture scanner:', error);
+      console.log('Fermeture scanner (normal):', error);
     }
     onClose();
   };
@@ -182,7 +174,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
               <>
                 <div className="relative">
                   <div 
-                    id="scanner-container"
                     ref={scannerRef}
                     className={`${isMobile ? 'w-full h-48' : 'w-96 h-64'} mx-auto rounded-lg overflow-hidden bg-black relative`}
                   />
