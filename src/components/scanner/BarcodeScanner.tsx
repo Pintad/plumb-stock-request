@@ -202,6 +202,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
         </CardHeader>
         
         <CardContent>
+          {/* Toujours rendre le div du scanner, mais le cacher si nécessaire */}
+          <div 
+            ref={scannerRef}
+            className={`${isMobile ? 'w-full h-48' : 'w-96 h-64'} mx-auto rounded-lg overflow-hidden bg-black ${(error || isLoading) ? 'hidden' : ''}`}
+          />
+
           {error ? (
             <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
               <AlertTriangle className="h-12 w-12 text-destructive" />
@@ -223,11 +229,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
           ) : (
             <div className="space-y-4">
               <div className="relative">
-                <div 
-                  ref={scannerRef}
-                  className={`${isMobile ? 'w-full h-48' : 'w-96 h-64'} mx-auto rounded-lg overflow-hidden bg-black`}
-                />
-                
                 {isScanning && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="border-2 border-primary border-dashed rounded-lg w-4/5 h-16 animate-pulse" />
