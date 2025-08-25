@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import ProductSearch from '@/components/ProductSearch';
 import HierarchicalMobileCategoryFilter from './HierarchicalMobileCategoryFilter';
 import { useAppContext } from '@/context/AppContext';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface CatalogHeaderProps {
   searchTerm: string;
@@ -33,6 +34,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   onScannerOpen
 }) => {
   const { user } = useAppContext();
+  const { catalogScannerEnabled } = useAppSettings();
   return (
     <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
       <div className="flex-1 max-w-md">
@@ -49,7 +51,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
         />
         
         {/* Bouton Scanner pour les magasiniers */}
-        {user?.role === 'admin' && onScannerOpen && (
+        {user?.role === 'admin' && onScannerOpen && catalogScannerEnabled && (
           <Button 
             variant="outline" 
             onClick={onScannerOpen}
