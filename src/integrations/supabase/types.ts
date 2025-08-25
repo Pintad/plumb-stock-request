@@ -214,6 +214,10 @@ export type Database = {
       }
     }
     Functions: {
+      current_user_email: {
+        Args: { _uid?: string }
+        Returns: string
+      }
       is_admin: {
         Args: { _uid?: string }
         Returns: boolean
