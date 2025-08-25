@@ -222,6 +222,10 @@ export type Database = {
         Args: { _uid?: string }
         Returns: boolean
       }
+      jwt_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
