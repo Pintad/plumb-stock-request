@@ -156,7 +156,7 @@ export const useDashboardData = (orders: Order[], products: any[]) => {
   // Configuration des couleurs pour les graphiques
   const chartConfig = {
     pending: { color: "#f97316", label: "En attente" },
-    inProgress: { color: "#9b87f5", label: "En cours" },
+    inProgress: { color: "#3b82f6", label: "En cours" },
     completed: { color: "#10b981", label: "Terminées" },
     items: { color: "#6E59A5", label: "Articles" },
   };
