@@ -33,9 +33,13 @@ const MyOrders = () => {
     memoizedLoadOrders();
   }, []); // Dépendance vide pour éviter les rechargements
   
-  // Filter orders to show only those of the current user
+  // Filter orders to show only those of the current user (support legacy name-based rows)
   const userOrders = orders.filter(order => {
-    if (order.clientname !== user?.name) return false;
+    const clientLower = (order.clientname || '').toLowerCase();
+    const userEmailLower = (user?.username || '').toLowerCase();
+    const userNameLower = (user?.name || '').toLowerCase();
+
+    if (clientLower !== userEmailLower && clientLower !== userNameLower) return false;
     
     if (searchTerm.trim() !== "") {
       const searchLower = searchTerm.toLowerCase();
