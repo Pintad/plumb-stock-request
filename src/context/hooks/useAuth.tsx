@@ -17,10 +17,10 @@ export const useAuth = () => {
       // Mettre à jour l'état de la session de manière synchrone
       setSession(currentSession);
       
-      if (currentSession?.user) {
+      if (currentSession?.user?.email) {
         // Utiliser setTimeout pour éviter des appels imbriqués à l'API Supabase
         // qui peuvent causer des blocages
-        setTimeout(() => fetchProfile(currentSession.user.id), 0);
+        setTimeout(() => fetchProfile(currentSession.user.email!), 0);
       } else {
         setProfile(null);
         setLoading(false);
@@ -31,8 +31,8 @@ export const useAuth = () => {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       
-      if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
+      if (currentSession?.user?.email) {
+        fetchProfile(currentSession.user.email);
       } else {
         setLoading(false);
       }
@@ -41,21 +41,13 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userEmail: string) => {
     setLoading(true);
-
-    // Get user email from auth.users first
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
 
     const { data, error } = await supabase
       .from('utilisateurs')
       .select('id, email, nom, role')
-      .eq('email', user.email)
+      .eq('email', userEmail)
       .maybeSingle();
 
     if (error) {
