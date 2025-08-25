@@ -38,7 +38,8 @@ import {
   Lock,
   MessageSquare,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  Scan
 } from 'lucide-react';
 
 interface DatabaseUser {
@@ -73,6 +74,7 @@ const SuperAdmin: React.FC = () => {
     warehouseNotificationSmsEnabled,
     warehouseEmail,
     warehousePhone,
+    catalogScannerEnabled,
     saveAllSettings 
   } = useAppSettings();
   const [users, setUsers] = useState<DatabaseUser[]>([]);
@@ -92,7 +94,8 @@ const SuperAdmin: React.FC = () => {
     warehouseNotificationEmailEnabled: false,
     warehouseNotificationSmsEnabled: false,
     warehouseEmail: '',
-    warehousePhone: ''
+    warehousePhone: '',
+    catalogScannerEnabled: true
   });
   const [securitySettings, setSecuritySettings] = useState({
     sessionDuration: 24,
@@ -122,9 +125,10 @@ const SuperAdmin: React.FC = () => {
       warehouseNotificationEmailEnabled: warehouseNotificationEmailEnabled,
       warehouseNotificationSmsEnabled: warehouseNotificationSmsEnabled,
       warehouseEmail: warehouseEmail,
-      warehousePhone: warehousePhone
+      warehousePhone: warehousePhone,
+      catalogScannerEnabled: catalogScannerEnabled
     });
-  }, [smsButtonEnabled, emailNotificationsEnabled, senderEmail, warehouseNotificationEmailEnabled, warehouseNotificationSmsEnabled, warehouseEmail, warehousePhone]);
+  }, [smsButtonEnabled, emailNotificationsEnabled, senderEmail, warehouseNotificationEmailEnabled, warehouseNotificationSmsEnabled, warehouseEmail, warehousePhone, catalogScannerEnabled]);
 
   const loadTableStats = async () => {
     try {
@@ -546,6 +550,32 @@ const SuperAdmin: React.FC = () => {
                           onCheckedChange={(checked) => setLocalSettings({ ...localSettings, warehouseNotificationSmsEnabled: checked })}
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Configuration du scanner du catalogue */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-green-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="catalog-scanner-enabled" className="flex items-center gap-2">
+                          <Scan className="w-4 h-4" />
+                          Activer le scanner du catalogue
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permettre aux magasiniers d'utiliser le scanner de codes-barres
+                        </p>
+                      </div>
+                      <Switch
+                        id="catalog-scanner-enabled"
+                        checked={localSettings.catalogScannerEnabled}
+                        onCheckedChange={(checked) => setLocalSettings({ ...localSettings, catalogScannerEnabled: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Scan className="w-4 h-4" />
+                      <span>
+                        {localSettings.catalogScannerEnabled ? 'Le scanner est activé pour les magasiniers' : 'Le scanner est désactivé'}
+                      </span>
                     </div>
                   </div>
 

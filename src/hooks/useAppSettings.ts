@@ -11,6 +11,7 @@ export const useAppSettings = () => {
   const [warehouseNotificationSmsEnabled, setWarehouseNotificationSmsEnabled] = useState<boolean>(false);
   const [warehouseEmail, setWarehouseEmail] = useState<string>('');
   const [warehousePhone, setWarehousePhone] = useState<string>('');
+  const [catalogScannerEnabled, setCatalogScannerEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSettings = async () => {
@@ -25,7 +26,8 @@ export const useAppSettings = () => {
           'warehouse_notification_email_enabled',
           'warehouse_notification_sms_enabled',
           'warehouse_email',
-          'warehouse_phone'
+          'warehouse_phone',
+          'catalog_scanner_enabled'
         ]);
 
       if (error && error.code !== 'PGRST116') {
@@ -56,6 +58,9 @@ export const useAppSettings = () => {
               break;
             case 'warehouse_phone':
               setWarehousePhone(setting.setting_value);
+              break;
+            case 'catalog_scanner_enabled':
+              setCatalogScannerEnabled(setting.setting_value === 'true');
               break;
           }
         });
@@ -141,6 +146,7 @@ export const useAppSettings = () => {
     warehouseNotificationSmsEnabled: boolean;
     warehouseEmail: string;
     warehousePhone: string;
+    catalogScannerEnabled: boolean;
   }) => {
     try {
       // Sauvegarder chaque paramètre individuellement pour éviter les conflits de clé unique
@@ -186,6 +192,12 @@ export const useAppSettings = () => {
           setting_value: settings.warehousePhone 
         }, { 
           onConflict: 'setting_key' 
+        }),
+        supabase.from('app_settings').upsert({ 
+          setting_key: 'catalog_scanner_enabled', 
+          setting_value: settings.catalogScannerEnabled.toString() 
+        }, { 
+          onConflict: 'setting_key' 
         })
       ];
 
@@ -205,6 +217,7 @@ export const useAppSettings = () => {
       setWarehouseNotificationSmsEnabled(settings.warehouseNotificationSmsEnabled);
       setWarehouseEmail(settings.warehouseEmail);
       setWarehousePhone(settings.warehousePhone);
+      setCatalogScannerEnabled(settings.catalogScannerEnabled);
       toast.success('Configuration sauvegardée avec succès');
     } catch (error) {
       console.error('Error saving all settings:', error);
@@ -224,6 +237,7 @@ export const useAppSettings = () => {
     warehouseNotificationSmsEnabled,
     warehouseEmail,
     warehousePhone,
+    catalogScannerEnabled,
     loading,
     updateSmsButtonSetting,
     updateEmailNotificationsSetting,
