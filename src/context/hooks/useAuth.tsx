@@ -44,10 +44,18 @@ export const useAuth = () => {
   const fetchProfile = async (userId: string) => {
     setLoading(true);
 
+    // Get user email from auth.users first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('utilisateurs')
       .select('id, email, nom, role')
-      .eq('id', userId)
+      .eq('email', user.email)
       .maybeSingle();
 
     if (error) {
