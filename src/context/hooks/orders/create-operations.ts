@@ -16,6 +16,15 @@ export const createOrderInDb = async (
   try {
     if (!user || (cart.length === 0 && customItems.length === 0)) return false;
     
+    // Récupérer l'email de la session JWT pour les politiques RLS
+    const { data: { session } } = await supabase.auth.getSession();
+    const userEmail = session?.user?.email;
+    
+    if (!userEmail) {
+      console.error("Email utilisateur non trouvé dans la session");
+      return false;
+    }
+    
     // Ajouter completed: false à chaque article du catalogue
     const cartWithCompletionStatus = cart.map(item => ({
       ...item,
@@ -60,7 +69,7 @@ export const createOrderInDb = async (
     // Les données de la commande à insérer
     // CORRECTION: Utiliser maintenant datecommande: null pour laisser Supabase générer automatiquement la date et l'heure
     const orderData = {
-      clientname: user.name,
+      clientname: userEmail, // Utiliser l'email JWT pour correspondre à la politique RLS
       articles: allArticles as unknown as Json,
       termine: 'Non',
       archive: false,
