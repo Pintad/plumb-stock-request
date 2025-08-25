@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useNavigate } from 'react-router-dom';
 import { 
   Settings, 
   Users, 
@@ -36,7 +37,8 @@ import {
   Upload,
   Lock,
   MessageSquare,
-  Bell
+  Bell,
+  ArrowLeft
 } from 'lucide-react';
 
 interface DatabaseUser {
@@ -62,6 +64,7 @@ interface ActivityLog {
 }
 
 const SuperAdmin: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     smsButtonEnabled, 
     emailNotificationsEnabled, 
@@ -398,9 +401,19 @@ const SuperAdmin: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Shield className="w-8 h-8 text-destructive" />
-        <h1 className="text-3xl font-bold">Administration Système</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-destructive" />
+          <h1 className="text-3xl font-bold">Administration Système</h1>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/admin')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour à l'application
+        </Button>
       </div>
 
       <Tabs defaultValue="settings" className="space-y-6">
