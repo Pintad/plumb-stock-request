@@ -29,6 +29,7 @@ export interface OrderByDateData {
   date: string;
   displayDate: string;
   pending: number;
+  inProgress: number;
   completed: number;
 }
 
@@ -126,6 +127,7 @@ export const useDashboardData = (orders: Order[], products: any[]) => {
         date: format(date, 'yyyy-MM-dd'),
         displayDate: format(date, 'dd MMM', { locale: fr }),
         pending: 0,
+        inProgress: 0,
         completed: 0
       };
     });
@@ -140,6 +142,8 @@ export const useDashboardData = (orders: Order[], products: any[]) => {
       if (dayData) {
         if (order.termine === 'Oui') {
           dayData.completed += 1;
+        } else if (order.termine === 'En cours') {
+          dayData.inProgress += 1;
         } else {
           dayData.pending += 1;
         }

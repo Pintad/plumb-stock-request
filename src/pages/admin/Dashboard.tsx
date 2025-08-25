@@ -5,7 +5,6 @@ import { useAppContext } from '@/context/AppContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import StatCards from '@/components/admin/dashboard/StatCards';
 import OrdersChart from '@/components/admin/dashboard/OrdersChart';
-import TopRequestersChart from '@/components/admin/dashboard/TopRequestersChart';
 import TopItemsList from '@/components/admin/dashboard/TopItemsList';
 import RecentOrders from '@/components/admin/dashboard/RecentOrders';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,18 +45,10 @@ const Dashboard = () => {
           isMobile={isMobile}
         />
         
-        {/* Graphiques et analyses */}
-        <div className={`grid grid-cols-1 ${isMobile ? 'gap-4 mt-6' : 'lg:grid-cols-2 gap-6 mt-8'}`}>
-          {/* Graphique des commandes sur les 14 derniers jours */}
+        {/* Graphique des commandes sur les 14 derniers jours */}
+        <div className={`${isMobile ? 'mt-6' : 'mt-8'}`}>
           <OrdersChart 
             ordersByDateData={ordersByDateData}
-            chartConfig={chartConfig}
-            isMobile={isMobile}
-          />
-          
-          {/* Graphique des ouvriers qui anticipent le plus */}
-          <TopRequestersChart 
-            topRequestersData={topRequestersData}
             chartConfig={chartConfig}
             isMobile={isMobile}
           />

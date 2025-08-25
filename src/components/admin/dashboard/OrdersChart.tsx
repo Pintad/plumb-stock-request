@@ -11,6 +11,7 @@ interface OrdersByDateData {
   date: string;
   displayDate: string;
   pending: number;
+  inProgress: number;
   completed: number;
 }
 
@@ -29,13 +30,15 @@ interface OrdersChartProps {
 const CustomTooltip = ({ active, payload, label, isMobile }: any) => {
   if (active && payload && payload.length) {
     const pending = payload.find((p: any) => p.name === "En attente")?.value || 0;
+    const inProgress = payload.find((p: any) => p.name === "En cours")?.value || 0;
     const completed = payload.find((p: any) => p.name === "Terminées")?.value || 0;
-    const total = pending + completed;
+    const total = pending + inProgress + completed;
     
     return (
       <div className={`bg-white p-3 rounded-md shadow-lg border border-gray-200 ${isMobile ? 'text-xs' : 'text-sm'}`}>
         <p className="font-semibold mb-1">{label}</p>
         <p className="text-amber-600">En attente: {pending}</p>
+        <p className="text-blue-500">En cours: {inProgress}</p>
         <p className="text-green-600">Terminées: {completed}</p>
         <p className="mt-2 pt-1 border-t border-gray-200 font-medium">Total: {total}</p>
       </div>
@@ -87,6 +90,13 @@ const OrdersChart = ({ ordersByDateData, chartConfig, isMobile = false }: Orders
                 name="En attente" 
                 stackId="a" 
                 fill={chartConfig.pending.color} 
+                radius={[0, 0, 0, 0]}
+              />
+              <Bar 
+                dataKey="inProgress" 
+                name="En cours" 
+                stackId="a" 
+                fill={chartConfig.inProgress.color} 
                 radius={[0, 0, 0, 0]}
               />
               <Bar 
