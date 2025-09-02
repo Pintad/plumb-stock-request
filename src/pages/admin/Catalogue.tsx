@@ -125,24 +125,14 @@ const Catalogue: React.FC = () => {
           <div className="flex items-center gap-2">
             <CatalogueImportExport onImportComplete={refreshItems} />
             {isSuperAdmin && (
-              <>
-                <Button 
-                  onClick={handleExportCatalogue} 
-                  variant="outline" 
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  {isMobile ? 'Export' : 'Exporter'}
-                </Button>
-                <Button 
-                  onClick={() => setShowDeleteAllDialog(true)} 
-                  variant="destructive" 
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {isMobile ? 'Suppr.' : 'Supprimer tout'}
-                </Button>
-              </>
+              <Button 
+                onClick={handleExportCatalogue} 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isMobile ? 'Export' : 'Exporter'}
+              </Button>
             )}
             <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -202,6 +192,28 @@ const Catalogue: React.FC = () => {
             onSave={handleSave}
             onCancel={handleCloseEdit}
           />
+        )}
+
+        {/* Zone de danger - Supprimer tout le catalogue */}
+        {isSuperAdmin && (
+          <Card className="mt-8 border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">Zone de danger</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Actions irréversibles qui affectent l'ensemble du catalogue
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => setShowDeleteAllDialog(true)} 
+                variant="destructive" 
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer tout le catalogue
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         <PasswordConfirmationDialog
