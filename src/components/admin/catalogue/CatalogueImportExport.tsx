@@ -491,7 +491,10 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         
         const { error } = await supabase
           .from('catalogue')
-          .insert(batch);
+          .upsert(batch, { 
+            onConflict: 'reference',
+            ignoreDuplicates: false 
+          });
 
         if (error) throw error;
         
