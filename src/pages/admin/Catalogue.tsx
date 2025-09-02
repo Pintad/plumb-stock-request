@@ -14,13 +14,14 @@ import { useCatalogueOperations } from '@/hooks/useCatalogueOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/hooks/useAuth';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
-
 const Catalogue: React.FC = () => {
   const isMobile = useIsMobile();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const {
     catalogueItems,
     filteredItems,
@@ -32,23 +33,19 @@ const Catalogue: React.FC = () => {
     handlePageChange,
     refreshItems
   } = useCatalogueManagement();
-  
-  const { 
-    addCatalogueItem, 
-    updateCatalogueItem, 
+  const {
+    addCatalogueItem,
+    updateCatalogueItem,
     deleteCatalogueItem,
     deleteVariant,
     deleteAllCatalogueItems
   } = useCatalogueOperations();
-
   const handleEdit = (item: any) => {
     setEditingItem(item);
   };
-
   const handleCloseEdit = () => {
     setEditingItem(null);
   };
-
   const handleSave = async (data: any) => {
     if (editingItem) {
       await updateCatalogueItem(editingItem, data);
@@ -59,7 +56,6 @@ const Catalogue: React.FC = () => {
     }
     refreshItems();
   };
-
   const handleDelete = async (id: string) => {
     // Trouver l'item complet pour la suppression
     const itemToDelete = catalogueItems.find(item => item.id === id);
@@ -68,7 +64,6 @@ const Catalogue: React.FC = () => {
     }
     refreshItems();
   };
-
   const handleExportCatalogue = async () => {
     try {
       const exportData = catalogueItems.map(item => ({
@@ -81,35 +76,52 @@ const Catalogue: React.FC = () => {
         keywords: item.keywords || '',
         image_url: item.image_url || ''
       }));
-
-      const columns = [
-        { header: 'Désignation', key: 'designation', width: 30 },
-        { header: 'Catégorie', key: 'categorie', width: 20 },
-        { header: 'Sur-catégorie', key: 'sur_categorie', width: 20 },
-        { header: 'Variantes', key: 'variantes', width: 25 },
-        { header: 'Références', key: 'references', width: 25 },
-        { header: 'Unités', key: 'unites', width: 15 },
-        { header: 'Mots-clés', key: 'keywords', width: 25 },
-        { header: 'Image URL', key: 'image_url', width: 30 }
-      ];
-
+      const columns = [{
+        header: 'Désignation',
+        key: 'designation',
+        width: 30
+      }, {
+        header: 'Catégorie',
+        key: 'categorie',
+        width: 20
+      }, {
+        header: 'Sur-catégorie',
+        key: 'sur_categorie',
+        width: 20
+      }, {
+        header: 'Variantes',
+        key: 'variantes',
+        width: 25
+      }, {
+        header: 'Références',
+        key: 'references',
+        width: 25
+      }, {
+        header: 'Unités',
+        key: 'unites',
+        width: 15
+      }, {
+        header: 'Mots-clés',
+        key: 'keywords',
+        width: 25
+      }, {
+        header: 'Image URL',
+        key: 'image_url',
+        width: 30
+      }];
       await exportDataToExcel(exportData, columns, `catalogue-complet-${new Date().toISOString().split('T')[0]}`, 'Catalogue');
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
     }
   };
-
   const handleDeleteAllCatalogue = async () => {
     const success = await deleteAllCatalogueItems();
     if (success) {
       refreshItems();
     }
   };
-
   const isSuperAdmin = user?.role === 'superadmin';
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+  return <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       
       <main className={`flex-1 container ${isMobile ? 'px-2 py-3' : 'px-4 py-6'}`}>
@@ -124,16 +136,10 @@ const Catalogue: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <CatalogueImportExport onImportComplete={refreshItems} />
-            {isSuperAdmin && (
-              <Button 
-                onClick={handleExportCatalogue} 
-                variant="outline" 
-                className="flex items-center gap-2"
-              >
+            {isSuperAdmin && <Button onClick={handleExportCatalogue} variant="outline" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 {isMobile ? 'Export' : 'Exporter'}
-              </Button>
-            )}
+              </Button>}
             <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {isMobile ? 'Ajouter' : 'Nouvel Article'}
@@ -154,79 +160,47 @@ const Catalogue: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <CatalogueTable
-              items={catalogueItems}
-              loading={loading}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+            <CatalogueTable items={catalogueItems} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
             
-            <CataloguePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            <CataloguePagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
           </CardContent>
         </Card>
 
-        {showAddForm && (
-          <CatalogueEditPanel
-            item={{
-              id: '',
-              designation: '',
-              categorie: '',
-              sur_categorie: 'RACCORD',
-              image_url: '',
-              keywords: '',
-              variants: [{ id: '', variante: '', reference: '', unite: 'U' }]
-            }}
-            onSave={handleSave}
-            onCancel={() => setShowAddForm(false)}
-            isNewItem={true}
-          />
-        )}
+        {showAddForm && <CatalogueEditPanel item={{
+        id: '',
+        designation: '',
+        categorie: '',
+        sur_categorie: 'RACCORD',
+        image_url: '',
+        keywords: '',
+        variants: [{
+          id: '',
+          variante: '',
+          reference: '',
+          unite: 'U'
+        }]
+      }} onSave={handleSave} onCancel={() => setShowAddForm(false)} isNewItem={true} />}
 
-        {editingItem && (
-          <CatalogueEditPanel
-            item={editingItem}
-            onSave={handleSave}
-            onCancel={handleCloseEdit}
-          />
-        )}
+        {editingItem && <CatalogueEditPanel item={editingItem} onSave={handleSave} onCancel={handleCloseEdit} />}
 
         {/* Zone de danger - Supprimer tout le catalogue */}
-        {isSuperAdmin && (
-          <Card className="mt-8 border-destructive">
+        {isSuperAdmin && <Card className="mt-8 border-destructive">
             <CardHeader>
-              <CardTitle className="text-destructive">Zone de danger</CardTitle>
+              <CardTitle className="text-destructive">⚠️</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Actions irréversibles qui affectent l'ensemble du catalogue
               </p>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={() => setShowDeleteAllDialog(true)} 
-                variant="destructive" 
-                className="flex items-center gap-2"
-              >
+              <Button onClick={() => setShowDeleteAllDialog(true)} variant="destructive" className="flex items-center gap-2">
                 <Trash2 className="h-4 w-4" />
                 Supprimer tout le catalogue
               </Button>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
-        <PasswordConfirmationDialog
-          open={showDeleteAllDialog}
-          onOpenChange={setShowDeleteAllDialog}
-          onConfirm={handleDeleteAllCatalogue}
-          title="Supprimer tout le catalogue"
-          description="Cette action est irréversible. Tous les articles du catalogue seront définitivement supprimés. Nous vous recommandons de télécharger le catalogue avant de procéder à la suppression."
-          itemName="le catalogue complet"
-        />
+        <PasswordConfirmationDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} onConfirm={handleDeleteAllCatalogue} title="Supprimer tout le catalogue" description="Cette action est irréversible. Tous les articles du catalogue seront définitivement supprimés. Nous vous recommandons de télécharger le catalogue avant de procéder à la suppression." itemName="le catalogue complet" />
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Catalogue;
