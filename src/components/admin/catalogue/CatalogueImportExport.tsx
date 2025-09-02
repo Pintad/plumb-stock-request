@@ -247,7 +247,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       setCurrentStep('Analyse du fichier...');
       setImportProgress(10);
       
-      const { headers, lines } = parseCSV(csvContent);
+      const { headers, lines, delimiter } = parseCSV(csvContent);
       
       if (lines.length === 0) {
         setIsImporting(false);
@@ -289,7 +289,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         if (!line.trim()) continue;
 
         // Parser la ligne CSV correctement en gérant les guillemets
-        const values = parseCSVLine(line);
+        const values = parseCSVLine(line, delimiter);
         const item: any = {};
 
         // Mapper les colonnes
