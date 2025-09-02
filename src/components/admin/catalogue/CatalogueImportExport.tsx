@@ -217,36 +217,39 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
   const convertWorksheetToCSV = (worksheet: ExcelJS.Worksheet): string => {
     const csvLines: string[] = [];
     
-    // Obtenir le nombre total de colonnes du worksheet
+    // Déterminer le nombre total de lignes et de colonnes du worksheet
+    const maxRow = worksheet.rowCount || 0;
     const maxCol = worksheet.columnCount || 20; // Fallback à 20 colonnes si indéterminé
-    
-    worksheet.eachRow((row, rowNumber) => {
+
+    // Parcourir toutes les lignes via getRow pour éviter les limites de eachRow
+    for (let rowNumber = 1; rowNumber <= maxRow; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
       const values: string[] = [];
-      
-      // Lire toutes les colonnes possibles, pas seulement cellCount
+
       for (let colNumber = 1; colNumber <= maxCol; colNumber++) {
         const cell = row.getCell(colNumber);
         let value = '';
-        
-        if (cell.value !== null && cell.value !== undefined) {
+
+        if (cell && cell.value !== null && cell.value !== undefined) {
           // Gérer les formules et autres types de cellules
-          if (typeof cell.value === 'object' && 'result' in cell.value) {
-            value = cell.value.result?.toString() || '';
+          if (typeof cell.value === 'object' && 'result' in (cell.value as any)) {
+            value = (cell.value as any).result?.toString() || '';
           } else {
-            value = cell.value.toString();
+            value = String(cell.value);
           }
         }
-        
+
         // Échapper les virgules et guillemets
         const escapedValue = value.includes(',') || value.includes('"') || value.includes('\n')
-          ? `"${value.replace(/"/g, '""')}"` 
+          ? `"${value.replace(/"/g, '""')}"`
           : value;
         values.push(escapedValue);
       }
+
       csvLines.push(values.join(','));
-    });
-    
-    console.log(`📊 Excel converti: ${csvLines.length} lignes, ${maxCol} colonnes`);
+    }
+
+    console.log(`📊 Excel converti: ${csvLines.length} lignes (sur ${maxRow} attendues), ${maxCol} colonnes`);
     return csvLines.join('\n');
   };
 
