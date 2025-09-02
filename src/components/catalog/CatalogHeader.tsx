@@ -33,7 +33,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   setSuperCategory,
   onScannerOpen
 }) => {
-  const { user } = useAppContext();
+  const { user, isSuperAdmin } = useAppContext();
   const { catalogScannerEnabled } = useAppSettings();
   return (
     <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
@@ -50,8 +50,8 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
           setSuperCategory={setSuperCategory}
         />
         
-        {/* Bouton Scanner pour les magasiniers */}
-        {user?.role === 'admin' && onScannerOpen && catalogScannerEnabled && (
+        {/* Bouton Scanner pour les magasiniers et super admins */}
+        {(user?.role === 'admin' || isSuperAdmin) && onScannerOpen && catalogScannerEnabled && (
           <Button 
             variant="outline" 
             onClick={onScannerOpen}

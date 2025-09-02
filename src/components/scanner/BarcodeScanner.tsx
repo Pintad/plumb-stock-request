@@ -5,6 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Camera, Loader2, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+// Détection des navigateurs Safari/iOS
+const isSafari = () => {
+  const ua = navigator.userAgent;
+  return /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua);
+};
+
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+};
+
+const isWebKitBrowser = () => {
+  return isSafari() || isIOS();
+};
+
 interface BarcodeScannerProps {
   onScanSuccess: (barcode: string) => void;
   onClose: () => void;
@@ -42,20 +56,33 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
           setIsLoading(true);
           setError(null);
 
-          console.log('🔍 Vérification navigator.mediaDevices...');
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('navigator.mediaDevices non supporté');
-          }
-          console.log('✅ navigator.mediaDevices disponible');
-
-          console.log('🎥 Test permissions caméra...');
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-          });
-          console.log('✅ Permissions caméra accordées');
+          // Vérification compatible Safari/iOS
+          const hasMediaDevices = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+          const isWebKit = isWebKitBrowser();
           
-          stream.getTracks().forEach(track => track.stop());
-          console.log('✅ Stream fermé');
+          console.log('🔍 Détection navigateur - Safari/iOS:', isWebKit, 'MediaDevices:', !!hasMediaDevices);
+
+          // Pour Safari/iOS, on passe directement à QuaggaJS sans vérification préalable
+          if (!isWebKit && (!hasMediaDevices)) {
+            throw new Error('Caméra non supportée sur ce navigateur');
+          }
+
+          // Test permissions seulement si navigator.mediaDevices est disponible (non-Safari)
+          if (!isWebKit && hasMediaDevices) {
+            console.log('🎥 Test permissions caméra (non-Safari)...');
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+              });
+              console.log('✅ Permissions caméra accordées');
+              stream.getTracks().forEach(track => track.stop());
+              console.log('✅ Stream fermé');
+            } catch (permError) {
+              console.log('⚠️ Erreur permissions, on continue avec QuaggaJS:', permError.message);
+            }
+          } else {
+            console.log('📱 Safari/iOS détecté - utilisation directe de QuaggaJS');
+          }
 
           console.log('✅ scannerRef.current disponible:', scannerRef.current);
 
@@ -68,19 +95,35 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onClose 
               constraints: {
                 width: isMobile ? 640 : 800,
                 height: isMobile ? 480 : 600,
-                facingMode: "environment"
+                facingMode: "environment",
+                // Configuration spécifique pour Safari/iOS
+                ...(isWebKit && {
+                  aspectRatio: { min: 1, max: 2 },
+                  frameRate: { ideal: 10, max: 15 }
+                })
               }
             },
             decoder: {
               readers: [
                 "code_128_reader",
-                "ean_reader",
+                "ean_reader", 
+                "ean_8_reader",
                 "code_39_reader",
-                "upc_reader"
-              ]
+                "code_39_vin_reader",
+                "codabar_reader",
+                "upc_reader",
+                "upc_e_reader",
+                "i2of5_reader"
+              ],
+              // Configuration améliorée pour Safari
+              ...(isWebKit && {
+                multiple: false
+              })
             },
             locate: true,
-            frequency: 10
+            frequency: isWebKit ? 5 : 10, // Fréquence réduite pour Safari
+            numOfWorkers: isWebKit ? 1 : 2, // Moins de workers pour Safari
+            debug: false
           };
           console.log('✅ Config QuaggaJS créée');
 
