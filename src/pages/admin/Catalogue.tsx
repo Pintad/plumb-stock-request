@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Download, Trash2 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,14 +8,19 @@ import { CatalogueFilters } from '@/components/admin/catalogue/CatalogueFilters'
 import { CataloguePagination } from '@/components/admin/catalogue/CataloguePagination';
 import { CatalogueImportExport } from '@/components/admin/catalogue/CatalogueImportExport';
 import { CatalogueEditPanel } from '@/components/admin/catalogue/CatalogueEditPanel';
+import { PasswordConfirmationDialog } from '@/components/ui/password-confirmation-dialog';
 import { useCatalogueManagement } from '@/hooks/useCatalogueManagement';
 import { useCatalogueOperations } from '@/hooks/useCatalogueOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/context/hooks/useAuth';
+import { exportDataToExcel } from '@/lib/utils/excelUtils';
 
 const Catalogue: React.FC = () => {
   const isMobile = useIsMobile();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const { user } = useAuth();
   const {
     catalogueItems,
     filteredItems,
@@ -32,7 +37,8 @@ const Catalogue: React.FC = () => {
     addCatalogueItem, 
     updateCatalogueItem, 
     deleteCatalogueItem,
-    deleteVariant 
+    deleteVariant,
+    deleteAllCatalogueItems
   } = useCatalogueOperations();
 
   const handleEdit = (item: any) => {
@@ -63,6 +69,45 @@ const Catalogue: React.FC = () => {
     refreshItems();
   };
 
+  const handleExportCatalogue = async () => {
+    try {
+      const exportData = catalogueItems.map(item => ({
+        designation: item.designation,
+        categorie: item.categorie || '',
+        sur_categorie: item.sur_categorie || '',
+        variantes: item.variants.map(v => v.variante).join(', '),
+        references: item.variants.map(v => v.reference).join(', '),
+        unites: item.variants.map(v => v.unite).join(', '),
+        keywords: item.keywords || '',
+        image_url: item.image_url || ''
+      }));
+
+      const columns = [
+        { header: 'Désignation', key: 'designation', width: 30 },
+        { header: 'Catégorie', key: 'categorie', width: 20 },
+        { header: 'Sur-catégorie', key: 'sur_categorie', width: 20 },
+        { header: 'Variantes', key: 'variantes', width: 25 },
+        { header: 'Références', key: 'references', width: 25 },
+        { header: 'Unités', key: 'unites', width: 15 },
+        { header: 'Mots-clés', key: 'keywords', width: 25 },
+        { header: 'Image URL', key: 'image_url', width: 30 }
+      ];
+
+      await exportDataToExcel(exportData, columns, `catalogue-complet-${new Date().toISOString().split('T')[0]}`, 'Catalogue');
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+    }
+  };
+
+  const handleDeleteAllCatalogue = async () => {
+    const success = await deleteAllCatalogueItems();
+    if (success) {
+      refreshItems();
+    }
+  };
+
+  const isSuperAdmin = user?.role === 'superadmin';
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
@@ -79,6 +124,26 @@ const Catalogue: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <CatalogueImportExport onImportComplete={refreshItems} />
+            {isSuperAdmin && (
+              <>
+                <Button 
+                  onClick={handleExportCatalogue} 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {isMobile ? 'Export' : 'Exporter'}
+                </Button>
+                <Button 
+                  onClick={() => setShowDeleteAllDialog(true)} 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isMobile ? 'Suppr.' : 'Supprimer tout'}
+                </Button>
+              </>
+            )}
             <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {isMobile ? 'Ajouter' : 'Nouvel Article'}
@@ -138,6 +203,15 @@ const Catalogue: React.FC = () => {
             onCancel={handleCloseEdit}
           />
         )}
+
+        <PasswordConfirmationDialog
+          open={showDeleteAllDialog}
+          onOpenChange={setShowDeleteAllDialog}
+          onConfirm={handleDeleteAllCatalogue}
+          title="Supprimer tout le catalogue"
+          description="Cette action est irréversible. Tous les articles du catalogue seront définitivement supprimés. Nous vous recommandons de télécharger le catalogue avant de procéder à la suppression."
+          itemName="le catalogue complet"
+        />
       </main>
     </div>
   );

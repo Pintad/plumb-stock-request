@@ -135,10 +135,28 @@ export const useCatalogueOperations = () => {
     }
   };
 
+  const deleteAllCatalogueItems = async () => {
+    try {
+      const { error } = await supabase
+        .from('catalogue')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (error) throw error;
+      toast.success('Catalogue entièrement supprimé avec succès');
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la suppression complète:', error);
+      toast.error('Erreur lors de la suppression complète du catalogue');
+      return false;
+    }
+  };
+
   return {
     addCatalogueItem,
     updateCatalogueItem,
     deleteCatalogueItem,
-    deleteVariant
+    deleteVariant,
+    deleteAllCatalogueItems
   };
 };
