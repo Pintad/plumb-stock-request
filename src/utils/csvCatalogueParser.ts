@@ -1,10 +1,10 @@
 
 import { CatalogueItem } from '../types';
-import { parseCSV, parseCSVLine } from '@/context/imports/csvUtils';
+import { parseCSV } from '@/context/imports/csvUtils';
 
 export const parseCatalogueCSV = (csvContent: string): CatalogueItem[] => {
   try {
-    const { headers, lines, delimiter } = parseCSV(csvContent);
+    const { headers, lines } = parseCSV(csvContent);
     const catalogueItems: CatalogueItem[] = [];
     
     // Mapping pour les noms de colonnes du format fourni
@@ -22,7 +22,7 @@ export const parseCatalogueCSV = (csvContent: string): CatalogueItem[] => {
     for (const line of lines) {
       if (!line.trim()) continue;
       
-      const values = parseCSVLine(line, delimiter);
+      const values = line.split(',').map(value => value.trim());
       
       catalogueItems.push({
         id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

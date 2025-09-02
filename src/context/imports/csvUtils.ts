@@ -57,83 +57,26 @@ export const readCSVFile = (
 };
 
 /**
- * Parse a CSV line correctly handling quotes and the given delimiter
- * @param line The CSV line to parse
- * @param delimiter The field delimiter (default ',')
- * @returns Array of parsed values
- */
-export const parseCSVLine = (line: string, delimiter: ',' | ';' | '\t' = ','): string[] => {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = line[i + 1];
-    
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        // Double quote escaped
-        current += '"';
-        i++; // Skip next quote
-      } else {
-        // Toggle quote state
-        inQuotes = !inQuotes;
-      }
-    } else if (char === delimiter && !inQuotes) {
-      // End of field
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  
-  // Add last field
-  result.push(current.trim());
-  
-  return result;
-};
-
-/**
  * Parse CSV content and extract headers
- * - Auto-detects delimiter between ',', ';', and '\t'
  * @param csvContent The CSV content to parse
- * @returns An object with headers, lines and the detected delimiter
+ * @returns An object with headers and lines
  */
 export const parseCSV = (csvContent: string) => {
-  const rawLines = csvContent.split(/\r?\n/);
-  if (rawLines.length === 0) {
+  const lines = csvContent.split('\n');
+  if (lines.length === 0) {
     throw new Error("Le fichier CSV est vide");
   }
   
-  if (rawLines.length === 1 && rawLines[0].trim() === '') {
+  if (lines.length === 1 && lines[0].trim() === '') {
     throw new Error("Le fichier CSV est vide");
   }
   
-  const lines = rawLines.filter(line => line.trim() !== '');
-  const headerLine = lines[0];
-
-  // Detect delimiter by the highest occurrence among candidates
-  const candidates: Array<',' | ';' | '\t'> = [',', ';', '\t'];
-  const counts = candidates.map(d => (headerLine.match(new RegExp(`\\${d}`, 'g')) || []).length);
-  const maxIndex = counts.indexOf(Math.max(...counts));
-  const delimiter = candidates[maxIndex] ?? ',';
-
-  // Use proper CSV parsing for headers with the detected delimiter
-  const headers = parseCSVLine(headerLine, delimiter).map(header => header.trim().toLowerCase());
-  
+  const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
   if (headers.length === 0) {
     throw new Error("Le fichier CSV ne contient pas d'en-têtes");
   }
   
-  const dataLines = lines.slice(1);
-  
-  console.log('CSV parsing - Delimiter:', JSON.stringify(delimiter));
-  console.log('CSV parsing - Headers found:', headers);
-  console.log('CSV parsing - Data lines:', dataLines.length);
-  
-  return { headers, lines: dataLines, delimiter };
+  return { headers, lines: lines.slice(1).filter(line => line.trim() !== '') };
 };
 
 /**

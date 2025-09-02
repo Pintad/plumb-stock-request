@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
-import { readCSVFile, parseCSV, showImportSuccess, showImportError, parseCSVLine } from '@/context/imports/csvUtils';
+import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
 import * as ExcelJS from 'exceljs';
 
 interface CatalogueImportExportProps {
@@ -247,7 +247,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       setCurrentStep('Analyse du fichier...');
       setImportProgress(10);
       
-      const { headers, lines, delimiter } = parseCSV(csvContent);
+      const { headers, lines } = parseCSV(csvContent);
       
       if (lines.length === 0) {
         setIsImporting(false);
@@ -264,36 +264,19 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       // Normaliser les en-têtes pour qu'ils correspondent aux colonnes DB
       const normalizedHeaders = headers.map(header => {
-        const cleanHeader = header.trim().toLowerCase().replace(/\s+/g, ' ');
-        
+        const cleanHeader = header.trim().toLowerCase();
         // Mapper les en-têtes français vers les noms de colonnes DB
         const headerMapping: Record<string, string> = {
-          'id': 'id',
           'désignation': 'designation',
-          'designation': 'designation',
           'catégorie': 'categorie',
-          'categorie': 'categorie',
           'sur catégorie': 'sur_categorie',
-          'sur_categorie': 'sur_categorie',
-          'variante': 'variante',
-          'référence': 'reference',
-          'reference': 'reference',
-          'unité': 'unite',
-          'unite': 'unite',
           'url image': 'image_url',
-          'image_url': 'image_url',
           'mots-clés': 'keywords',
-          'keywords': 'keywords',
-          'mots-cles': 'keywords'
+          'référence': 'reference',
+          'unité': 'unite'
         };
-        
-        const mapped = headerMapping[cleanHeader] || cleanHeader;
-        console.log(`Header mapping: "${header}" -> "${cleanHeader}" -> "${mapped}"`);
-        return mapped;
+        return headerMapping[cleanHeader] || cleanHeader;
       });
-      
-      console.log('Headers originaux:', headers);
-      console.log('Headers normalisés:', normalizedHeaders);
 
       // Vérifier si la colonne ID est présente
       const hasIdColumn = normalizedHeaders.includes('id');
@@ -306,7 +289,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         if (!line.trim()) continue;
 
         // Parser la ligne CSV correctement en gérant les guillemets
-        const values = parseCSVLine(line, delimiter);
+        const values = parseCSVLine(line);
         const item: any = {};
 
         // Mapper les colonnes
@@ -346,10 +329,26 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       console.log('Articles traités pour import:', processedItems);
       console.log('Colonne ID présente:', hasIdColumn);
 
-      // Import unifié: upsert (mise à jour si l'ID existe, création sinon)
-      setCurrentStep(`Mise à jour/création de ${processedItems.length} articles...`);
-      await upsertItems(processedItems);
-
+      // Traitement selon la présence de l'ID
+      if (hasIdColumn) {
+        // Séparer les articles avec et sans ID
+        const itemsWithId = processedItems.filter(item => item.id && item.id.trim() !== '');
+        const itemsWithoutId = processedItems.filter(item => !item.id || item.id.trim() === '');
+        
+        console.log(`Articles avec ID: ${itemsWithId.length}, Articles sans ID: ${itemsWithoutId.length}`);
+        
+        if (itemsWithId.length > 0) {
+          setCurrentStep(`Mise à jour de ${itemsWithId.length} articles...`);
+          await updateExistingItems(itemsWithId, processedItems.length);
+        }
+        if (itemsWithoutId.length > 0) {
+          setCurrentStep(`Création de ${itemsWithoutId.length} nouveaux articles...`);
+          await createNewItems(itemsWithoutId, processedItems.length);
+        }
+      } else {
+        setCurrentStep(`Création de ${processedItems.length} nouveaux articles...`);
+        await createNewItems(processedItems, processedItems.length);
+      }
 
       setImportProgress(100);
       setCurrentStep('Import terminé !');
@@ -365,6 +364,40 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       setIsImporting(false);
       showImportError(error);
     }
+  };
+
+  // Fonction pour parser correctement une ligne CSV avec guillemets
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Double quote escaped
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    // Add last field
+    result.push(current);
+    
+    return result;
   };
 
   const updateExistingItems = async (items: any[], totalItems?: number) => {
@@ -464,51 +497,6 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       showImportSuccess(itemsToInsert.length, 'nouveaux articles créés');
 
-    } catch (error) {
-      showImportError(error);
-    }
-  };
-
-  // Upsert: met à jour si l'ID existe, crée sinon
-  const upsertItems = async (items: any[]) => {
-    try {
-      const batchSize = 50;
-      let processed = 0;
-
-      const sanitize = (item: any) => {
-        const dbItem: any = {
-          designation: item.designation,
-          categorie: item.categorie || null,
-          sur_categorie: item.sur_categorie || 'RACCORD',
-          variante: item.variante || null,
-          reference: item.reference || null,
-          unite: item.unite || null,
-          image_url: item.image_url || null,
-          keywords: item.keywords || null,
-        };
-        const id = (item.id ?? '').toString().trim();
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-        if (id && isUUID) {
-          dbItem.id = id;
-        }
-        return dbItem;
-      };
-
-      for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize).map(sanitize);
-        const { error } = await supabase
-          .from('catalogue')
-          .upsert(batch, { onConflict: 'id' });
-        if (error) throw error;
-
-        processed += batch.length;
-        const progress = 50 + ((processed / items.length) * 40);
-        setImportProgress(progress);
-        setCurrentStep(`Traitement... ${processed}/${items.length}`);
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      showImportSuccess(items.length, 'articles importés (créés/mis à jour)');
     } catch (error) {
       showImportError(error);
     }
