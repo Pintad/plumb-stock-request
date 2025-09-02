@@ -17,6 +17,48 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [showVisibilityWarning, setShowVisibilityWarning] = useState(false);
+  const importIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Surveiller la visibilité de l'onglet
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden;
+      setIsTabVisible(isVisible);
+      
+      if (!isVisible && isImporting) {
+        setShowVisibilityWarning(true);
+        // Optionnel: ralentir les opérations mais ne pas les arrêter
+      } else if (isVisible && showVisibilityWarning) {
+        setShowVisibilityWarning(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isImporting, showVisibilityWarning]);
+
+  // Maintenir l'onglet "actif" pendant l'import
+  React.useEffect(() => {
+    if (isImporting) {
+      // Créer un petit ping pour maintenir l'activité
+      importIntervalRef.current = setInterval(() => {
+        // Ne rien faire, juste maintenir l'activité JavaScript
+      }, 1000);
+    } else {
+      if (importIntervalRef.current) {
+        clearInterval(importIntervalRef.current);
+        importIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (importIntervalRef.current) {
+        clearInterval(importIntervalRef.current);
+      }
+    };
+  }, [isImporting]);
 
   const handleExportCSV = async () => {
     try {
@@ -388,10 +430,14 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
           updatedCount++;
         }
 
-        // Mettre à jour le progrès
-        if (i % 5 === 0) {
-          const progress = 50 + ((i / items.length) * 25);
-          setImportProgress(progress);
+        // Mettre à jour le progrès plus fréquemment
+        const progress = 50 + ((i / items.length) * 25);
+        setImportProgress(progress);
+        setCurrentStep(`Mise à jour... ${i + 1}/${items.length}`);
+        
+        // Petite pause pour maintenir la réactivité
+        if (i % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 25));
         }
       }
 
@@ -425,8 +471,8 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         keywords: item.keywords || null
       }));
 
-      // Traiter par batch pour les gros imports
-      const batchSize = 50;
+      // Traiter par batch plus petit pour maintenir la réactivité
+      const batchSize = 25;
       let insertedCount = 0;
       
       for (let i = 0; i < itemsToInsert.length; i += batchSize) {
@@ -444,6 +490,9 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         const progress = 50 + ((insertedCount / itemsToInsert.length) * 40);
         setImportProgress(progress);
         setCurrentStep(`Création en cours... ${insertedCount}/${itemsToInsert.length}`);
+        
+        // Petite pause pour éviter de surcharger le navigateur et maintenir la réactivité
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
 
       showImportSuccess(itemsToInsert.length, 'nouveaux articles créés');
@@ -480,6 +529,21 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
         </Button>
       </div>
 
+      {/* Avertissement de visibilité */}
+      {showVisibilityWarning && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-orange-800">
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            <p className="text-sm font-medium">
+              ⚠️ Import en cours en arrière-plan
+            </p>
+          </div>
+          <p className="text-xs text-orange-600 mt-1">
+            L'import continue même si cet onglet n'est pas visible. Évitez de fermer la fenêtre.
+          </p>
+        </div>
+      )}
+
       {/* Indicateur de progression */}
       {isImporting && (
         <div className="space-y-2">
@@ -488,6 +552,9 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
             <span>{Math.round(importProgress)}%</span>
           </div>
           <Progress value={importProgress} className="w-full" />
+          <p className="text-xs text-muted-foreground">
+            💡 L'import continue même si vous changez d'onglet. Ne fermez pas cette fenêtre.
+          </p>
         </div>
       )}
 
