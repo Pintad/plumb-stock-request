@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportDataToExcel } from '@/lib/utils/excelUtils';
-import { readCSVFile, parseCSV, showImportSuccess, showImportError } from '@/context/imports/csvUtils';
+import { readCSVFile, parseCSV, showImportSuccess, showImportError, parseCSVLine } from '@/context/imports/csvUtils';
 import * as ExcelJS from 'exceljs';
 
 interface CatalogueImportExportProps {
@@ -364,40 +364,6 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       setIsImporting(false);
       showImportError(error);
     }
-  };
-
-  // Fonction pour parser correctement une ligne CSV avec guillemets
-  const parseCSVLine = (line: string): string[] => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      const nextChar = line[i + 1];
-      
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          // Double quote escaped
-          current += '"';
-          i++; // Skip next quote
-        } else {
-          // Toggle quote state
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        // End of field
-        result.push(current);
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    
-    // Add last field
-    result.push(current);
-    
-    return result;
   };
 
   const updateExistingItems = async (items: any[], totalItems?: number) => {

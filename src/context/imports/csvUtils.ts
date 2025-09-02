@@ -57,6 +57,44 @@ export const readCSVFile = (
 };
 
 /**
+ * Parse a CSV line correctly handling quotes and commas
+ * @param line The CSV line to parse
+ * @returns Array of parsed values
+ */
+export const parseCSVLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Double quote escaped
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add last field
+  result.push(current.trim());
+  
+  return result;
+};
+
+/**
  * Parse CSV content and extract headers
  * @param csvContent The CSV content to parse
  * @returns An object with headers and lines
@@ -71,12 +109,20 @@ export const parseCSV = (csvContent: string) => {
     throw new Error("Le fichier CSV est vide");
   }
   
-  const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+  // Use proper CSV parsing for headers
+  const headerLine = lines[0];
+  const headers = parseCSVLine(headerLine).map(header => header.trim().toLowerCase());
+  
   if (headers.length === 0) {
     throw new Error("Le fichier CSV ne contient pas d'en-têtes");
   }
   
-  return { headers, lines: lines.slice(1).filter(line => line.trim() !== '') };
+  const dataLines = lines.slice(1).filter(line => line.trim() !== '');
+  
+  console.log('CSV parsing - Headers found:', headers);
+  console.log('CSV parsing - Data lines:', dataLines.length);
+  
+  return { headers, lines: dataLines };
 };
 
 /**
