@@ -136,10 +136,7 @@ const Catalogue: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <CatalogueImportExport onImportComplete={refreshItems} />
-            {isSuperAdmin && <Button onClick={handleExportCatalogue} variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                {isMobile ? 'Export' : 'Exporter'}
-              </Button>}
+            {isSuperAdmin}
             <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {isMobile ? 'Ajouter' : 'Nouvel Article'}
