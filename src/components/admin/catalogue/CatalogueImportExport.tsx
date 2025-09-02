@@ -346,26 +346,10 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       console.log('Articles traités pour import:', processedItems);
       console.log('Colonne ID présente:', hasIdColumn);
 
-      // Traitement selon la présence de l'ID
-      if (hasIdColumn) {
-        // Séparer les articles avec et sans ID
-        const itemsWithId = processedItems.filter(item => item.id && item.id.trim() !== '');
-        const itemsWithoutId = processedItems.filter(item => !item.id || item.id.trim() === '');
-        
-        console.log(`Articles avec ID: ${itemsWithId.length}, Articles sans ID: ${itemsWithoutId.length}`);
-        
-        if (itemsWithId.length > 0) {
-          setCurrentStep(`Mise à jour de ${itemsWithId.length} articles...`);
-          await updateExistingItems(itemsWithId, processedItems.length);
-        }
-        if (itemsWithoutId.length > 0) {
-          setCurrentStep(`Création de ${itemsWithoutId.length} nouveaux articles...`);
-          await createNewItems(itemsWithoutId, processedItems.length);
-        }
-      } else {
-        setCurrentStep(`Création de ${processedItems.length} nouveaux articles...`);
-        await createNewItems(processedItems, processedItems.length);
-      }
+      // Import unifié: upsert (mise à jour si l'ID existe, création sinon)
+      setCurrentStep(`Mise à jour/création de ${processedItems.length} articles...`);
+      await upsertItems(processedItems);
+
 
       setImportProgress(100);
       setCurrentStep('Import terminé !');
@@ -480,6 +464,51 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       showImportSuccess(itemsToInsert.length, 'nouveaux articles créés');
 
+    } catch (error) {
+      showImportError(error);
+    }
+  };
+
+  // Upsert: met à jour si l'ID existe, crée sinon
+  const upsertItems = async (items: any[]) => {
+    try {
+      const batchSize = 50;
+      let processed = 0;
+
+      const sanitize = (item: any) => {
+        const dbItem: any = {
+          designation: item.designation,
+          categorie: item.categorie || null,
+          sur_categorie: item.sur_categorie || 'RACCORD',
+          variante: item.variante || null,
+          reference: item.reference || null,
+          unite: item.unite || null,
+          image_url: item.image_url || null,
+          keywords: item.keywords || null,
+        };
+        const id = (item.id ?? '').toString().trim();
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        if (id && isUUID) {
+          dbItem.id = id;
+        }
+        return dbItem;
+      };
+
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize).map(sanitize);
+        const { error } = await supabase
+          .from('catalogue')
+          .upsert(batch, { onConflict: 'id' });
+        if (error) throw error;
+
+        processed += batch.length;
+        const progress = 50 + ((processed / items.length) * 40);
+        setImportProgress(progress);
+        setCurrentStep(`Traitement... ${processed}/${items.length}`);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      showImportSuccess(items.length, 'articles importés (créés/mis à jour)');
     } catch (error) {
       showImportError(error);
     }
