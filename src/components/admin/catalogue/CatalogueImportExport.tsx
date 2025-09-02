@@ -264,19 +264,36 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
 
       // Normaliser les en-têtes pour qu'ils correspondent aux colonnes DB
       const normalizedHeaders = headers.map(header => {
-        const cleanHeader = header.trim().toLowerCase();
+        const cleanHeader = header.trim().toLowerCase().replace(/\s+/g, ' ');
+        
         // Mapper les en-têtes français vers les noms de colonnes DB
         const headerMapping: Record<string, string> = {
+          'id': 'id',
           'désignation': 'designation',
+          'designation': 'designation',
           'catégorie': 'categorie',
+          'categorie': 'categorie',
           'sur catégorie': 'sur_categorie',
-          'url image': 'image_url',
-          'mots-clés': 'keywords',
+          'sur_categorie': 'sur_categorie',
+          'variante': 'variante',
           'référence': 'reference',
-          'unité': 'unite'
+          'reference': 'reference',
+          'unité': 'unite',
+          'unite': 'unite',
+          'url image': 'image_url',
+          'image_url': 'image_url',
+          'mots-clés': 'keywords',
+          'keywords': 'keywords',
+          'mots-cles': 'keywords'
         };
-        return headerMapping[cleanHeader] || cleanHeader;
+        
+        const mapped = headerMapping[cleanHeader] || cleanHeader;
+        console.log(`Header mapping: "${header}" -> "${cleanHeader}" -> "${mapped}"`);
+        return mapped;
       });
+      
+      console.log('Headers originaux:', headers);
+      console.log('Headers normalisés:', normalizedHeaders);
 
       // Vérifier si la colonne ID est présente
       const hasIdColumn = normalizedHeaders.includes('id');
