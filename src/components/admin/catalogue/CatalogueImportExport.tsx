@@ -217,17 +217,24 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
   const convertWorksheetToCSV = (worksheet: ExcelJS.Worksheet): string => {
     const csvLines: string[] = [];
     
+    // Obtenir le nombre total de colonnes du worksheet
+    const maxCol = worksheet.columnCount || 20; // Fallback à 20 colonnes si indéterminé
+    
     worksheet.eachRow((row, rowNumber) => {
       const values: string[] = [];
-      const maxCol = row.cellCount;
       
-      // S'assurer qu'on a toutes les colonnes même si elles sont vides
+      // Lire toutes les colonnes possibles, pas seulement cellCount
       for (let colNumber = 1; colNumber <= maxCol; colNumber++) {
         const cell = row.getCell(colNumber);
         let value = '';
         
         if (cell.value !== null && cell.value !== undefined) {
-          value = cell.value.toString();
+          // Gérer les formules et autres types de cellules
+          if (typeof cell.value === 'object' && 'result' in cell.value) {
+            value = cell.value.result?.toString() || '';
+          } else {
+            value = cell.value.toString();
+          }
         }
         
         // Échapper les virgules et guillemets
@@ -239,6 +246,7 @@ export const CatalogueImportExport: React.FC<CatalogueImportExportProps> = ({ on
       csvLines.push(values.join(','));
     });
     
+    console.log(`📊 Excel converti: ${csvLines.length} lignes, ${maxCol} colonnes`);
     return csvLines.join('\n');
   };
 
